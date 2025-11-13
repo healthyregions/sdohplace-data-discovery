@@ -20,7 +20,7 @@ export default function MyApp(props: MyAppProps) {
 
   return (
     <>
-      <PlausibleProvider domain="sdohplace.org">
+      <PlausibleProvider domain="search.sdohplace.org">
         <CacheProvider value={emotionCache}>
           <Provider store={store}>
             <AnyComponent {...pageProps} />
