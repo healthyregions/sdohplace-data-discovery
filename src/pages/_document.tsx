@@ -37,7 +37,7 @@ export default class MyDocument extends Document {
             {/* extra Plausible tag for custom events */}
             <script
                 defer
-                data-domain="sdohplace.org"
+                data-domain="search.sdohplace.org"
                 src="https://plausible.io/js/script.pageview-props.tagged-events.js"
             ></script>
         </Head>
