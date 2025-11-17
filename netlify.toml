@@ -2,11 +2,6 @@
 command = "npm run build"
 publish = "out"
 
-[[redirects]]
-  from = "/"
-  to = "https://sdohplace.org/search"
-  status = 302
-
 [[edge_functions]]
 pattern = "/chat-search"
 function = "chat-search"

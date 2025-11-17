@@ -116,23 +116,23 @@ const NavBar = (): JSX.Element => {
   const classes = useStyles();
 
   const aboutItems = [
-    { title: "Project", url: "/project" },
-    { title: "Core Team", url: "/team" },
-    { title: "Advisory", url: "/advisory" },
+    { title: "Project", url: "https://sdohplace.org/project" },
+    { title: "Core Team", url: "https://sdohplace.org/team" },
+    { title: "Advisory", url: "https://sdohplace.org/advisory" },
   ];
 
   const resourcesItems = [
-    { title: "Data Discovery", url: "/search" },
-    { title: "Data Refuge", url: "/data-refuge" },
+    { title: "Data Discovery", url: "https://sdohplace.org/search" },
+    { title: "Data Refuge", url: "https://sdohplace.org/data-refuge" },
     { title: "Community Toolkit", url: "https://toolkit.sdohplace.org" },
-    { title: "SDOH Guides", url: "/guides" },
-    { title: "Call for Guides", url: "/guides/call-for-guides", subitem: true },
-    { title: "Research & Reports", url: "/research" },
+    { title: "SDOH Guides", url: "https://sdohplace.org/guides" },
+    { title: "Call for Guides", url: "https://sdohplace.org/guides/call-for-guides", subitem: true },
+    { title: "Research & Reports", url: "https://sdohplace.org/research" },
   ];
 
   const communityItems = [
-    { title: "Fellows", url: "/fellows" },
-    { title: "Showcase", url: "/showcase" },
+    { title: "Fellows", url: "https://sdohplace.org/fellows" },
+    { title: "Showcase", url: "https://sdohplace.org/showcase" },
     //{ title: "Place Mini-Projects", url: "/mini-projects" },
     //{ title: "Things We Like!", url: "/recommendations" },
   ];
@@ -145,25 +145,21 @@ const NavBar = (): JSX.Element => {
         className={`flex justify-between items-center 2xl:max-w-[1536px] mt-8 pl-0 pr-0 mx-auto`}
       >
         <ul className="navbar hidden min-[940px]:flex pl-[2.5%]">
-          { router.pathname != "/" && <li className={'p-0 pt-2 mr-6'}>
+          <li className={'p-0 pt-2 mr-6'}>
               <Link href="/" style={{ padding:0, margin:0 }}>
                 <Image width={40} height={40} src={'/logos/sdoh-logo-navbar-desktop.svg'} alt={'LOGO'} />
               </Link>
-            </li>
-          }
+          </li>
+
 
           {/* Home Link */}
-          <li className={`mt-4 ${router.pathname == "/" ? "active" : ""}`}>
-            <Link href="/">Home</Link>
+          <li className={`mt-4`}>
+            <Link href="https://sdohplace.org/">Home</Link>
           </li>
 
           {/* Resources Menu */}
           <li
-            className={`mt-4 ml-6 ${
-              router.pathname == "/search"
-                ? "active"
-                : ""
-            }`}
+            className={`mt-4 ml-6 active`}
           >
             <NavDropdownButton
               title="Resources"
@@ -175,7 +171,7 @@ const NavBar = (): JSX.Element => {
           {/* Community Menu */}
           <li
             className={`mt-4 ml-6 ${
-              router.pathname == "/fellows" ||
+              router.pathname == "https://sdohplace.org/fellows" ||
               router.pathname.startsWith("/showcase")
                 ? "active"
                 : ""
@@ -199,14 +195,14 @@ const NavBar = (): JSX.Element => {
           <li
             className={`mt-4 ml-6 ${router.pathname.startsWith("/news") ? "active" : ""}`}
           >
-            <Link href="/news">News</Link>
+            <Link href="https://sdohplace.org/news">News</Link>
           </li>
 
           {/* About Menu */}
           <li
             className={`mt-4 ml-4 ${
-              router.pathname.startsWith("/about") ||
-              router.pathname.startsWith("/advisory")
+              router.pathname.startsWith("https://sdohplace.org/about") ||
+              router.pathname.startsWith("https://sdohplace.org/advisory")
                 ? "active"
                 : ""
             }`}
@@ -221,10 +217,10 @@ const NavBar = (): JSX.Element => {
           {/* Contact Us Link */}
           <li
             className={`mt-4 ml-4 ${
-              router.pathname.startsWith("/contact") ? "active" : ""
+              router.pathname.startsWith("https://sdohplace.org/contact") ? "active" : ""
             }`}
           >
-            <Link href="/contact">Contact Us</Link>
+            <Link href="https://sdohplace.org/contact">Contact Us</Link>
           </li>
         </ul>
 
@@ -286,7 +282,7 @@ const NavBar = (): JSX.Element => {
 
             {/* News Link */}
             <li className={'text-uppercase'}>
-              <Link href="/news">News</Link>
+              <Link href="https://sdohplace.org/news">News</Link>
             </li>
 
             {/* About Menu */}
@@ -300,7 +296,7 @@ const NavBar = (): JSX.Element => {
 
             {/* Contact Us Link */}
             <li className={'text-uppercase'}>
-              <Link href="/contact">Contact Us</Link>
+              <Link href="https://sdohplace.org/contact">Contact Us</Link>
             </li>
           </ul>
         </div>

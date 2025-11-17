@@ -250,7 +250,7 @@ const Footer = (): JSX.Element => {
               <li className="leading-4">
                 <Link
                   className="uppercase no-underline text-salmonpink text-center text-xl-rfs"
-                  href="/"
+                  href="https://sdohplace.org"
                 >
                   Home
                 </Link>
@@ -258,7 +258,7 @@ const Footer = (): JSX.Element => {
               <li className="leading-4">
                 <Link
                   className="uppercase no-underline text-salmonpink text-center text-xl-rfs"
-                  href="/advisory"
+                  href="https://sdohplace.org/advisory"
                 >
                   Advisory
                 </Link>
@@ -266,7 +266,7 @@ const Footer = (): JSX.Element => {
               <li className="leading-4">
                 <Link
                   className="uppercase no-underline text-salmonpink text-center text-xl-rfs"
-                  href="/fellows"
+                  href="https://sdohplace.org/fellows"
                 >
                   Fellows
                 </Link>
@@ -274,7 +274,7 @@ const Footer = (): JSX.Element => {
               <li className="leading-4">
                 <Link
                   className="uppercase no-underline text-salmonpink text-center text-xl-rfs"
-                  href="/news"
+                  href="https://sdohplace.org/news"
                 >
                   News
                 </Link>
@@ -282,7 +282,7 @@ const Footer = (): JSX.Element => {
               <li className="leading-4">
                 <Link
                   className="uppercase no-underline text-salmonpink text-center text-xl-rfs"
-                  href="/project"
+                  href="https://sdohplace.org/project"
                 >
                   About
                 </Link>
@@ -290,7 +290,7 @@ const Footer = (): JSX.Element => {
               <li className="leading-4">
                 <Link
                   className="uppercase no-underline text-salmonpink text-center text-xl-rfs"
-                  href="/contact"
+                  href="https://sdohplace.org/contact"
                 >
                   Contact Us
                 </Link>
@@ -315,7 +315,7 @@ const Footer = (): JSX.Element => {
                 fillColor={"smokegray"}
                 labelColor={"salmonpink"}
                 onClick={() => {
-                  window.location.href = "/news";
+                  window.location.href = "https://sdohplace.org/news";
                 }}
               ></ButtonWithIcon>
               <ButtonWithIcon
