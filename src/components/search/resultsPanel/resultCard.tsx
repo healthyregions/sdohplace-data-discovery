@@ -153,6 +153,10 @@ const ResultCard = (props: Props): JSX.Element => {
   const { showDetailPanel } = useSelector((state: RootState) => state.ui);
   const mapPreview = useSelector((state: RootState) => state.ui.mapPreview);
   const { maxScore, avgScore } = useSelector(getAllScoresSelector);
+  const isAiSearch = useSelector((state: RootState) => state.search.aiSearch);
+  const effectiveAvgScore = isAiSearch && props.resultItem.termAvgScore !== undefined
+    ? props.resultItem.termAvgScore
+    : avgScore;
 
   const itemId = props.resultItem?.id;
   const itemTitle = props.resultItem?.title || "Untitled";
@@ -363,7 +367,7 @@ const ResultCard = (props: Props): JSX.Element => {
             spellcheck={props.resultItem.spellcheck}
             highlights={props.resultItem.highlights || []}
             score={props.resultItem.score}
-            avgScore={avgScore}
+            avgScore={effectiveAvgScore}
             maxScore={maxScore}
           />
         }

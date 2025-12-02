@@ -24,8 +24,8 @@ export interface SearchState {
 
   // sort
   sort: {
-    sortBy: string;
-    sortOrder: string;
+    sortBy: string | null;
+    sortOrder: string | null;
   };
   
   // filter
@@ -65,8 +65,8 @@ export const initialState: SearchState = {
   enableLocalFallback: true,
   // sort
   sort: {
-    sortBy: "score",
-    sortOrder: "desc",
+    sortBy: null,
+    sortOrder: null,
   },
   bbox: null,
   subject: [],

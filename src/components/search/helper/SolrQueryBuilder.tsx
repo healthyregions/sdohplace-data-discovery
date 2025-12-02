@@ -80,7 +80,7 @@ export default class SolrQueryBuilder {
         }
       } else if (!CACHE_DISABLED && !skipCache) {
       }
-      console.log("search query: ", currentUrl);
+      console.info("search query: ", currentUrl);
       if (pendingRequests.has(currentUrl)) {
         pendingRequests.get(currentUrl).push({ resolve, reject });
         return;
