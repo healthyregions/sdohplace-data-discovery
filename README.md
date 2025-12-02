@@ -76,3 +76,6 @@ docker compose down
 ```
 NOTE: this is a shorthand for running `docker rm -f sdohplace-data-discovery`
 
+## Contributors
+
+Adam Cox, Pengyin Shan, Sara Lambert, Shubham Kumar
