@@ -1,8 +1,8 @@
 services:
 
   homepage:
-    container_name: sdoh-homepage
-    image: herop/sdoh-homepage
+    container_name: sdohplace-data-discovery
+    image: herop/sdohplace-data-discovery
     build:
       context: .
     env_file:
