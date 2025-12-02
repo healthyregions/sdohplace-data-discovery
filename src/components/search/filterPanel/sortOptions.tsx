@@ -11,9 +11,14 @@ export const SortOptions = () => {
 
   const handleSort = (field: string, direction: string) => {
     if (isSearching || initializing) return;
-    dispatch(setSort({ field, direction }));
+    if (sort.sortBy === field && sort.sortOrder === direction) {
+      dispatch(setSort({ field: null, direction: null }));
+    } else {
+      dispatch(setSort({ field, direction }));
+    }
   };
-
+  const isRecentActive = sort.sortBy === "index_year" && sort.sortOrder === "desc";
+  const isOldestActive = sort.sortBy === "index_year" && sort.sortOrder === "asc";
   return (
     <Box display="flex" alignItems="center">
       <Box>
@@ -22,22 +27,7 @@ export const SortOptions = () => {
             isSearching ? "opacity-50" : ""
           }`}
           style={{
-            textDecoration: sort.sortBy === "score" ? "underline" : "none",
-          }}
-          onClick={() => handleSort("score", "desc")}
-        >
-          Relevance
-        </span>
-
-        <span
-          className={`pr-5 cursor-pointer text-frenchviolet font-bold ${
-            isSearching ? "opacity-50" : ""
-          }`}
-          style={{
-            textDecoration:
-              sort.sortBy !== "score" && sort.sortOrder === "desc"
-                ? "underline"
-                : "none",
+            textDecoration: isRecentActive ? "underline" : "none",
           }}
           onClick={() => handleSort("index_year", "desc")}
         >
@@ -49,10 +39,7 @@ export const SortOptions = () => {
             isSearching ? "opacity-50" : ""
           }`}
           style={{
-            textDecoration:
-              sort.sortBy !== "score" && sort.sortOrder !== "desc"
-                ? "underline"
-                : "none",
+            textDecoration: isOldestActive ? "underline" : "none",
           }}
           onClick={() => handleSort("index_year", "asc")}
         >
