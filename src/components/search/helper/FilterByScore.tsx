@@ -26,12 +26,12 @@ export function getScoreExplanation(
   const cleanTerm = q.replace(/,/g, '"').replace(/"/g, " ");
   if (!spellcheck) {
     if (score >= avgScore) {
-      return `<b>Good match</b> for <b>${cleanTerm}</b>: this dataset contains relevant information in key fields like title and description.`;
+      return `<b>Good match</b>: this dataset contains relevant information in key fields like title and description for the term <b>${cleanTerm}</b>.`;
     }
-    return `<b>Related match</b> for <b>${cleanTerm}</b>: this dataset may contain useful context or indirect references.`;
+    return `<b>Broad match</b>: this dataset may contain useful context or indirect references for the term <b>${cleanTerm}</b>.`;
   } else {
-    return `<b>Synonym match</b> for <b>${
+    return `<b>Synonym match</b>: this dataset may contain a possible related term found in this result for the term <b>${
       q.split("~")[0]
-      }</b>: this dataset may contain a possible related term found in this result.`;
+      }</b>.`;
   }
 }
