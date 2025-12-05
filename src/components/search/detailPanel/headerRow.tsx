@@ -76,7 +76,7 @@ const HeaderRow = (props: Props): JSX.Element => {
           onClick={backToMapView}
           style={{ textDecoration: "none" }}
         >
-          Back to map view
+          Back to map
         </a>
       </div>
       <div className="flex flex-col sm:mb-7 sm:flex-row items-start">
