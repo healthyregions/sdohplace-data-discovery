@@ -117,7 +117,7 @@ const MapPanelContent = (props: Props): JSX.Element => {
       <Box>
         <div className="flex flex-col sm:mb-[1.5em] sm:ml-[1.1em] sm:flex-row items-center">
           <div className="flex flex-col sm:flex-row flex-grow text-2xl">
-            Map view
+            Map Search
           </div>
           <Button
             id="overlays-button"
