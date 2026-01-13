@@ -37,6 +37,11 @@ export interface SearchState {
   // map
   visOverlays: string[];
   bbox: [number, number, number, number] | null;
+  geocodeFeature: {
+    'label': string,
+    'bbox': [number, number, number, number],
+    'geometry': any,
+  } | null;
 
   // status
   currentRequestId: string;
@@ -68,10 +73,12 @@ export const initialState: SearchState = {
     sortBy: "score",
     sortOrder: "desc",
   },
+  //map
+  visOverlays: [],
   bbox: null,
+  geocodeFeature: null,
   subject: [],
   spatialResolution: [],
-  visOverlays: [],
   indexYear: [],
   spellCheck: "",
   originalQuery: "",

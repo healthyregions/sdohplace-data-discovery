@@ -20,7 +20,7 @@ import {
 import ThemeIcons from "../helper/themeIcons";
 import { EventType } from "@/lib/event";
 import { usePlausible } from "next-plausible";
-import { clearError, reloadAiSearchFromUrl, setAISearch } from "@/store/slices/searchSlice";
+import { clearError, reloadAiSearchFromUrl, setAISearch, setGeocodeFeature } from "@/store/slices/searchSlice";
 
 interface Props {
   schema: any;
@@ -169,8 +169,9 @@ const ResultsPanel = (props: Props): JSX.Element => {
   };
 
   const handleClearFilters = async () => {
-    dispatch(clearMapPreview());
-    dispatch(setGeosearchSelection(null));
+    // dispatch(clearMapPreview());
+    // dispatch(setGeosearchSelection(null));
+    dispatch(setGeocodeFeature(null))
     setIsResetting(true);
     await resetFilters(store);
     setTimeout(() => {

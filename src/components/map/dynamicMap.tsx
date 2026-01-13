@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { setBbox } from "@/store/slices/searchSlice";
+import { setBbox, setGeocodeFeature } from "@/store/slices/searchSlice";
 import { clearMapPreview, setGeosearchSelection } from "@/store/slices/uiSlice";
 import { AppDispatch, RootState } from "@/store";
 import maplibregl, {
@@ -10,6 +10,7 @@ import maplibregl, {
     GeoJSONSource,
     Map,
     NavigationControl,
+    AttributionControl,
     Popup,
     ScaleControl,
 } from "maplibre-gl";
@@ -25,6 +26,7 @@ import {EventType} from "@/lib/event";
 import {usePlausible} from "next-plausible";
 
 import { overlayRegistry, makePreviewLyrs, previewSources } from "./helper/layers";
+import GeocodeControl from "./geocodeControl";
 
 const apiKey = process.env.NEXT_PUBLIC_MAPTILER_API_KEY;
 
@@ -35,7 +37,7 @@ interface Props {
 export default function DynamicMap(props: Props): JSX.Element {
   const dispatch = useDispatch<AppDispatch>();
   const plausible = usePlausible();
-  const { bbox, visOverlays } = useSelector((state: RootState) => state.search);
+  const { bbox, visOverlays, geocodeFeature } = useSelector((state: RootState) => state.search);
   const { mapPreview, geosearchSelection} = useSelector((state: RootState) => state.ui);
   const [popup, setPopup] = useState(null);
   const [popupInfo, setPopupInfo] = useState(null);
@@ -43,7 +45,7 @@ export default function DynamicMap(props: Props): JSX.Element {
 
   const mapDivRef = useRef(null)
   const mapRef = useRef(null)
-  const gcRef = useRef(null)
+  // const gcRef = useRef(null)
 
   // create ability to load pmtiles layers
   useEffect(() => {
@@ -242,134 +244,56 @@ export default function DynamicMap(props: Props): JSX.Element {
     }
   }, [popupInfo, popup]);
 
-  const handleGeoSearchSelection = useCallback(
-    (e) => {
-      dispatch(clearMapPreview());
-      const highlightSource = mapRef.current.getSource(
-        "geoSearchHighlight"
-      ) as GeoJSONSource;
+  useEffect(() => {
+    if (!mapLoaded) return;
+    const highlightSource = mapRef.current.getSource(
+      "geoSearchHighlight"
+    ) as GeoJSONSource;
+
+    // start by clearing the highlight source data
+    highlightSource.setData({ type: "FeatureCollection", features: [] });
+
+    let boundaryGeom;
+    if (geocodeFeature) {
       if (
-        e.feature &&
-        (e.feature.geometry.type == "MultiPolygon" ||
-          e.feature.geometry.type == "Polygon")
-      ) {
-        let feat = turf.feature(e.feature.geometry);
-        let diffGeom = turf.difference(
-          turf.featureCollection([
-            turf.polygon([
-              [
-                [180, 90],
-                [-180, 90],
-                [-180, -90],
-                [180, -90],
-                [180, 90],
-              ],
-            ]),
-            feat,
-          ])
-        );
-        highlightSource.setData(diffGeom);
-      } else {
-        highlightSource.setData({ type: "FeatureCollection", features: [] });
-      }
-      if (e.feature) {
-        dispatch(setGeosearchSelection(e.feature.text_en));
-        mapRef.current.on("moveend", setBboxOnMoveEnd);
-      } else {
-        dispatch(setGeosearchSelection(null));
-        mapRef.current.off("moveend", setBboxOnMoveEnd);
-        dispatch(setBbox(null));
-      };
+        geocodeFeature.geometry['type'] == "MultiPolygon" ||
+        geocodeFeature.geometry['type'] == "Polygon"
+      ) { boundaryGeom = geocodeFeature.geometry; }
+      mapRef.current.fitBounds(geocodeFeature.bbox, {padding: 40})
+    } else {
+      mapRef.current.fitBounds(props.initialBounds)
+    }
+    if (boundaryGeom) {
+      let feat = turf.feature(geocodeFeature.geometry);
+      let diffGeom = turf.difference(
+        turf.featureCollection([
+          turf.polygon([
+            [
+              [180, 90],
+              [-180, 90],
+              [-180, -90],
+              [180, -90],
+              [180, 90],
+            ],
+          ]),
+          feat,
+        ])
+      );
+      highlightSource.setData(diffGeom);
+    }
+  }, [geocodeFeature, mapLoaded, props.initialBounds]);
 
-      if (e?.feature?.properties) {
-        plausible(EventType.SubmittedLocationSearch, {
-          props: {
-            ...e.feature.properties
-          }
-        });
-      }
-    },
-    [dispatch, plausible, setBboxOnMoveEnd]
-  );
+  //  const addOverlaySources = useCallback(() => {
+  //       for (const [key, data] of Object.entries(overlayRegistry)) {
+  //           mapRef.current.addSource(data.source.id, overlayRegistry[key].source.spec);
+  //       }
+  //  }, []);
 
-   const addOverlaySources = useCallback(() => {
-        for (const [key, data] of Object.entries(overlayRegistry)) {
-            mapRef.current.addSource(data.source.id, overlayRegistry[key].source.spec);
-        }
-   }, []);
-
-   const addPreviewSources = useCallback(() => {
-        previewSources.map((src) => {
-            mapRef.current.addSource(src.id, src.spec);
-        })
-   }, []);
-
-   const initializeGeocodeControl = useCallback(() => {
-        const map = mapRef.current;
-        const gc = new GeocodingControl({
-            apiKey: apiKey,
-            country: "us",
-            types: ["region", "county", "postal_code", "municipality", "municipal_district", "joint_municipality", "joint_submunicipality", "locality", "neighbourhood"],
-            marker: false,
-            markerOnSelected: false,
-            showResultMarkers: false,
-            fullGeometryStyle: null,
-            selectFirst: true,
-            placeholder: "Filter by state, county, city, or zip",
-            noResultsMessage: "No matching locations found...",
-            class: "geosearch-control",
-        });
-        gc.on('pick', handleGeoSearchSelection)
-
-        map.addControl(gc, 'top-left')
-
-        map.addSource("geoSearchHighlight", { type: "geojson", data: null });
-        map.addLayer({
-        id: "geoSearchHighlightLyr-fill",
-        type: "fill",
-        source: "geoSearchHighlight",
-        paint: {
-            "fill-color": "#000",
-            "fill-opacity": 0.1,
-        },
-        });
-        map.addLayer({
-        id: "geoSearchHighlightLyr-line",
-        type: "line",
-        source: "geoSearchHighlight",
-        paint: {
-            "line-width": ["case", ["==", ["geometry-type"], "Polygon"], 2, 3],
-            "line-dasharray": [1, 1],
-            "line-color": "#FF9C77",
-        },
-        });
-
-        gcRef.current = gc;
-   }, [handleGeoSearchSelection])
-
-   // add hook that responds to a clearing of the geosearchSelection state,
-   // and clears the geocode control input and map
-   useEffect(() => {
-        if (gcRef.current && !geosearchSelection) {
-            gcRef.current.clearMap()
-            mapRef.current.fitBounds(props.initialBounds)
-            gcRef.current.setOptions({apiKey:apiKey, clearOnBlur:true});
-            setTimeout(() => {
-                gcRef.current.focus()
-                gcRef.current.blur()
-                gcRef.current.setOptions({apiKey:apiKey, clearOnBlur:false});
-            }, 1000);
-        }
-        // Code linter wants props.initialBounds to be included in dependency array, but this causes
-        // a max recursion depth error. Leaving it out for now...
-   }, [geosearchSelection])
-
-   const handleMapLoad = useCallback(() => {
-        initializeGeocodeControl();
-        addOverlaySources();
-        addPreviewSources();
-        setMapLoaded(true);
-   }, [initializeGeocodeControl, addOverlaySources, addPreviewSources])
+  //  const addPreviewSources = useCallback(() => {
+  //       previewSources.map((src) => {
+  //           mapRef.current.addSource(src.id, src.spec);
+  //       })
+  //  }, []);
 
   useEffect(() => {
     if (mapRef.current) return; // stops map from intializing more than once
@@ -394,27 +318,59 @@ export default function DynamicMap(props: Props): JSX.Element {
     mapRef.current.addControl(scale);
 
     mapRef.current.getCanvas().style.cursor = 'default';
-
-    // final callback to be run after the map element has been fully loaded.
     mapRef.current.on('load', () => {
-        initializeGeocodeControl();
-        addOverlaySources();
-        addPreviewSources();
-        setMapLoaded(true);
+      // final callback to be run after the map element has been fully loaded.
+
+      
+      mapRef.current.addSource("geoSearchHighlight", { type: "geojson", data: null });
+      mapRef.current.addLayer({
+        id: "geoSearchHighlightLyr-fill",
+        type: "fill",
+        source: "geoSearchHighlight",
+        paint: {
+            "fill-color": "#000",
+            "fill-opacity": 0.1,
+        },
+      });
+      mapRef.current.addLayer({
+      id: "geoSearchHighlightLyr-line",
+      type: "line",
+      source: "geoSearchHighlight",
+      paint: {
+          "line-width": ["case", ["==", ["geometry-type"], "Polygon"], 2, 3],
+          "line-dasharray": [1, 1],
+          "line-color": "#FF9C77",
+        },
+      });
+
+      for (const [key, data] of Object.entries(overlayRegistry)) {
+        mapRef.current.addSource(data.source.id, overlayRegistry[key].source.spec);
+      }
+
+      previewSources.map((src) => {
+        mapRef.current.addSource(src.id, src.spec);
+      })
+
+      setMapLoaded(true);
     })
 
-  }, [props.initialBounds, handleMapLoad, setBboxOnMoveEnd, initializeGeocodeControl, addOverlaySources, addPreviewSources])
+  }, [props.initialBounds, setBboxOnMoveEnd])
 
   return (
     <div ref={mapDivRef} style={{ width: "100%", height: "100%" }}>
+        {mapLoaded && (
+          <div style={{marginTop: "1em", marginLeft: "1em"}}>
+            <GeocodeControl apiKey={apiKey} />
+          </div>
+        )}
         {bbox && mapLoaded && (
-            <div
-            className={`z-1000 mt-[54px] ml-[10px] text-almostblack s py-1 px-2 rounded relative font-sans text-sm bg-white bg-opacity-75 inline-flex`}
-            >
-                <span>
-                    results filtered by current map extent
-                </span>
-            </div>
+          <div
+          className={`z-1000 mt-[54px] ml-[10px] text-almostblack s py-1 px-2 rounded relative font-sans text-sm bg-white bg-opacity-75 inline-flex`}
+          >
+            <span>
+                results filtered by current map extent
+            </span>
+          </div>
         )}
     </div>
   );

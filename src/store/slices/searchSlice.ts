@@ -349,6 +349,9 @@ const searchSlice = createSlice({
       state.sort.sortBy = field;
       state.sort.sortOrder = direction;
     },
+    setGeocodeFeature: (state, action) => {
+      state.geocodeFeature = action.payload;
+    },
     setBbox: (state, action) => {
       state.bbox = action.payload;
     },
@@ -556,8 +559,9 @@ export const {
   setThoughts,
   setFilterQueries,
   setSort,
-  setBbox,
   setVisOverlays,
+  setBbox,
+  setGeocodeFeature,
   setSubject,
   setSpatialResolution,
   setIndexYear,
