@@ -8,7 +8,6 @@ interface MapPreviewLyr {
 interface MapState {
   previewLyrs: MapPreviewLyr[];
   overlayIds: string[];
-  mapBbox: [number, number, number, number] | null;
   geocodeFeature: {
     'label': string,
     'bbox': [number, number, number, number],
@@ -20,7 +19,6 @@ interface MapState {
 const initialState: MapState = {
   previewLyrs: [],
   overlayIds: [],
-  mapBbox: [ -125.332, 23.899, -65.742, 49.432],
   geocodeFeature: null,
   showBboxFilter: false
 };
@@ -38,9 +36,6 @@ const mapSlice = createSlice({
     setGeocodeFeature: (state, action) => {
       state.geocodeFeature = action.payload;
     },
-    setMapBbox: (state, action) => {
-      state.mapBbox = action.payload;
-    },
     setShowBboxFilter: (state, action) => {
       state.showBboxFilter = action.payload
     }
@@ -51,7 +46,6 @@ export const {
   setPreviewLyrs,
   setOverlayIds,
   setGeocodeFeature,
-  setMapBbox,
   setShowBboxFilter,
 } = mapSlice.actions;
 
