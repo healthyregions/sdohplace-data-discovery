@@ -35,13 +35,8 @@ export interface SearchState {
   indexYear: string[];
 
   // map
-  visOverlays: string[];
-  bbox: [number, number, number, number] | null;
-  geocodeFeature: {
-    'label': string,
-    'bbox': [number, number, number, number],
-    'geometry': any,
-  } | null;
+  searchBbox: [number, number, number, number] | null;
+  syncSearchBboxToMapBbox: boolean;
 
   // status
   currentRequestId: string;
@@ -74,9 +69,8 @@ export const initialState: SearchState = {
     sortOrder: "desc",
   },
   //map
-  visOverlays: [],
-  bbox: null,
-  geocodeFeature: null,
+  searchBbox: null,
+  syncSearchBboxToMapBbox: false,
   subject: [],
   spatialResolution: [],
   indexYear: [],

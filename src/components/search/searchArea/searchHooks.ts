@@ -8,7 +8,8 @@ import {
   setQuery,
   setIsSearching,
 } from "@/store/slices/searchSlice";
-import { setShowDetailPanel, clearMapPreview } from "@/store/slices/uiSlice";
+import { setShowDetailPanel } from "@/store/slices/uiSlice";
+import { setPreviewLyrs } from "@/store/slices/mapSlice";
 import { usePlausible } from "next-plausible";
 import { EventType } from "@/lib/event";
 import filterService from "@/middleware/FilterService";
@@ -70,7 +71,7 @@ export const useSearch = ({ schema }: UseSearchProps) => {
       }
 
       clearSuggestions();
-      dispatch(clearMapPreview());
+      dispatch(setPreviewLyrs([]));
       dispatch(setShowDetailPanel(null));
 
       const uniqueSearchId = Date.now().toString();

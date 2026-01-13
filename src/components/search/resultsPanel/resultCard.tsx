@@ -7,7 +7,8 @@ import resolveConfig from "tailwindcss/resolveConfig";
 import IconText from "../iconText";
 import { SolrObject } from "meta/interface/SolrObject";
 import IconMatch from "../helper/IconMatch";
-import { setShowDetailPanel, setMapPreview } from "@/store/slices/uiSlice";
+import { setShowDetailPanel } from "@/store/slices/uiSlice";
+import { setPreviewLyrs } from "@/store/slices/mapSlice";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "@/store";
 import { Tooltip } from "@mui/material";
@@ -151,7 +152,7 @@ const ResultCard = (props: Props): JSX.Element => {
   const classes = useStyles();
   const plausible = usePlausible();
   const { showDetailPanel } = useSelector((state: RootState) => state.ui);
-  const mapPreview = useSelector((state: RootState) => state.ui.mapPreview);
+  const previewLyrs = useSelector((state: RootState) => state.map.previewLyrs);
   const { maxScore, avgScore } = useSelector(getAllScoresSelector);
 
   const itemId = props.resultItem?.id;
@@ -162,8 +163,8 @@ const ResultCard = (props: Props): JSX.Element => {
 
   const isInMapPreview = React.useMemo(() => {
     if (!itemId) return false;
-    return mapPreview.some((p) => p.lyrId === itemId);
-  }, [mapPreview, itemId]);
+    return previewLyrs.some((p) => p.lyrId === itemId);
+  }, [previewLyrs, itemId]);
 
   // prevent analytics errors
   const safeTrackEvent = (eventName, props) => {
@@ -184,14 +185,14 @@ const ResultCard = (props: Props): JSX.Element => {
       if (!itemId || !hasHighlightIds) return;
       if (isInMapPreview) {
           dispatch(
-              setMapPreview(
-                  mapPreview.filter((item) => item.lyrId != itemId)
+              setPreviewLyrs(
+                  previewLyrs.filter((item) => item.lyrId != itemId)
                 )
             );
         } else {
           dispatch(setShowDetailPanel(false))
         dispatch(
-          setMapPreview([
+          setPreviewLyrs([
             {
               lyrId: itemId,
               filterIds: props.resultItem.meta.highlight_ids,
@@ -206,7 +207,7 @@ const ResultCard = (props: Props): JSX.Element => {
         });
       }
     },
-    [dispatch, isInMapPreview, mapPreview, plausible, itemId, hasHighlightIds, props.resultItem?.meta?.highlight_ids]
+    [dispatch, isInMapPreview, previewLyrs, plausible, itemId, hasHighlightIds, props.resultItem?.meta?.highlight_ids]
   );
 
   const handleShowDetails = React.useCallback(

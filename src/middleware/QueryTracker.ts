@@ -59,7 +59,7 @@ export class QueryTracker {
            queryKey.includes("index_year") ||
            queryKey.includes("setSpatialResolution") ||
            queryKey.includes("setSubject") ||
-           queryKey.includes("setBbox") ||
+           queryKey.includes("setSearchBbox") ||
            queryKey.includes("setIndexYear");
   }
 

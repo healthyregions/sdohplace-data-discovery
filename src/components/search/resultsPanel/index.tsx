@@ -5,7 +5,7 @@ import { makeStyles } from "@mui/styles";
 import tailwindConfig from "../../../../tailwind.config";
 import resolveConfig from "tailwindcss/resolveConfig";
 import SearchIcon from "@mui/icons-material/Search";
-import { clearMapPreview, setShowFilter } from "@/store/slices/uiSlice";
+import { setShowFilter } from "@/store/slices/uiSlice";
 import { Box, SvgIcon, CircularProgress, Fade, Collapse, Alert, Button } from "@mui/material";
 import FilterAltIcon from "@mui/icons-material/FilterAlt";
 import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline";
@@ -20,7 +20,8 @@ import {
 import ThemeIcons from "../helper/themeIcons";
 import { EventType } from "@/lib/event";
 import { usePlausible } from "next-plausible";
-import { clearError, reloadAiSearchFromUrl, setAISearch, setGeocodeFeature } from "@/store/slices/searchSlice";
+import { clearError, reloadAiSearchFromUrl, setAISearch } from "@/store/slices/searchSlice";
+import { setGeocodeFeature } from "@/store/slices/mapSlice";
 
 interface Props {
   schema: any;

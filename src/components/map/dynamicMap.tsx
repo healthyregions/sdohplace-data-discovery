@@ -1,7 +1,8 @@
 "use client";
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { setBbox } from "@/store/slices/searchSlice";
+import { setSearchBbox, setSyncSearchBboxToMapBbox } from "@/store/slices/searchSlice";
+import { setShowBboxFilter } from "@/store/slices/mapSlice";
 import { AppDispatch, RootState } from "@/store";
 import maplibregl, {
     LngLatBoundsLike,
@@ -31,15 +32,17 @@ interface Props {
 export default function DynamicMap(props: Props): JSX.Element {
   const dispatch = useDispatch<AppDispatch>();
   const plausible = usePlausible();
-  const { bbox, visOverlays, geocodeFeature } = useSelector((state: RootState) => state.search);
-  const { mapPreview } = useSelector((state: RootState) => state.ui);
+
+  const { geocodeFeature, overlayIds, previewLyrs, showBboxFilter } = useSelector((state: RootState) => state.map);
+  const { syncSearchBboxToMapBbox } = useSelector((state: RootState) => state.search);
+
   const [popup, setPopup] = useState(null);
   const [popupInfo, setPopupInfo] = useState(null);
   const [mapLoaded, setMapLoaded] = useState(false);
+  const [bboxFilterChecked, setBboxFilterChecked] = useState(false);
 
   const mapDivRef = useRef(null)
   const mapRef = useRef(null)
-  // const gcRef = useRef(null)
 
   // create ability to load pmtiles layers
   useEffect(() => {
@@ -48,27 +51,56 @@ export default function DynamicMap(props: Props): JSX.Element {
     return () => {
       maplibregl.removeProtocol("pmtiles");
     };
-  }, []);
+  });
 
-  const overlayLayerIds = []
-  Object.keys(overlayRegistry).forEach(key => {
-    overlayRegistry[key].layers.forEach(layer => {
-      overlayLayerIds.push(layer.spec.id)
-    })
-  })
+  function getCurrentMapBbox () {
+    const bounds = mapRef.current.getBounds();
+    const newBbox: [number, number, number, number] = [
+      Math.round(bounds._sw.lng * 1000) / 1000,
+      Math.round(bounds._sw.lat * 1000) / 1000,
+      Math.round(bounds._ne.lng * 1000) / 1000,
+      Math.round(bounds._ne.lat * 1000) / 1000,
+    ];
+    return newBbox
+  }
 
   const setBboxOnMoveEnd = useCallback( () => {
-      const bounds = mapRef.current.getBounds();
-      const newBbox: [number, number, number, number] = [
-        Math.round(bounds._sw.lng * 1000) / 1000,
-        Math.round(bounds._sw.lat * 1000) / 1000,
-        Math.round(bounds._ne.lng * 1000) / 1000,
-        Math.round(bounds._ne.lat * 1000) / 1000,
-      ];
-      dispatch(setBbox(newBbox));
-    }, [dispatch]);
+    dispatch(setSearchBbox(getCurrentMapBbox()));
+  }, [dispatch]);
 
-  useEffect(() => {
+  const handleSearchWithinMap = () => {
+    if (!mapLoaded) return;
+    if (syncSearchBboxToMapBbox) {
+      mapRef.current.on("moveend", setBboxOnMoveEnd);
+    } else {
+      mapRef.current.off("moveend", setBboxOnMoveEnd);
+    }
+  }
+  useEffect(handleSearchWithinMap, [mapLoaded, syncSearchBboxToMapBbox, setBboxOnMoveEnd])
+
+  const handleBboxFilter = () => {
+    setBboxFilterChecked(!bboxFilterChecked)
+    if (!mapLoaded) return
+    dispatch(setSyncSearchBboxToMapBbox(bboxFilterChecked))
+    if (bboxFilterChecked) {
+      dispatch(setSearchBbox(getCurrentMapBbox()));
+    } else  {
+      dispatch(setSearchBbox(null));
+    }
+  }
+
+  const handleBboxSync = () => {
+    if (!mapLoaded) return
+    dispatch(setSyncSearchBboxToMapBbox(bboxFilterChecked))
+    if (bboxFilterChecked) {
+      dispatch(setSearchBbox(getCurrentMapBbox()));
+    } else  {
+      dispatch(setSearchBbox(null));
+    }
+  }
+  useEffect(handleBboxSync, [dispatch, mapLoaded, bboxFilterChecked])
+
+  const handlePreviewIds = () => {
     if (!mapLoaded) return;
     const map = mapRef.current;
     map.getStyle().layers.map((lyr) => {
@@ -76,7 +108,7 @@ export default function DynamicMap(props: Props): JSX.Element {
         map.removeLayer(lyr.id);
       }
     });
-
+  
     const lookup = {
       "040": "state-2018",
       "050": "county-2018",
@@ -84,12 +116,11 @@ export default function DynamicMap(props: Props): JSX.Element {
       "150": "bg-2018",
       "860": "zcta-2018",
     };
-    mapPreview.map((previewLyr) => {
+
+    previewLyrs.map((previewLyr) => {
+
       // Just look at first id here (we shouldn't see minus mixed with non-minus)
       const firstId = previewLyr.filterIds[0];
-      const source = firstId.startsWith("-")
-        ? lookup[firstId.slice(1, 4)]
-        : lookup[firstId.slice(0, 3)];
       const operator = firstId.startsWith("-") ? "all" : "any";
       let clauses: FilterSpecification[] = [];
       previewLyr.filterIds.forEach((id: string) => {
@@ -123,59 +154,65 @@ export default function DynamicMap(props: Props): JSX.Element {
       if (exactMatches.length) {
         clauses.push(["in", ["get", "HEROP_ID"], ["literal", exactMatches]]);
       }
-
+  
       const expression = [operator, ...clauses];
+
+      const source = firstId.startsWith("-")
+        ? lookup[firstId.slice(1, 4)]
+        : lookup[firstId.slice(0, 3)];
 
       const previewLyrs = makePreviewLyrs(
         previewLyr.lyrId,
         source,
         expression as any
       );
-
+  
       // determine where in the layer stack to add the preview layers.
       // they must be before any overlay clusters for the best presentation.
       // get list of all currently visible overlay ids
-      const currentOverlayLayerIds = visOverlays.map(overlayName => {
+      const currentOverlayLayerIds = overlayIds.map(overlayName => {
         return overlayRegistry[overlayName].layers.map(layer => layer.spec.id)
       }).flat()
-
+  
       // find the first overlay id in the overall list of map layers.
       // if no overlays, this will be undefined.
       const firstOverlay = map.getStyle().layers.find(function (lyr) {
         return currentOverlayLayerIds.includes(lyr.id);
       });
-
+  
       // get the id of the first overlay, if exists, otherwise default to "Ocean labels"
       const addBefore = firstOverlay ? firstOverlay.id : "Ocean labels";
-
+  
       // now add the preview layers to the map
       previewLyrs.forEach((lyr) => {
         map.addLayer(lyr, addBefore);
       });
     });
-  }, [mapPreview, mapLoaded, visOverlays]);
+  }
+  useEffect(handlePreviewIds, [mapLoaded, previewLyrs, overlayIds]);
 
-  useEffect(() => {
+  const handleOverlayInteraction = () => {
     if (!mapLoaded) return;
+
     const map = mapRef.current;
     const mapLyrIds = map.getStyle().layers.map((lyr) => lyr.id);
-
-    visOverlays.forEach((lyr) => {
+  
+    overlayIds.forEach((lyr) => {
       if (overlayRegistry[lyr]) {
         overlayRegistry[lyr].layers.forEach((lyrDef) => {
           if (!mapLyrIds.includes(lyrDef.spec.id)) {
             map.addLayer(lyrDef.spec, lyrDef.addBefore);
-
+  
             // Change the cursor to a pointer when the mouse is over this layer.
             map.on('mouseenter', lyrDef.spec.id, () => {
                 map.getCanvas().style.cursor = 'pointer';
             });
-
+  
             // Change it back to a default style when it leaves.
             map.on('mouseleave', lyrDef.spec.id, () => {
                 map.getCanvas().style.cursor = 'default';
             });
-
+  
             // set the click handling for the cluster layer
             if(lyrDef.spec.id.endsWith("-clusters")) {
               map.on('click', lyrDef.spec.id, async (e) => {
@@ -205,20 +242,20 @@ export default function DynamicMap(props: Props): JSX.Element {
         })
       }
     });
-
     for (const [key, data] of Object.entries(overlayRegistry)) {
       data.layers.forEach((lyrDef) => {
         if (
           mapLyrIds.includes(lyrDef.spec.id) &&
-          !visOverlays.includes(key)
+          !overlayIds.includes(key)
         ) {
           map.removeLayer(lyrDef.spec.id);
         }
       })
     }
-  }, [visOverlays, mapLoaded]);
+  }
+  useEffect(handleOverlayInteraction, [overlayIds, mapLoaded]);
 
-  useEffect(() => {
+  const handlePopup = () => {
     if (!mapRef.current) return;
     if (!popup) {
         const popupInstance = new Popup({
@@ -236,62 +273,68 @@ export default function DynamicMap(props: Props): JSX.Element {
     } else {
         popup.remove();
     }
-  }, [popupInfo, popup]);
+  }
+  useEffect(handlePopup, [popupInfo, popup]);
 
-  useEffect(() => {
+  const handleGeocodeFeatureDisplay = () => {
     if (!mapLoaded) return;
+
     const highlightSource = mapRef.current.getSource(
       "geoSearchHighlight"
     ) as GeoJSONSource;
-
+  
     // start by clearing the highlight source data
     highlightSource.setData({ type: "FeatureCollection", features: [] });
 
-    let boundaryGeom;
+    // add an inverted boundary if the geocode feature has a polygon
     if (geocodeFeature) {
       if (
         geocodeFeature.geometry['type'] == "MultiPolygon" ||
         geocodeFeature.geometry['type'] == "Polygon"
-      ) { boundaryGeom = geocodeFeature.geometry; }
-      mapRef.current.fitBounds(geocodeFeature.bbox, {padding: 40})
+      ) {
+        let feat = turf.feature(geocodeFeature.geometry);
+        let diffGeom = turf.difference(
+          turf.featureCollection([
+            turf.polygon([
+              [
+                [180, 90],
+                [-180, 90],
+                [-180, -90],
+                [180, -90],
+                [180, 90],
+              ],
+            ]),
+            feat,
+          ])
+        );
+        highlightSource.setData(diffGeom);
+      }
+    }
+  }
+  useEffect(handleGeocodeFeatureDisplay, [geocodeFeature, mapLoaded]);
+
+  const handleGeocodeFeatureZoom = () => {
+    if (!mapLoaded) return;
+    if (geocodeFeature) {
+      mapRef.current.fitBounds(geocodeFeature.bbox, {padding: 40});
+      setBboxFilterChecked(true)
     } else {
-      mapRef.current.fitBounds(props.initialBounds)
+      mapRef.current.fitBounds(props.initialBounds);
+      dispatch(setShowBboxFilter(false));
+      dispatch(setSyncSearchBboxToMapBbox(false));
+      setTimeout(() => {
+        mapRef.current.once('moveend', () => {
+          dispatch(setShowBboxFilter(true));
+        });
+      }, 3000)
     }
-    if (boundaryGeom) {
-      let feat = turf.feature(geocodeFeature.geometry);
-      let diffGeom = turf.difference(
-        turf.featureCollection([
-          turf.polygon([
-            [
-              [180, 90],
-              [-180, 90],
-              [-180, -90],
-              [180, -90],
-              [180, 90],
-            ],
-          ]),
-          feat,
-        ])
-      );
-      highlightSource.setData(diffGeom);
-    }
-  }, [geocodeFeature, mapLoaded, props.initialBounds]);
+  };
+  // don't include props.initialBounds here because it causes unwanted re-zooming
+  useEffect(handleGeocodeFeatureZoom, [dispatch, geocodeFeature, mapLoaded]);
 
-  //  const addOverlaySources = useCallback(() => {
-  //       for (const [key, data] of Object.entries(overlayRegistry)) {
-  //           mapRef.current.addSource(data.source.id, overlayRegistry[key].source.spec);
-  //       }
-  //  }, []);
-
-  //  const addPreviewSources = useCallback(() => {
-  //       previewSources.map((src) => {
-  //           mapRef.current.addSource(src.id, src.spec);
-  //       })
-  //  }, []);
-
-  useEffect(() => {
+  const initMap = () => {
     if (mapRef.current) return; // stops map from intializing more than once
-
+  
     mapRef.current = new Map({
         container: mapDivRef.current,
         style: `https://api.maptiler.com/maps/3d4a663a-95c3-42d0-9ee6-6a4cce2ba220/style.json?key=${apiKey}`,
@@ -300,22 +343,24 @@ export default function DynamicMap(props: Props): JSX.Element {
         touchPitch: false,
         touchZoomRotate: false,
     })
-
+  
     const nav = new NavigationControl({
         showCompass: false
     });
     mapRef.current.addControl(nav)
+
     const scale = new ScaleControl({
         maxWidth: 80,
         unit: 'imperial'
     });
     mapRef.current.addControl(scale);
-
+  
     mapRef.current.getCanvas().style.cursor = 'default';
+  
+    // final callback to be run after the map element has been fully loaded.
     mapRef.current.on('load', () => {
-      // final callback to be run after the map element has been fully loaded.
-
-      
+  
+      // add sources and layers to the map to be used to display geocode selection
       mapRef.current.addSource("geoSearchHighlight", { type: "geojson", data: null });
       mapRef.current.addLayer({
         id: "geoSearchHighlightLyr-fill",
@@ -336,19 +381,22 @@ export default function DynamicMap(props: Props): JSX.Element {
           "line-color": "#FF9C77",
         },
       });
-
+  
+      // add all community asset overlay sources to the map
       for (const [key, data] of Object.entries(overlayRegistry)) {
         mapRef.current.addSource(data.source.id, overlayRegistry[key].source.spec);
       }
-
+  
+      // add all preview sources to the map
       previewSources.map((src) => {
         mapRef.current.addSource(src.id, src.spec);
       })
-
+  
       setMapLoaded(true);
-    })
 
-  }, [props.initialBounds, setBboxOnMoveEnd])
+    })
+  }
+  useEffect(initMap, [props.initialBounds]);
 
   return (
     <div ref={mapDivRef} style={{ width: "100%", height: "100%" }}>
@@ -357,13 +405,16 @@ export default function DynamicMap(props: Props): JSX.Element {
             <GeocodeControl apiKey={apiKey} />
           </div>
         )}
-        {bbox && mapLoaded && (
+        {showBboxFilter && (
           <div
           className={`z-1000 mt-[54px] ml-[10px] text-almostblack s py-1 px-2 rounded relative font-sans text-sm bg-white bg-opacity-75 inline-flex`}
           >
             <span>
                 results filtered by current map extent
             </span>
+            <div style={{marginTop: "1em", marginLeft: "1em"}}>
+              <input id="search-within-map-checkbox" type="checkbox" checked={bboxFilterChecked} onChange={handleBboxFilter} />
+            </div>
           </div>
         )}
     </div>

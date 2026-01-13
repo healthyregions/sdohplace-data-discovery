@@ -27,7 +27,8 @@ import { SolrObject } from "meta/interface/SolrObject";
 import { SearchUIConfig } from "@/components/searchUIConfig";
 import ButtonWithIcon from "@/components/homepage/buttonwithicon";
 import { AppDispatch, RootState } from "@/store";
-import { setSchema, setVisOverlays } from "@/store/slices/searchSlice";
+import { setSchema } from "@/store/slices/searchSlice";
+import { setOverlayIds } from "@/store/slices/mapSlice";
 import { overlayRegistry } from "../../map/helper/layers";
 import { localStyles } from "../../../lib/localStyles";
 import dynamic from "next/dynamic";
@@ -65,8 +66,8 @@ const DynamicMapArea = dynamic(() => import("../../map/mapArea"), {
 const MapPanelContent = (props: Props): JSX.Element => {
   const classes = useStyles();
   const dispatch = useDispatch<AppDispatch>();
-  const visOverlays = useSelector(
-    (state: RootState) => state.search.visOverlays
+  const overlayIds = useSelector(
+    (state: RootState) => state.map.overlayIds
   );
   const [overlaysMenuAnchorEl, setOverlaysMenuAnchorEl] =
     useState<null | HTMLElement>(null);
@@ -84,14 +85,14 @@ const MapPanelContent = (props: Props): JSX.Element => {
   }, [dispatch]);
   useEffect(() => {
     if (isMounted) {
-      dispatch(setVisOverlays(visOverlays));
+      dispatch(setOverlayIds(overlayIds));
     }
-  }, [dispatch, visOverlays, isMounted]);
+  }, [dispatch, overlayIds, isMounted]);
   useEffect(() => {
     setOverlaysBtnTxt(
-      `Community Assets${visOverlays.length > 0 ? ": " + visOverlays.slice(0,2).join(", ") : ""}${visOverlays.length > 2 ? "..." : ""}`
+      `Community Assets${overlayIds.length > 0 ? ": " + overlayIds.slice(0,2).join(", ") : ""}${overlayIds.length > 2 ? "..." : ""}`
     );
-  }, [visOverlays]);
+  }, [overlayIds]);
 
   const handleOverlaysClick = (event: React.MouseEvent<HTMLButtonElement>) => {
     setOverlaysMenuAnchorEl(event.currentTarget);
@@ -100,10 +101,10 @@ const MapPanelContent = (props: Props): JSX.Element => {
     setOverlaysMenuAnchorEl(null);
   };
   const toggleOverlay = (overlay: string) => {
-    const newOverlays = visOverlays.includes(overlay)
-      ? visOverlays.filter((e) => e !== overlay)
-      : [...visOverlays, overlay];
-    dispatch(setVisOverlays(newOverlays));
+    const newOverlays = overlayIds.includes(overlay)
+      ? overlayIds.filter((e) => e !== overlay)
+      : [...overlayIds, overlay];
+    dispatch(setOverlayIds(newOverlays));
   };
   const handleInfoClick = (event: React.MouseEvent<HTMLButtonElement>) => {
     setInfoAnchorEl(event.currentTarget);
@@ -176,7 +177,7 @@ const MapPanelContent = (props: Props): JSX.Element => {
             <MenuList>
             {Object.keys(overlayRegistry).map((overlay) => (
               <MenuItem key={overlay} onClick={() => toggleOverlay(overlay)} sx={{fontFamily:fullConfig.theme.fontFamily["sans"]}}>
-                {visOverlays.includes(overlay) && (
+                {overlayIds.includes(overlay) && (
                   <ListItemIcon>
                     <CheckIcon />
                   </ListItemIcon>

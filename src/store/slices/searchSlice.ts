@@ -349,14 +349,11 @@ const searchSlice = createSlice({
       state.sort.sortBy = field;
       state.sort.sortOrder = direction;
     },
-    setGeocodeFeature: (state, action) => {
-      state.geocodeFeature = action.payload;
+    setSearchBbox: (state, action) => {
+      state.searchBbox = action.payload;
     },
-    setBbox: (state, action) => {
-      state.bbox = action.payload;
-    },
-    setVisOverlays: (state, action) => {
-      state.visOverlays = action.payload;
+    setSyncSearchBboxToMapBbox: (state, action) => {
+      state.syncSearchBboxToMapBbox = action.payload;
     },
     setSubject: (state, action) => {
       state.subject = action.payload;
@@ -516,7 +513,7 @@ const searchSlice = createSlice({
         state.suggestions = [];
       })
       .addCase(batchResetFilters, (state, action) => {
-        state.bbox = null;
+        state.searchBbox = null;
         state.spatialResolution = [];
         state.indexYear = [];
         state.filterQueries = [];
@@ -559,9 +556,8 @@ export const {
   setThoughts,
   setFilterQueries,
   setSort,
-  setVisOverlays,
-  setBbox,
-  setGeocodeFeature,
+  setSearchBbox,
+  setSyncSearchBboxToMapBbox,
   setSubject,
   setSpatialResolution,
   setIndexYear,

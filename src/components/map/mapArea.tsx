@@ -12,7 +12,7 @@ const DynamicMap = dynamic(() => import("./dynamicMap"), {
 export default function MapArea(): JSX.Element {
   const [isMounted, setIsMounted] = useState(false);
   const contiguousBounds: LngLatBoundsLike = [
-    -125.3321, 23.8991, -65.7421, 49.4325,
+    -125.332, 23.899, -65.742, 49.432,
   ];
   useEffect(() => {
     setIsMounted(true);

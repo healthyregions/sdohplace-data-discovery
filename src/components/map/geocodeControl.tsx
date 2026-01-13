@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 
 import { useDispatch, useSelector } from "react-redux";
-import { setBbox, setGeocodeFeature } from "@/store/slices/searchSlice";
+import { setGeocodeFeature } from "@/store/slices/mapSlice";
+import { setSearchBbox, setSyncSearchBboxToMapBbox } from "@/store/slices/searchSlice";
 import { AppDispatch, RootState } from "@/store";
 
 import { config, geocoding } from '@maptiler/client';
@@ -12,21 +13,21 @@ interface Props {
 
 export default function GeocodeControl(props: Props): JSX.Element {
   config.apiKey = props.apiKey
-  
+
   const dispatch = useDispatch<AppDispatch>();
+  const { geocodeFeature } = useSelector((state: RootState) => state.map);
+
   const [geocodeResults, setGeocodeResults] = useState([])
-  const { geocodeFeature } = useSelector((state: RootState) => state.search);
 
   const handleInputChange = (event) => {
-    const v = event.target.value;
+    const inputVal = event.target.value;
 
-    if (v.length && v.length >= 2) {
+    if (inputVal.length && inputVal.length >= 2) {
       (async () => {
-        const result = await geocoding.forward(v, {
+        const result = await geocoding.forward(inputVal, {
           country: ["us"],
           types: ["region", "county", "postal_code", "municipality", "municipal_district", "joint_municipality", "joint_submunicipality", "locality", "neighbourhood"],
         });
-        console.log(result)
         setGeocodeResults(result.features)
       })()
     }
@@ -39,14 +40,13 @@ export default function GeocodeControl(props: Props): JSX.Element {
         types: ["region", "county", "postal_code", "municipality", "municipal_district", "joint_municipality", "joint_submunicipality", "locality", "neighbourhood"],
       });
       const selectedPlace = resultById.features[0]
-      setGeocodeResults(resultById.features)
-      console.log(resultById)
-      dispatch(setBbox(selectedPlace.bbox))
       dispatch(setGeocodeFeature({
         "label": selectedPlace.place_name,
         "bbox": selectedPlace.bbox,
         "geometry": selectedPlace.geometry
       }))
+      // dispatch(setSyncSearchBboxToMapBbox(true));
+      // (document.getElementById("search-within-map-checkbox") as HTMLInputElement).checked = true;
       setGeocodeResults([])
     })()
   }
@@ -60,8 +60,9 @@ export default function GeocodeControl(props: Props): JSX.Element {
   }, [geocodeFeature])
 
   const handleClearGeocode = () => {
-    dispatch(setBbox(null))
     dispatch(setGeocodeFeature(null))
+    dispatch(setSearchBbox(null))
+    dispatch(setSyncSearchBboxToMapBbox(false))
   }
 
   return <div className="maplibregl-ctrl geocode-ctrl">
