@@ -5,7 +5,7 @@ import { makeStyles } from "@mui/styles";
 import tailwindConfig from "../../../../tailwind.config";
 import resolveConfig from "tailwindcss/resolveConfig";
 import SearchIcon from "@mui/icons-material/Search";
-import { clearMapPreview, setGeosearchSelection, setShowFilter } from "@/store/slices/uiSlice";
+import { clearMapPreview, setShowFilter } from "@/store/slices/uiSlice";
 import { Box, SvgIcon, CircularProgress, Fade, Collapse, Alert, Button } from "@mui/material";
 import FilterAltIcon from "@mui/icons-material/FilterAlt";
 import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline";
@@ -169,8 +169,6 @@ const ResultsPanel = (props: Props): JSX.Element => {
   };
 
   const handleClearFilters = async () => {
-    // dispatch(clearMapPreview());
-    // dispatch(setGeosearchSelection(null));
     dispatch(setGeocodeFeature(null))
     setIsResetting(true);
     await resetFilters(store);

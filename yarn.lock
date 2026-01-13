@@ -2139,18 +2139,6 @@
   dependencies:
     quick-lru "^7.0.0"
 
-"@maptiler/geocoding-control@^2.0.1":
-  version "2.0.1"
-  resolved "https://registry.yarnpkg.com/@maptiler/geocoding-control/-/geocoding-control-2.0.1.tgz#8f4d798758c95e601cb163f3b44766c2a4abdc8c"
-  integrity sha512-fHa6QgRfYGbviMdDY1QoDNs2yIQyc2LS8rTOwoj71dTAWwSiQfw6s+ohhiM9zEBmfwYVoELByAG8qwC9brafww==
-  dependencies:
-    "@turf/bbox" "^7.1.0"
-    "@turf/clone" "^7.1.0"
-    "@turf/difference" "^7.1.0"
-    "@turf/flatten" "^7.1.0"
-    "@turf/union" "^7.1.0"
-    geo-coordinates-parser "^1.7.4"
-
 "@mdx-js/mdx@^2.2.1":
   version "2.3.0"
   resolved "https://registry.yarnpkg.com/@mdx-js/mdx/-/mdx-2.3.0.tgz#d65d8c3c28f3f46bb0e7cb3bf7613b39980671a9"
@@ -8873,11 +8861,6 @@ gensync@^1.0.0-beta.2:
   version "1.0.0-beta.2"
   resolved "https://registry.yarnpkg.com/gensync/-/gensync-1.0.0-beta.2.tgz#32a6ee76c3d7f52d46b2b1ae5d93fea8580a25e0"
   integrity sha512-3hN7NaskYvMDLQY55gnW3NQ+mesEAepTqlg+VEbj7zzqEMBVNhzcGYYeqFo/TlYz6eQiFcp1HcsCZO+nGgS8zg==
-
-geo-coordinates-parser@^1.7.4:
-  version "1.7.4"
-  resolved "https://registry.yarnpkg.com/geo-coordinates-parser/-/geo-coordinates-parser-1.7.4.tgz#b9c45ee188cc5bdd7b29f82601e6e6d7b566ac9c"
-  integrity sha512-gVGxBW+s1csexXVMf5bIwz3TH9n4sCEglOOOqmrPk8YazUI5f79jCowKjTw05m/0h1//3+Z2m/nv8IIozgZyUw==
 
 geojson-equality-ts@^1.0.2:
   version "1.0.2"

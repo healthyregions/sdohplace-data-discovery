@@ -2,11 +2,9 @@ import React, { useState, useEffect } from 'react';
 
 import { useDispatch, useSelector } from "react-redux";
 import { setBbox, setGeocodeFeature } from "@/store/slices/searchSlice";
-import { clearMapPreview } from "@/store/slices/uiSlice";
 import { AppDispatch, RootState } from "@/store";
 
 import { config, geocoding } from '@maptiler/client';
-import { Place } from '@mui/icons-material';
 
 interface Props {
   apiKey: string;
@@ -66,11 +64,14 @@ export default function GeocodeControl(props: Props): JSX.Element {
     dispatch(setGeocodeFeature(null))
   }
 
-
   return <div className="maplibregl-ctrl geocode-ctrl">
-    <div>
-      <input id="geocode-input" style={{width: "250px"}} type="text" onChange={handleInputChange} />
-      <button id="clearButton" onClick={handleClearGeocode}>Clear</button>
+    <div style={{backgroundColor:"rgba(255,255,255,.9)", width: "250px"}}>
+      <input id="geocode-input" style={{width: "230px", border:"none", background:"none"}} type="text" onChange={handleInputChange} />
+      <button id="clearButton" style={{width: "20px"}} onClick={handleClearGeocode}>
+        {geocodeFeature && (
+          "X"
+        )}
+      </button>
     </div>
     {geocodeResults.length > 0 && (
     <div style={{marginTop: "1em", backgroundColor:"rgba(255,255,255,.9)", width:"250px"}}>

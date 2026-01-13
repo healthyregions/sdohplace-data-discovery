@@ -1,8 +1,7 @@
 "use client";
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { setBbox, setGeocodeFeature } from "@/store/slices/searchSlice";
-import { clearMapPreview, setGeosearchSelection } from "@/store/slices/uiSlice";
+import { setBbox } from "@/store/slices/searchSlice";
 import { AppDispatch, RootState } from "@/store";
 import maplibregl, {
     LngLatBoundsLike,
@@ -10,7 +9,6 @@ import maplibregl, {
     GeoJSONSource,
     Map,
     NavigationControl,
-    AttributionControl,
     Popup,
     ScaleControl,
 } from "maplibre-gl";
@@ -19,10 +17,6 @@ import "maplibre-gl/dist/maplibre-gl.css";
 
 import * as turf from "@turf/turf";
 
-import { GeocodingControl } from "@maptiler/geocoding-control/maplibregl";
-import "@maptiler/geocoding-control/style.css";
-
-import {EventType} from "@/lib/event";
 import {usePlausible} from "next-plausible";
 
 import { overlayRegistry, makePreviewLyrs, previewSources } from "./helper/layers";
@@ -38,7 +32,7 @@ export default function DynamicMap(props: Props): JSX.Element {
   const dispatch = useDispatch<AppDispatch>();
   const plausible = usePlausible();
   const { bbox, visOverlays, geocodeFeature } = useSelector((state: RootState) => state.search);
-  const { mapPreview, geosearchSelection} = useSelector((state: RootState) => state.ui);
+  const { mapPreview } = useSelector((state: RootState) => state.ui);
   const [popup, setPopup] = useState(null);
   const [popupInfo, setPopupInfo] = useState(null);
   const [mapLoaded, setMapLoaded] = useState(false);
