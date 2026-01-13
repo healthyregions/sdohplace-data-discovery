@@ -48,4 +48,5 @@ export interface SolrObject {
   parents?: string[];
   highlights?: string[];
   q?: string; // query string for this search (in solr)
+  termAvgScore?: number; // per-term average score for AI search
 }

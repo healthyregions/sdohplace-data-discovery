@@ -39,16 +39,16 @@ const ResultsPanel = (props: Props): JSX.Element => {
   const dispatch = useDispatch<AppDispatch>();
   const classes = useStyles();
   const searchState = useSelector(selectSearchState);
-  const { hasError, errorMessage, errorType, aiSearch } = useSelector((state: RootState) => state.search);
+  const { hasError, errorMessage, errorType, aiSearch } = useSelector(
+    (state: RootState) => state.search
+  );
   const filterStatus = useSelector(getFilterStatus) as {
     hasActiveFilters: boolean;
     activeFilters: { [key: string]: boolean };
   };
   const plausible = usePlausible();
   const showFilter = useSelector((state: RootState) => state.ui.showFilter);
-  const isLoading =
-    searchState.isSearching ||
-    searchState.isSuggesting;
+  const isLoading = searchState.isSearching || searchState.isSuggesting;
   const isQuery =
     searchState.query && searchState.query !== "*" && searchState.query !== "";
   const [previousCount, setPreviousCount] = React.useState(
@@ -65,30 +65,45 @@ const ResultsPanel = (props: Props): JSX.Element => {
   const [prevResults, setPrevResults] = React.useState([]);
   const sortConfig = useSelector((state: RootState) => state.search.sort);
   const isAiSearch = useSelector((state: RootState) => state.search.aiSearch);
-  const getSortedResults = React.useCallback((directResults, relatedResults) => {
-    const allResults = [...directResults, ...relatedResults];
-    if (sortConfig.sortBy === "score") {
-      return allResults.sort((a, b) => (b.score || 0) - (a.score || 0));
-    } else if (sortConfig.sortBy === "index_year") {
-      return allResults.sort((a, b) => {
-        const aYears = a.index_year || [];
-        const bYears = b.index_year || [];
-        if (aYears.length === 0 && bYears.length === 0) return 0;
-        if (aYears.length === 0) return 1;
-        if (bYears.length === 0) return -1;
-        const aYearsNum = aYears.map(year => parseInt(year, 10)).filter(y => !isNaN(y));
-        const bYearsNum = bYears.map(year => parseInt(year, 10)).filter(y => !isNaN(y));
-        if (aYearsNum.length === 0 && bYearsNum.length === 0) return 0;
-        if (aYearsNum.length === 0) return 1;
-        if (bYearsNum.length === 0) return -1;
-        const aValue = sortConfig.sortOrder === "desc" ? Math.max(...aYearsNum) : Math.min(...aYearsNum);
-        const bValue = sortConfig.sortOrder === "desc" ? Math.max(...bYearsNum) : Math.min(...bYearsNum);
-        return sortConfig.sortOrder === "desc" ? (bValue - aValue) : (aValue - bValue);
-      });
-    }
-    return allResults;
-  }, [sortConfig.sortBy, sortConfig.sortOrder]);
-  
+
+  const getSortedResults = React.useCallback(
+    (directResults, relatedResults) => {
+      const allResults = [...directResults, ...relatedResults];
+
+      if (sortConfig.sortBy === "index_year") {
+        return allResults.sort((a, b) => {
+          const aYears = a.index_year || [];
+          const bYears = b.index_year || [];
+          if (aYears.length === 0 && bYears.length === 0) return 0;
+          if (aYears.length === 0) return 1;
+          if (bYears.length === 0) return -1;
+          const aYearsNum = aYears
+            .map((year) => parseInt(year, 10))
+            .filter((y) => !isNaN(y));
+          const bYearsNum = bYears
+            .map((year) => parseInt(year, 10))
+            .filter((y) => !isNaN(y));
+          if (aYearsNum.length === 0 && bYearsNum.length === 0) return 0;
+          if (aYearsNum.length === 0) return 1;
+          if (bYearsNum.length === 0) return -1;
+          const aValue =
+            sortConfig.sortOrder === "desc"
+              ? Math.max(...aYearsNum)
+              : Math.min(...aYearsNum);
+          const bValue =
+            sortConfig.sortOrder === "desc"
+              ? Math.max(...bYearsNum)
+              : Math.min(...bYearsNum);
+          return sortConfig.sortOrder === "desc"
+            ? bValue - aValue
+            : aValue - bValue;
+        });
+      }
+      return allResults;
+    },
+    [sortConfig.sortBy, sortConfig.sortOrder]
+  );
+
   const isNonLatinSearch = React.useMemo(() => {
     if (!searchState.query) return false;
     const nonLatinRegex = /[^\u0000-\u007F]/;
@@ -97,7 +112,8 @@ const ResultsPanel = (props: Props): JSX.Element => {
 
   React.useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const hasAiSearch = params.has("ai_search") && params.get("ai_search") === "true";
+    const hasAiSearch =
+      params.has("ai_search") && params.get("ai_search") === "true";
     if (!hasTriedUrlReload && !searchState.isSearching) {
       const query = params.get("query");
       if (
@@ -187,13 +203,44 @@ const ResultsPanel = (props: Props): JSX.Element => {
     }
     return searchState.results;
   }, [searchState.aiSearch, isLoading, prevResults, searchState.results]);
-  
- 
+
   const sortedResults = React.useMemo(() => {
     const directResults = resultsToShow;
     const relatedResults = uniqueRelatedList;
-    return getSortedResults(directResults, relatedResults);
-  }, [resultsToShow, uniqueRelatedList, getSortedResults]);
+    const sortedRes = getSortedResults(directResults, relatedResults);
+    if (!isAiSearch || sortConfig.sortBy === "index_year") return sortedRes;
+
+    // AI search with relevance sorting: compute per-term average scores
+    const termAvgScores = new Map<string, number>();
+    sortedRes.forEach((result) => {
+      const term = result.q || "unknown";
+      if (!termAvgScores.has(term)) {
+        const termResults = sortedRes.filter((r) => (r.q || "unknown") === term);
+        const termScores = termResults.map((r) => r.score || 0);
+        const termAvg = termScores.length > 0
+          ? termScores.reduce((a, b) => a + b, 0) / termScores.length
+          : 0;
+        termAvgScores.set(term, termAvg);
+      }
+    });
+    const resultsWithTermAvg = sortedRes.map((result) => {
+      const term = result.q || "unknown";
+      return {
+        ...result,
+        termAvgScore: termAvgScores.get(term) || 0,
+      };
+    });
+    return resultsWithTermAvg.sort((a, b) => {
+      const aAboveAvg = (a.score || 0) >= a.termAvgScore;
+      const bAboveAvg = (b.score || 0) >= b.termAvgScore;
+      if (aAboveAvg && !bAboveAvg) return -1;
+      if (!aAboveAvg && bAboveAvg) return 1;
+      if (a.score && b.score) {
+        return b.score - a.score;
+      }
+      return 0;
+    });
+  }, [resultsToShow, uniqueRelatedList, getSortedResults, isAiSearch, sortConfig.sortBy]);
 
   const displayCount = React.useMemo(() => {
     if (isResetting || isLoading) {
@@ -211,7 +258,7 @@ const ResultsPanel = (props: Props): JSX.Element => {
     previousCount,
     searchState.results.length,
     uniqueRelatedList.length,
-    sortedResults
+    sortedResults,
   ]);
 
   React.useEffect(() => {
@@ -253,13 +300,14 @@ const ResultsPanel = (props: Props): JSX.Element => {
     isInitialLoad,
     isNonLatinSearch,
     searchState.aiSearch,
-    prevResults.length
+    prevResults.length,
   ]);
 
   React.useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const hasSearchParams = params.has("query") || params.has("ai_search");
-    const hasAiSearch = params.has("ai_search") && params.get("ai_search") === "true";
+    const hasAiSearch =
+      params.has("ai_search") && params.get("ai_search") === "true";
 
     if (hasSearchParams && !hasAiSearch) {
       setIsInitialLoad(true);
@@ -299,10 +347,10 @@ const ResultsPanel = (props: Props): JSX.Element => {
     uniqueRelatedList.length,
     isResetting,
     hasCompletedSearch,
-    isNonLatinSearch, 
+    isNonLatinSearch,
     searchState.aiSearch,
     hasSearchBeenInitiated,
-    prevResults.length
+    prevResults.length,
   ]);
 
   React.useEffect(() => {
@@ -315,9 +363,15 @@ const ResultsPanel = (props: Props): JSX.Element => {
       if (searchState.aiSearch && !prevResults.length) {
         setPreviousCount(0);
       }
-    } else if (hasSearchBeenInitiated || (filterStatus && filterStatus.hasActiveFilters)) {
+    } else if (
+      hasSearchBeenInitiated ||
+      (filterStatus && filterStatus.hasActiveFilters)
+    ) {
       setTimeout(() => {
-        if (searchState.results.length === 0 && uniqueRelatedList.length === 0) {
+        if (
+          searchState.results.length === 0 &&
+          uniqueRelatedList.length === 0
+        ) {
           setIsInitialLoad(false);
           setHasCompletedSearch(true);
           setShowNoResults(true);
@@ -325,14 +379,14 @@ const ResultsPanel = (props: Props): JSX.Element => {
       }, 300);
     }
   }, [
-    isLoading, 
-    searchState.aiSearch, 
-    searchState.results.length, 
-    uniqueRelatedList.length, 
-    hasSearchBeenInitiated, 
+    isLoading,
+    searchState.aiSearch,
+    searchState.results.length,
+    uniqueRelatedList.length,
+    hasSearchBeenInitiated,
     isNonLatinSearch,
     prevResults.length,
-    filterStatus
+    filterStatus,
   ]);
 
   const renderLoadingState = () => {
@@ -367,24 +421,26 @@ const ResultsPanel = (props: Props): JSX.Element => {
   }, [isLoading, isResetting, hasCompletedSearch, displayCount]);
 
   const shouldShowLoading = React.useMemo(() => {
-    if (filterStatus && 
-        filterStatus.hasActiveFilters && 
-        !isLoading && 
-        !isResetting && 
-        searchState.results.length === 0 && 
-        uniqueRelatedList.length === 0) {
+    if (
+      filterStatus &&
+      filterStatus.hasActiveFilters &&
+      !isLoading &&
+      !isResetting &&
+      searchState.results.length === 0 &&
+      uniqueRelatedList.length === 0
+    ) {
       return false;
     }
-    
+
     return isLoading || isResetting || isInitialLoad || !showNoResults;
   }, [
-    isLoading, 
-    isResetting, 
-    isInitialLoad, 
-    showNoResults, 
-    filterStatus, 
-    searchState.results.length, 
-    uniqueRelatedList.length
+    isLoading,
+    isResetting,
+    isInitialLoad,
+    showNoResults,
+    filterStatus,
+    searchState.results.length,
+    uniqueRelatedList.length,
   ]);
 
   return (
@@ -408,13 +464,19 @@ const ResultsPanel = (props: Props): JSX.Element => {
                 </div>
               </Fade>
             </div>
-            {filterStatus && filterStatus.hasActiveFilters && !isLoading && !isResetting && (
-              <div className="flex flex-col sm:flex-row items-enter justify-center mr-4 cursor-pointer text-uppercase">
-                <div className="text-frenchviolet" onClick={handleClearFilters}>
-                  Reset Filters
+            {filterStatus &&
+              filterStatus.hasActiveFilters &&
+              !isLoading &&
+              !isResetting && (
+                <div className="flex flex-col sm:flex-row items-enter justify-center mr-4 cursor-pointer text-uppercase">
+                  <div
+                    className="text-frenchviolet"
+                    onClick={handleClearFilters}
+                  >
+                    Reset Filters
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
 
             <div
               className="flex sm:justify-end mt-0 order-1 sm:order-none flex-none text-l-500 sm:mr-[2.3em] text-frenchviolet cursor-pointer"
@@ -467,25 +529,32 @@ const ResultsPanel = (props: Props): JSX.Element => {
                   ) : hasError ? (
                     <div className="flex flex-col sm:ml-[1.1em] sm:mb-[2.5em]">
                       <Box className="flex flex-col justify-center items-center mb-[1.5em]">
-                        <ErrorOutlineIcon className="text-red-500 mb-3" sx={{ fontSize: 48 }} />
+                        <ErrorOutlineIcon
+                          className="text-red-500 mb-3"
+                          sx={{ fontSize: 48 }}
+                        />
                         <div className="text-lg font-medium text-gray-800 mb-2">
-                          {errorType === 'server' ? 'AI Search Service Unavailable' : 
-                           errorType === 'network' ? 'Connection Issue' : 'Search Error'}
+                          {errorType === "server"
+                            ? "AI Search Service Unavailable"
+                            : errorType === "network"
+                            ? "Connection Issue"
+                            : "Search Error"}
                         </div>
-                      </Box>              
-                      <Alert 
-                        severity={errorType === 'network' ? 'warning' : 'error'}
+                      </Box>
+                      <Alert
+                        severity={errorType === "network" ? "warning" : "error"}
                         className="mb-4"
                         sx={{
-                          backgroundColor: errorType === 'network' ? '#fff3cd' : '#f8d7da',
-                          borderColor: errorType === 'network' ? '#ffeaa7' : '#f5c6cb',
-                          color: errorType === 'network' ? '#856404' : '#721c24',
+                          backgroundColor:
+                            errorType === "network" ? "#fff3cd" : "#f8d7da",
+                          borderColor:
+                            errorType === "network" ? "#ffeaa7" : "#f5c6cb",
+                          color:
+                            errorType === "network" ? "#856404" : "#721c24",
                         }}
                       >
                         <div className="flex flex-col space-y-3">
-                          <div className="text-sm">
-                            {errorMessage}
-                          </div>
+                          <div className="text-sm">{errorMessage}</div>
                           {aiSearch && (
                             <Box className="flex flex-col sm:flex-row gap-3 mt-3">
                               <Button
@@ -497,16 +566,17 @@ const ResultsPanel = (props: Props): JSX.Element => {
                                   dispatch(clearError());
                                 }}
                                 sx={{
-                                  backgroundColor: '#2563eb',
-                                  '&:hover': { backgroundColor: '#1d4ed8' },
-                                  textTransform: 'none',
+                                  backgroundColor: "#2563eb",
+                                  "&:hover": { backgroundColor: "#1d4ed8" },
+                                  textTransform: "none",
                                   fontWeight: 500,
                                 }}
                               >
                                 Switch to Keyword Search
                               </Button>
                               <div className="text-xs text-gray-600 self-center">
-                                Search for specific terms directly in our database
+                                Search for specific terms directly in our
+                                database
                               </div>
                             </Box>
                           )}
@@ -515,9 +585,9 @@ const ResultsPanel = (props: Props): JSX.Element => {
                             size="small"
                             onClick={() => dispatch(clearError())}
                             sx={{
-                              alignSelf: 'flex-start',
-                              textTransform: 'none',
-                              mt: 1
+                              alignSelf: "flex-start",
+                              textTransform: "none",
+                              mt: 1,
                             }}
                           >
                             Dismiss
@@ -536,11 +606,14 @@ const ResultsPanel = (props: Props): JSX.Element => {
                               plausible(EventType.ReceivedNoSearchResults, {
                                 props: {
                                   searchQuery: searchState.query,
-                                  searchFilter: filterStatus?.activeFilters || {},
+                                  searchFilter:
+                                    filterStatus?.activeFilters || {},
                                   fullSearchStates:
                                     searchState.query +
                                     " || " +
-                                    Object.entries(filterStatus?.activeFilters || {})
+                                    Object.entries(
+                                      filterStatus?.activeFilters || {}
+                                    )
                                       .map(([key, value]) => `${key}: ${value}`)
                                       .join(" || "),
                                 },

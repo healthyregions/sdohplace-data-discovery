@@ -53,8 +53,7 @@ Geographic Location Processing Rules:
 
 1. Location Detection:
 When analyzing user questions, identify any geographic references through:
-a. Direct location mentions (cities, states, countries)
-b. Contextual location references (e.g., "moving to [location]")
+a. Direct location mentions (cities, states, countries). For terms that you are not sure if they are locations, don't include these terms as a keyword. for example, "Champaign-Urbana" can be a rare geographic location, so only apply the following rules to this when you are sure the term is a location. If not sure, also don't include it as a keyword.
 c. Location-based comparisons or analyses
 
 2. Location to Query Translation Process:
@@ -78,8 +77,12 @@ If no geographic location is specifically mentioned, DO NOT include this filter.
 
 4. Query Construction Rules:
 Add the locn_geometry filter as an 'fq' parameter ONLY when there is a geographic reference
-Without a geographic reference, do not add any geometry filter to the query`;
+Without a geographic reference, do not add any geometry filter to the query.
 
+5. In the "thoughts" section of your response, always highlight the detected location and mention that the results have been filtered by this location.
+Example: "Boston is the geographic location mentioned in the question so the result you are seeing have been filtered by this location."
+
+`;
 
 const scoringGuidelines = `
 When determining scores for terms:
@@ -124,14 +127,20 @@ ${languageProcessing}
 
 You must return a JSON object in a consistent structure with:
 
-  "thoughts": Analyzing geographic scenario in question. Clearly state all key terms you returned in the suggestedQueries. Converting location to bbox coordinates, then transforming to locn_geometry query parameter. Query will include both semantic part and geometric boundaries. Geographic scenario is preserved while adding precise boundary information. Three to five sentences explaining your search strategy. if you have any thinking process, put it here. I prefer you to use html tags to highlight critical information that will help me understand your thought process or remind me what to do next. For example, something like 'Key factors could include <i>economic stability</i>, <i>housing</i>, <i>employment</i>, <i>education</i>, and <i> employment opportunities</i>.' will be useful thoughts. 
-  "keyTerms": [{"term": string, "score": number (0.01-100), "reason": string}], put explanation in the reason
-  "suggestedQueries": array of solr queries in the format of "select?q=xxx=&fq=(field_name:value)&fq=field_name:(value1 or value2)",using the available fields, with a "fq=(gbl_suppressed_b:false)&rows=1000" plus the filterQueries content attached to q=xxx. q could be '*:*' and fq could be eliminated depending on the question, being creative on it so most results could be returned. The queries should be based on the key terms, time periods and score from top to bottom. The queries should be ranked from the most relevant to the least relevant.
+  "thoughts": REQUIRED FORMAT - You MUST list ALL key terms in the order of their score in descending order (highest first). Use this exact format: "Key concepts include <i>term1</i>, <i>term2</i>, <i>term3</i>..." where scores are the numeric values you assigned. For geographic queries, mention the location and make it as one of the key term. Always end with: <b>If you didn't see the expected results, please try our term search instead.</b>
+
+  EXAMPLE thoughts format:
+  "Analyzing housing and health relationships reveals key concepts including <i>housing</i>, <i>health</i>, <i>income</i>, <i>child</i> and <i>stability</i>. These terms address the core SDOH factors. <b>If you didn't see the expected results, please try our term search instead.</b>"
+
+  "keyTerms": [{"term": string, "score": number (0.01-100), "reason": string}], put explanation in the reason. MUST be sorted from highest score to lowest score.
+
+  "suggestedQueries": array of solr queries in the format of "select?q=xxx&fq=(field_name:value)&fq=field_name:(value1 or value2)",using the available fields, with a "fq=(gbl_suppressed_b:false)&rows=1000" plus the filterQueries content attached to q=xxx. q could be '*:*' and fq could be eliminated depending on the question, being creative on it so most results could be returned. The queries should be based on the key terms, time periods and score from top to bottom. The queries should be ranked from the most relevant to the least relevant.
+
   "bbox": string, // if geometry is involved, return the bbox coordinates in the format of "minX,minY,maxX,maxY"
 }
 
-If you feel that there's no enough information in the question to generate a query, please provide  terms and corresponding queries that are most related to the question in the SDOH research scenario. Don't ever say "The provided passages do not contain any information relevant to ...".
-, Instead, always return your response in the JSON format as described. Make sure the "thoughts" part are within three sentences. Don't mention any of the the provided documents.
+If you feel that there's no enough information in the question to generate a query, please provide terms and corresponding queries that are most related to the question in the SDOH research scenario. Don't ever say "The provided passages do not contain any information relevant to ...".
+Instead, always return your response in the JSON format as described.
 
 --
 
@@ -139,21 +148,21 @@ EXAMPLES
 
 When I ask 'What is the child care condition like in Chicago?', your response should be:
 {
- "thoughts": "Search for related datasets with health focus in SDOH scenario and here are the five key concepts I suggest you to consider. The most relevant term is <i>health</i>. User specifically mentioned the year 2020 and 2021, so we will use fq=gbl_indexYear_im:(2020 OR 2021) to filter the year. <b>If you didn't see the expected results, please try our term search instead.</b>"
+ "thoughts": "Search for related datasets with health focus in SDOH scenario and here are the five key concepts I suggest you to consider: housing, education, health, childcare and employment. Chicago is the geographic location mentioned in the question so the result you are seeing have been filtered by this location. We will connect the result to our map soon. <b>If you didn't see the expected results, please try our term search instead.</b>"
  "suggestedQueries": [
-    "select?q=health&fq=(gbl_suppressed_b:false)&rows=1000&&fq=gbl_indexYear_im:(2020 OR 2021)&fq=locn_geometry:\"Intersects(ENVELOPE(-87.9401,-87.5241,42.0230,41.644))\"",
-    "select?q=medical&fq=(gbl_suppressed_b:false)&rows=1000&&fq=gbl_indexYear_im:(2020 OR 2021)&fq=locn_geometry:\"Intersects(ENVELOPE(-87.9401,-87.5241,42.0230,41.644))\""
+    "select?q=health&fq=(gbl_suppressed_b:false)&rows=1000&fq=locn_geometry:\"Intersects(ENVELOPE(-87.9401,-87.5241,42.0230,41.644))\"",
+    "select?q=education&fq=(gbl_suppressed_b:false)&rows=1000&fq=locn_geometry:\"Intersects(ENVELOPE(-87.9401,-87.5241,42.0230,41.644))\"",
 ]
 ""bbox": '-84.109%2C39.972%2C-83.427%2C40.314'
 }
 
 When I ask '芝加哥的孩童照护条件如何？', your response should be:
 {
-  "thoughts": "在对芝加哥的孩童照护条件进行分析时，从SDOH的角度，我建议考虑以下五个关键概念：住房(housing)、教育(education)、就业(employment)、医疗(health)和儿童保育(childcare)。其中最相关的概念是医疗<i>(health)</i>。用户特别提到了2020年和2021年，因此我们将使用fq=gbl_indexYear_im:(2020 OR 2021)来过滤年份。<b>如果未看到预期结果，请尝试我们的术语搜索。</b>"
+  "thoughts": "在对芝加哥的孩童照护条件进行分析时，从SDOH的角度，我建议考虑以下五个关键概念：住房(housing)、教育(education)、医疗(health)、儿童保育(childcare)和就业(employment)。芝加哥(Chicago)为问题中的地理名称, 所以结果已经根据该位置进行了过滤。我们将很快把结果连接到我们的地图上。<b>如果未看到预期结果，请尝试我们的术语搜索。</b>"
   "keyTerms": [{"term": "health", "score": 100, "reason": "Direct match"}],
-  "suggestedQueries": [
-    "select?q=health&fq=(gbl_suppressed_b:false)&rows=1000&&fq=gbl_indexYear_im:(2020 OR 2021)&fq=locn_geometry:\"Intersects(ENVELOPE(-87.9401,-87.5241,42.0230,41.644))\"",
-    "select?q=housing&fq=(gbl_suppressed_b:false)&rows=1000&&fq=gbl_indexYear_im:(2020 OR 2021)&fq=locn_geometry:\"Intersects(ENVELOPE(-87.9401,-87.5241,42.0230,41.644))\"",
+    "suggestedQueries": [
+         "select?q=health&fq=(gbl_suppressed_b:false)&rows=1000&fq=locn_geometry:\"Intersects(ENVELOPE(-87.9401,-87.5241,42.0230,41.644))\"",
+    "select?q=education&fq=(gbl_suppressed_b:false)&rows=1000&fq=locn_geometry:\"Intersects(ENVELOPE(-87.9401,-87.5241,42.0230,41.644))\"",
   ]
 }
 
@@ -173,13 +182,12 @@ a. General rule:
 2. Compare to synonyms and hyponyms terms, give a slightly higher score to the exact term and synonyms term , but with a lowers score than the exact term appears in the secondary search fields. Make sure to add the exact synonymous term explanation in thoughts and reason for scoring
 3. Geographic Search Processing:
 - ALWAYS scan every question for geographic references using these patterns:
-  - Direct location mentions (e.g., "Chicago", "Hawaii")
-  - Location-based situation ("moving to", "living in", "health in")
+  - Direct location mentions (e.g., "Chicago", "Hawaii", "Champaign-Urbana", "Franklin County"). For terms that you are not sure if they are locations, don't include these terms as a keyword. for example, "Washington" could be a location or a person name. In this case, don't include it as a searchable keyword.
   - Comparative location phrases ("between", "from").
 - When ANY location is detected, using the following rules:
 ${geometryRule}
 4. Ignore the unused fields (list d above) when constructing the suggested queries for now, since their prompts needs to be updated in the future.
-5. Most importantly, after applying all of the rules above, find ${termLimit} key terms and their scores, then put them to 'thoughts'
+5. Most importantly, after applying all of the rules above, find ${termLimit} key terms and their scores, then put them to 'thoughts'. CRITICAL: In the keyTerms array, order terms from HIGHEST score to LOWEST score. The first term in the array should have the highest score, and the last term should have the lowest score. In the thoughts section, when listing terms, always rank them in descending order based on score, but don't show the exact score (e.g., "term1, term2, term3").
 6. Also for scoring, consider that ${scoringGuidelines}.
 
 b. When constructing the suggestedQuery:
@@ -201,7 +209,7 @@ c. Query JSON Formatting Rules:
     {"term": "health", "score": 100, "reason": "Direct match"}
   ],
   "suggestedQueries": [
-    "select?q=health&fq=(gbl_suppressed_b:false)&rows=1000", // No geometry filter for general queries
+    "select?q=health&fq=(gbl_suppressed_b:false)&rows=1000", // No geometry filter for general queries,
     "select?q=medical&fq=(gbl_suppressed_b:false)&rows=1000&fq=locn_geometry:\"Intersects(ENVELOPE(-87.9401,-87.5241,42.0230,41.644))\"" // Only include geometry when location is specified
   ],
   "bbox": "-87.9401,41.644,-87.5241,42.023" // Only include when location is mentioned
