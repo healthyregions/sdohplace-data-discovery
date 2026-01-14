@@ -328,7 +328,7 @@ export default function DynamicMap(props: Props): JSX.Element {
         mapRef.current.once('moveend', () => {
           dispatch(setShowBboxFilter(true));
         });
-      }, 3000)
+      }, 5000)
     }
   };
   // don't include props.initialBounds here because it causes unwanted re-zooming
