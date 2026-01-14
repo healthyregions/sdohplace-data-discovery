@@ -208,6 +208,7 @@ export const overlayRegistry = {
         url: "pmtiles://https://raw.githubusercontent.com/healthyregions/overture-poi-extract/v0.0.1/output/us-adult-education.pmtiles",
       }
     },
+    mainColor: "#D3DF85",
     layers: makeClusteredLayerSet({
       layerId: "us-adult-education",
       sourceId: "us-adult-education-source",
@@ -242,6 +243,7 @@ export const overlayRegistry = {
         url: "pmtiles://https://raw.githubusercontent.com/healthyregions/overture-poi-extract/v0.0.1/output/us-child-enrichment.pmtiles",
       }
     },
+    mainColor: "#95D5FF",
     layers: makeClusteredLayerSet({
       layerId: "us-child-enrichment",
       sourceId: "us-child-enrichment-source",
@@ -276,6 +278,7 @@ export const overlayRegistry = {
         url: "pmtiles://https://raw.githubusercontent.com/healthyregions/overture-poi-extract/v0.0.1/output/us-exercise.pmtiles",
       }
     },
+    mainColor: "#B769CA",
     layers: makeClusteredLayerSet({
       layerId: "us-exercise",
       sourceId: "us-exercise-source",
@@ -294,6 +297,7 @@ export const overlayRegistry = {
         url: "pmtiles://https://raw.githubusercontent.com/healthyregions/overture-poi-extract/v0.0.1/output/us-libraries.pmtiles",
       }
     },
+    mainColor: "#FFDA95",
     layers: makeClusteredLayerSet({
       layerId: "us-libraries",
       sourceId: "us-libraries-source",
@@ -311,6 +315,7 @@ export const overlayRegistry = {
         url: "pmtiles://https://raw.githubusercontent.com/healthyregions/overture-poi-extract/v0.0.1/output/us-parks.pmtiles",
       }
     },
+    mainColor: "#8BC980",
     layers: makeClusteredLayerSet({
       layerId: "us-parks",
       sourceId: "us-parks-source",
@@ -328,6 +333,7 @@ export const overlayRegistry = {
         url: "pmtiles://https://raw.githubusercontent.com/healthyregions/overture-poi-extract/v0.0.1/output/us-schools.pmtiles",
       }
     },
+    mainColor: "#D07778",
     layers: makeClusteredLayerSet({
       layerId: "us-schools",
       sourceId: "us-schools-source",
@@ -346,6 +352,7 @@ export const overlayRegistry = {
         url: "pmtiles://https://raw.githubusercontent.com/healthyregions/overture-poi-extract/v0.0.1/output/us-grocery.pmtiles",
       }
     },
+    mainColor: "#A6A7F9",
     layers: makeClusteredLayerSet({
       layerId: "us-grocery",
       sourceId: "us-grocery-source",

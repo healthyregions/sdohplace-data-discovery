@@ -2,7 +2,7 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { setSearchBbox, setEnableMapBboxFilter } from "@/store/slices/searchSlice";
-import { setShowBboxFilter } from "@/store/slices/mapSlice";
+import { setShowBboxFilter, setOverlayIds } from "@/store/slices/mapSlice";
 import { AppDispatch, RootState } from "@/store";
 import maplibregl, {
     LngLatBoundsLike,
@@ -410,8 +410,44 @@ export default function DynamicMap(props: Props): JSX.Element {
   }
   useEffect(initMap, [props.initialBounds]);
 
+  console.log(overlayRegistry)
+
   return (
     <>
+
+      {overlayIds.length > 0 && (
+        <div style={{marginBottom: ".5em"}}>
+          <div style={{
+            display:"flex",
+            gap: "1em",
+            alignItems: "center",
+            flexWrap: "wrap",
+          }}>
+          <span>Showing:</span>
+            {overlayIds.map((id, index) => {
+              return <button style={{
+                height: "fit-content",
+                padding: ".5em 1em",
+                borderRadius: "8px",
+                border: `1px solid ${fullConfig.theme.colors["salmonpink"]}`,
+                display: "flex",
+                justifyContent: "space-around",
+                alignItems: "center",
+              }}
+               key={index} onClick={(overlayId) => {dispatch(setOverlayIds(overlayIds.filter(k => k !== id)))}}>
+                 <svg height="20" width="20" xmlns="http://www.w3.org/2000/svg">
+                  <circle r="5" cx="10" cy="10" fill={overlayRegistry[id].mainColor} />
+                  </svg>
+                {id}
+                </button>
+            })}
+          <button style={{
+            color: fullConfig.theme.colors["frenchviolet"],
+            fontWeight:"800",
+            }} onClick={() => {dispatch(setOverlayIds([]))}}>Clear all</button>
+          </div>
+        </div>
+      )}
       <div ref={mapDivRef} style={{ width: "100%", height: "100%" }}>
           {mapLoaded && (
             <div style={{marginTop: "1em", marginLeft: "1em"}}>

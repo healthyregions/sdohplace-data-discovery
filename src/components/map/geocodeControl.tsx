@@ -1,11 +1,18 @@
 import React, { useState, useEffect } from 'react';
 
+import CloseIcon from "@mui/icons-material/Close";
+import SearchIcon from "@mui/icons-material/Search";
+
 import { useDispatch, useSelector } from "react-redux";
 import { setGeocodeFeature } from "@/store/slices/mapSlice";
 import { setSearchBbox, setEnableMapBboxFilter } from "@/store/slices/searchSlice";
 import { AppDispatch, RootState } from "@/store";
 
 import { config, geocoding } from '@maptiler/client';
+
+import resolveConfig from "tailwindcss/resolveConfig";
+import tailwindConfig from "tailwind.config.js";
+const fullConfig = resolveConfig(tailwindConfig);
 
 interface Props {
   apiKey: string;
@@ -66,13 +73,34 @@ export default function GeocodeControl(props: Props): JSX.Element {
   }
 
   return <div className="maplibregl-ctrl geocode-ctrl">
-    <div style={{backgroundColor:"rgba(255,255,255,.9)", width: "250px"}}>
-      <input id="geocode-input" style={{width: "230px", border:"none", background:"none"}} type="text" onChange={handleInputChange} />
-      <button id="clearButton" style={{width: "20px"}} onClick={handleClearGeocode}>
-        {geocodeFeature && (
-          "X"
-        )}
-      </button>
+    <div style={{
+        backgroundColor:"white",
+        width: "250px",
+        borderRadius:"50px",
+        border: "1px solid #ECE6F0",
+        height: 'min-content',
+        display: "flex",
+        alignItems: "center",
+        }}>
+        {/* <div style={{width:"20px"}}> */}
+        <SearchIcon sx={{
+          height: "18px",
+          marginLeft: "6px",
+          color: fullConfig.theme.colors["frenchviolet"]
+          }} />
+
+        {/* </div> */}
+      <input id="geocode-input" style={{width: "190px", border:"none", 
+        height: "38px", background:"none"}} type="text" onChange={handleInputChange} />
+      {geocodeFeature && 
+        <button id="clearButton" style={{width: "20px"}} onClick={handleClearGeocode}>
+          <CloseIcon sx={{
+          height: "18px",
+          marginLeft: "-2px",
+          color: fullConfig.theme.colors["frenchviolet"]
+          }} />
+        </button>
+      }
     </div>
     {geocodeResults.length > 0 && (
     <div style={{marginTop: "1em", backgroundColor:"rgba(255,255,255,.9)", width:"250px"}}>

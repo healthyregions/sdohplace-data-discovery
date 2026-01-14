@@ -71,7 +71,6 @@ const MapPanelContent = (props: Props): JSX.Element => {
   );
   const [overlaysMenuAnchorEl, setOverlaysMenuAnchorEl] =
     useState<null | HTMLElement>(null);
-  const [overlaysBtnTxt, setOverlaysBtnTxt] = useState("Overlays");
   const [infoAnchorEl, setInfoAnchorEl] = useState<HTMLButtonElement | null>(
     null
   );
@@ -88,11 +87,6 @@ const MapPanelContent = (props: Props): JSX.Element => {
       dispatch(setOverlayIds(overlayIds));
     }
   }, [dispatch, overlayIds, isMounted]);
-  useEffect(() => {
-    setOverlaysBtnTxt(
-      `Community Assets${overlayIds.length > 0 ? ": " + overlayIds.slice(0,2).join(", ") : ""}${overlayIds.length > 2 ? "..." : ""}`
-    );
-  }, [overlayIds]);
 
   const handleOverlaysClick = (event: React.MouseEvent<HTMLButtonElement>) => {
     setOverlaysMenuAnchorEl(event.currentTarget);
@@ -128,7 +122,7 @@ const MapPanelContent = (props: Props): JSX.Element => {
             aria-expanded={overlaysOpen ? "true" : undefined}
             onClick={handleOverlaysClick}
           >
-            {overlaysBtnTxt}
+            Community assets
             <SvgIcon
               component={ArrowDropDownIcon}
               sx={{
