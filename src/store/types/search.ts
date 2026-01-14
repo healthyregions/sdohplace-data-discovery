@@ -36,7 +36,7 @@ export interface SearchState {
 
   // map
   searchBbox: [number, number, number, number] | null;
-  syncSearchBboxToMapBbox: boolean;
+  enableMapBboxFilter: boolean;
 
   // status
   currentRequestId: string;
@@ -70,7 +70,7 @@ export const initialState: SearchState = {
   },
   //map
   searchBbox: null,
-  syncSearchBboxToMapBbox: false,
+  enableMapBboxFilter: false,
   subject: [],
   spatialResolution: [],
   indexYear: [],

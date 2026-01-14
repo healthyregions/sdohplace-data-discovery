@@ -2,13 +2,14 @@ import React, { useState, useEffect } from 'react';
 
 import { useDispatch, useSelector } from "react-redux";
 import { setGeocodeFeature } from "@/store/slices/mapSlice";
-import { setSearchBbox, setSyncSearchBboxToMapBbox } from "@/store/slices/searchSlice";
+import { setSearchBbox, setEnableMapBboxFilter } from "@/store/slices/searchSlice";
 import { AppDispatch, RootState } from "@/store";
 
 import { config, geocoding } from '@maptiler/client';
 
 interface Props {
   apiKey: string;
+  onClear: () => void;
 }
 
 export default function GeocodeControl(props: Props): JSX.Element {
@@ -45,8 +46,6 @@ export default function GeocodeControl(props: Props): JSX.Element {
         "bbox": selectedPlace.bbox,
         "geometry": selectedPlace.geometry
       }))
-      // dispatch(setSyncSearchBboxToMapBbox(true));
-      // (document.getElementById("search-within-map-checkbox") as HTMLInputElement).checked = true;
       setGeocodeResults([])
     })()
   }
@@ -60,9 +59,10 @@ export default function GeocodeControl(props: Props): JSX.Element {
   }, [geocodeFeature])
 
   const handleClearGeocode = () => {
+    props.onClear()
     dispatch(setGeocodeFeature(null))
     dispatch(setSearchBbox(null))
-    dispatch(setSyncSearchBboxToMapBbox(false))
+    dispatch(setEnableMapBboxFilter(false))
   }
 
   return <div className="maplibregl-ctrl geocode-ctrl">

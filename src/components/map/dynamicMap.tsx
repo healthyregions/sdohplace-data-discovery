@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { setSearchBbox, setSyncSearchBboxToMapBbox } from "@/store/slices/searchSlice";
+import { setSearchBbox, setEnableMapBboxFilter } from "@/store/slices/searchSlice";
 import { setShowBboxFilter } from "@/store/slices/mapSlice";
 import { AppDispatch, RootState } from "@/store";
 import maplibregl, {
@@ -34,7 +34,7 @@ export default function DynamicMap(props: Props): JSX.Element {
   const plausible = usePlausible();
 
   const { geocodeFeature, overlayIds, previewLyrs, showBboxFilter } = useSelector((state: RootState) => state.map);
-  const { syncSearchBboxToMapBbox } = useSelector((state: RootState) => state.search);
+  const { enableMapBboxFilter } = useSelector((state: RootState) => state.search);
 
   const [popup, setPopup] = useState(null);
   const [popupInfo, setPopupInfo] = useState(null);
@@ -70,18 +70,19 @@ export default function DynamicMap(props: Props): JSX.Element {
 
   const handleSearchWithinMap = () => {
     if (!mapLoaded) return;
-    if (syncSearchBboxToMapBbox) {
+    console.log("handleSearchWithinMap triggered")
+    if (enableMapBboxFilter) {
       mapRef.current.on("moveend", setBboxOnMoveEnd);
     } else {
       mapRef.current.off("moveend", setBboxOnMoveEnd);
     }
   }
-  useEffect(handleSearchWithinMap, [mapLoaded, syncSearchBboxToMapBbox, setBboxOnMoveEnd])
+  useEffect(handleSearchWithinMap, [mapLoaded, enableMapBboxFilter, setBboxOnMoveEnd])
 
-  const handleBboxFilter = () => {
+  const handleBboxFilterCheckbox = () => {
     setBboxFilterChecked(!bboxFilterChecked)
     if (!mapLoaded) return
-    dispatch(setSyncSearchBboxToMapBbox(bboxFilterChecked))
+    dispatch(setEnableMapBboxFilter(bboxFilterChecked))
     if (bboxFilterChecked) {
       dispatch(setSearchBbox(getCurrentMapBbox()));
     } else  {
@@ -89,16 +90,17 @@ export default function DynamicMap(props: Props): JSX.Element {
     }
   }
 
-  const handleBboxSync = () => {
+  const handleBboxFilterToggle = () => {
     if (!mapLoaded) return
-    dispatch(setSyncSearchBboxToMapBbox(bboxFilterChecked))
+    console.log("handleBboxSync trigggered")
+    dispatch(setEnableMapBboxFilter(bboxFilterChecked))
     if (bboxFilterChecked) {
       dispatch(setSearchBbox(getCurrentMapBbox()));
     } else  {
       dispatch(setSearchBbox(null));
     }
   }
-  useEffect(handleBboxSync, [dispatch, mapLoaded, bboxFilterChecked])
+  useEffect(handleBboxFilterToggle, [dispatch, mapLoaded, bboxFilterChecked])
 
   const handlePreviewIds = () => {
     if (!mapLoaded) return;
@@ -319,9 +321,9 @@ export default function DynamicMap(props: Props): JSX.Element {
       mapRef.current.fitBounds(geocodeFeature.bbox, {padding: 40});
       setBboxFilterChecked(true)
     } else {
-      mapRef.current.fitBounds(props.initialBounds);
+      mapRef.current.fitBounds(props.initialBounds, {padding: 40});
       dispatch(setShowBboxFilter(false));
-      dispatch(setSyncSearchBboxToMapBbox(false));
+      dispatch(setEnableMapBboxFilter(false));
       setTimeout(() => {
         mapRef.current.once('moveend', () => {
           dispatch(setShowBboxFilter(true));
@@ -402,7 +404,7 @@ export default function DynamicMap(props: Props): JSX.Element {
     <div ref={mapDivRef} style={{ width: "100%", height: "100%" }}>
         {mapLoaded && (
           <div style={{marginTop: "1em", marginLeft: "1em"}}>
-            <GeocodeControl apiKey={apiKey} />
+            <GeocodeControl apiKey={apiKey} onClear={() => {setBboxFilterChecked(false)}} />
           </div>
         )}
         {showBboxFilter && (
@@ -413,7 +415,7 @@ export default function DynamicMap(props: Props): JSX.Element {
                 results filtered by current map extent
             </span>
             <div style={{marginTop: "1em", marginLeft: "1em"}}>
-              <input id="search-within-map-checkbox" type="checkbox" checked={bboxFilterChecked} onChange={handleBboxFilter} />
+              <input id="bbox-filter" type="checkbox" checked={bboxFilterChecked} onChange={handleBboxFilterCheckbox} />
             </div>
           </div>
         )}

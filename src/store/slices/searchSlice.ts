@@ -352,8 +352,8 @@ const searchSlice = createSlice({
     setSearchBbox: (state, action) => {
       state.searchBbox = action.payload;
     },
-    setSyncSearchBboxToMapBbox: (state, action) => {
-      state.syncSearchBboxToMapBbox = action.payload;
+    setEnableMapBboxFilter: (state, action) => {
+      state.enableMapBboxFilter = action.payload;
     },
     setSubject: (state, action) => {
       state.subject = action.payload;
@@ -557,7 +557,7 @@ export const {
   setFilterQueries,
   setSort,
   setSearchBbox,
-  setSyncSearchBboxToMapBbox,
+  setEnableMapBboxFilter,
   setSubject,
   setSpatialResolution,
   setIndexYear,
