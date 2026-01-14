@@ -23,6 +23,10 @@ import {usePlausible} from "next-plausible";
 import { overlayRegistry, makePreviewLyrs, previewSources } from "./helper/layers";
 import GeocodeControl from "./geocodeControl";
 
+import resolveConfig from "tailwindcss/resolveConfig";
+import tailwindConfig from "tailwind.config.js";
+const fullConfig = resolveConfig(tailwindConfig);
+
 const apiKey = process.env.NEXT_PUBLIC_MAPTILER_API_KEY;
 
 interface Props {
@@ -39,7 +43,7 @@ export default function DynamicMap(props: Props): JSX.Element {
   const [popup, setPopup] = useState(null);
   const [popupInfo, setPopupInfo] = useState(null);
   const [mapLoaded, setMapLoaded] = useState(false);
-  const [bboxFilterChecked, setBboxFilterChecked] = useState(false);
+  const [bboxFilterLabel, setBboxFilterLabel ] = useState("")
 
   const mapDivRef = useRef(null)
   const mapRef = useRef(null)
@@ -70,7 +74,6 @@ export default function DynamicMap(props: Props): JSX.Element {
 
   const handleSearchWithinMap = () => {
     if (!mapLoaded) return;
-    console.log("handleSearchWithinMap triggered")
     if (enableMapBboxFilter) {
       mapRef.current.on("moveend", setBboxOnMoveEnd);
     } else {
@@ -79,11 +82,20 @@ export default function DynamicMap(props: Props): JSX.Element {
   }
   useEffect(handleSearchWithinMap, [mapLoaded, enableMapBboxFilter, setBboxOnMoveEnd])
 
-  const handleBboxFilterCheckbox = () => {
-    setBboxFilterChecked(!bboxFilterChecked)
+  const handleBboxFilterLabel = () => {
+    if (enableMapBboxFilter) {
+      setBboxFilterLabel("Showing results in this area")
+    } else {
+      setBboxFilterLabel("Show results in this area")
+    }
+  }
+  useEffect(handleBboxFilterLabel, [enableMapBboxFilter])
+
+  const handleBboxFilterButton = () => {
     if (!mapLoaded) return
-    dispatch(setEnableMapBboxFilter(bboxFilterChecked))
-    if (bboxFilterChecked) {
+    const newState = !enableMapBboxFilter
+    dispatch(setEnableMapBboxFilter(newState))
+    if (newState) {
       dispatch(setSearchBbox(getCurrentMapBbox()));
     } else  {
       dispatch(setSearchBbox(null));
@@ -92,15 +104,13 @@ export default function DynamicMap(props: Props): JSX.Element {
 
   const handleBboxFilterToggle = () => {
     if (!mapLoaded) return
-    console.log("handleBboxSync trigggered")
-    dispatch(setEnableMapBboxFilter(bboxFilterChecked))
-    if (bboxFilterChecked) {
+    if (enableMapBboxFilter) {
       dispatch(setSearchBbox(getCurrentMapBbox()));
     } else  {
       dispatch(setSearchBbox(null));
     }
   }
-  useEffect(handleBboxFilterToggle, [dispatch, mapLoaded, bboxFilterChecked])
+  useEffect(handleBboxFilterToggle, [dispatch, mapLoaded, enableMapBboxFilter])
 
   const handlePreviewIds = () => {
     if (!mapLoaded) return;
@@ -319,7 +329,7 @@ export default function DynamicMap(props: Props): JSX.Element {
     if (!mapLoaded) return;
     if (geocodeFeature) {
       mapRef.current.fitBounds(geocodeFeature.bbox, {padding: 40});
-      setBboxFilterChecked(true)
+      dispatch(setEnableMapBboxFilter(true));
     } else {
       mapRef.current.fitBounds(props.initialBounds, {padding: 40});
       dispatch(setShowBboxFilter(false));
@@ -401,24 +411,34 @@ export default function DynamicMap(props: Props): JSX.Element {
   useEffect(initMap, [props.initialBounds]);
 
   return (
-    <div ref={mapDivRef} style={{ width: "100%", height: "100%" }}>
-        {mapLoaded && (
-          <div style={{marginTop: "1em", marginLeft: "1em"}}>
-            <GeocodeControl apiKey={apiKey} onClear={() => {setBboxFilterChecked(false)}} />
-          </div>
-        )}
-        {showBboxFilter && (
-          <div
-          className={`z-1000 mt-[54px] ml-[10px] text-almostblack s py-1 px-2 rounded relative font-sans text-sm bg-white bg-opacity-75 inline-flex`}
-          >
-            <span>
-                results filtered by current map extent
-            </span>
+    <>
+      <div ref={mapDivRef} style={{ width: "100%", height: "100%" }}>
+          {mapLoaded && (
             <div style={{marginTop: "1em", marginLeft: "1em"}}>
-              <input id="bbox-filter" type="checkbox" checked={bboxFilterChecked} onChange={handleBboxFilterCheckbox} />
+              <GeocodeControl apiKey={apiKey} onClear={() => {setEnableMapBboxFilter(false)}} />
             </div>
-          </div>
+          )}
+      </div>
+      <div style={{width: "100%", display:"flex", justifyContent: "center"}}>
+        {showBboxFilter && (
+          <button style={{
+                marginTop: "-7em",
+                zIndex:100,
+                background: (enableMapBboxFilter ? "white": fullConfig.theme.colors["lightbisque"]),
+                height: "fit-content",
+                padding: ".5em 1em",
+                borderRadius: "8px",
+                border: `1px solid ${fullConfig.theme.colors["salmonpink"]}`,
+                fontSize: ".8em",
+              }} onClick={handleBboxFilterButton}>
+            <span>{bboxFilterLabel}</span>
+            {enableMapBboxFilter && (
+              <span style={{marginLeft: "2em", fontWeight:"800", color: fullConfig.theme.colors["frenchviolet"]}}>Clear</span>
+            )}
+          </button>
         )}
-    </div>
+
+      </div>
+    </>
   );
 }
