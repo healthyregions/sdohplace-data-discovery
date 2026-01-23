@@ -44,17 +44,20 @@ export const useSearchStyles = makeStyles((theme) => ({
     },
   },
   popper: {
-    borderRadius: "1em !important",
+    borderRadius: "1.75em !important",
     zIndex: 1000,
   },
   paper: {
     fontFamily: `${fullConfig.theme.fontFamily["sans"]} !important`,
     fontColor: `${fullConfig.theme.colors["smokegray"]}`,
     fontSize: "0.875em",
-    marginTop: "0.1em",
-    width: "80%",
-    transform: "translateX(5%)",
+    marginTop: "0.5em",
+    width: "100%",
     zIndex: 1000,
+    backgroundColor: "white",
+    borderRadius: "1.75em !important",
+    border: `1px solid ${fullConfig.theme.colors["frenchviolet"]}`,
+    overflow: "hidden",
   },
   aiModeButton: {
     color: fullConfig.theme.colors["frenchviolet"],
@@ -98,9 +101,9 @@ export const CustomPaper = (props) => {
 
 export const CustomListbox = React.forwardRef<
   HTMLUListElement,
-  React.HTMLAttributes<HTMLUListElement> & { 
-    onMouseEnter: () => void, 
-    onMouseLeave: () => void 
+  React.HTMLAttributes<HTMLUListElement> & {
+    onMouseEnter: () => void,
+    onMouseLeave: () => void
   }
 >((props, ref) => {
   return (
@@ -108,6 +111,12 @@ export const CustomListbox = React.forwardRef<
       ref={ref}
       {...props}
       className={`${props.className || ""} custom-autocomplete-listbox`}
+      style={{
+        padding: "8px 1.5rem",
+        margin: 0,
+        listStyle: "none",
+        ...props.style,
+      }}
     />
   );
 });

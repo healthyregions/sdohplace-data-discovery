@@ -12,6 +12,8 @@ import { setShowInfoPanel, setInfoPanelTab } from "@/store/slices/uiSlice";
 import EnhancedSearchBox from "./enhancedSearch";
 import {usePlausible} from "next-plausible";
 import {EventType} from "@/lib/event";
+import AIHintText from "./AIHintText";
+import Image from "next/image";
 
 interface Props {
   header: string;
@@ -30,6 +32,7 @@ const SearchArea = (props: Props): JSX.Element => {
   const classes = useStyles();
   const plausible = usePlausible();
   const { showInfoPanel } = useSelector((state: RootState) => state.ui);
+  const { aiSearch } = useSelector((state: RootState) => state.search);
 
   return (
     <>
@@ -55,25 +58,40 @@ const SearchArea = (props: Props): JSX.Element => {
           timeout={300}
           easing={"linear"}
         >
-        <h2>{props.header}</h2>
-        <div
-          className="text-s text-center sm:text-left sm:mt-[1em]"
-          style={{ textWrap: "balance" }}
-        >
-          This platform provides access to spatially indexed and curated
-          databases, specifically designed for conducting health equity
-          research.{" "}
-          <a
-            onClick={() => {
-              dispatch(setShowInfoPanel(true));
-              dispatch(setInfoPanelTab(0));
-              plausible(EventType.ClickedGetStarted);
-            }}
-            style={{ cursor: "pointer" }}
-            className="no-underline text-frenchviolet"
-          >
-            <strong>Get started &rarr;</strong>
-          </a>
+        <div className="flex items-start gap-8">
+          <Image
+            src="/icons/discovery_logo.svg"
+            alt="Data Discovery Logo"
+            width={80}
+            height={80}
+            className="flex-shrink-0"
+            style={{ objectFit: "contain" }}
+          />
+          <div className="flex flex-col min-w-0">
+            <h2 className="m-0">{props.header}</h2>
+            <div
+              className="text-s sm:text-left sm:mt-[1em]"
+              style={{ textWrap: "balance" }}
+            >
+              This platform provides access to spatially indexed and curated
+              databases, specifically designed for conducting health equity
+              research.{" "}
+              <a
+                onClick={() => {
+                  const target = document.getElementById("sdoh-learn-more");
+                  if (target) {
+                    target.scrollIntoView({ behavior: "smooth" });
+                  }
+                  plausible(EventType.ClickedGetStarted);
+                }}
+                style={{ cursor: "pointer" }}
+                className="no-underline text-frenchviolet"
+              >
+                <strong>Get started &rarr;</strong>
+              </a>
+            </div>
+            {aiSearch && <AIHintText />}
+          </div>
         </div>
         </Collapse>
       </Grid>
@@ -86,7 +104,7 @@ const SearchArea = (props: Props): JSX.Element => {
         justifyContent="flex-start"
         alignItems="flex-start"
         order={{ xs: 1, sm: 0 }}
-        className={`py-[2em] px-8 ${classes.searchArea}`}
+        className={`py-[2em] px-8 sm:pl-[5rem] ${classes.searchArea}`}
       >
         {/* <Collapse
           className={"relative w-full"}

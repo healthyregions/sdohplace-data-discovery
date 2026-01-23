@@ -1,10 +1,7 @@
 import * as React from "react";
-import { useDispatch } from "react-redux";
-import SearchIcon from "@mui/icons-material/Search";
+import LightbulbOutlined from "@mui/icons-material/LightbulbOutlined";
 import ArrowCircleRightIcon from "@mui/icons-material/ArrowCircleRight";
-import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import CloseIcon from "@mui/icons-material/Close";
-import QuestionAnswerIcon from "@mui/icons-material/QuestionAnswer";
 import {
   Autocomplete,
   Box,
@@ -15,15 +12,18 @@ import {
   TextField,
   Tooltip,
 } from "@mui/material";
-import { AppDispatch } from "@/store";
 import {
-  setInfoPanelTab,
-  setShowInfoPanel,
-} from "@/store/slices/uiSlice";
-import { CustomPaper, CustomPopper, useSearchStyles } from "./searchUiComponents";
+  CustomPaper,
+  CustomPopper,
+  useSearchStyles,
+} from "./searchUiComponents";
 import tailwindConfig from "../../../../tailwind.config";
 import resolveConfig from "tailwindcss/resolveConfig";
-import { MAX_SEARCH_LENGTH, isSearchAllowed, isSearchBlocked } from "./searchUtils";
+import {
+  MAX_SEARCH_LENGTH,
+  isSearchAllowed,
+  isSearchBlocked,
+} from "./searchUtils";
 
 const fullConfig = resolveConfig(tailwindConfig);
 
@@ -73,15 +73,10 @@ const SearchInput: React.FC<SearchInputProps> = ({
   isSearching,
 }) => {
   const classes = useSearchStyles();
-  const dispatch = useDispatch<AppDispatch>();
   const maxLength = MAX_SEARCH_LENGTH;
-  
-  const searchBlocked = isSearchBlocked(
-    isLocalLoading,
-    isSearching,
-    aiSearch
-  );
-  
+
+  const searchBlocked = isSearchBlocked(isLocalLoading, isSearching, aiSearch);
+
   const noSearchAllowed = !isSearchAllowed(aiSearch, inputValue, maxLength);
 
   return (
@@ -114,24 +109,42 @@ const SearchInput: React.FC<SearchInputProps> = ({
         onKeyDown={onKeyDown}
         onFocus={onAutocompleteFocus}
         onBlur={onAutocompleteBlur}
-        renderOption={(props, option) => {
+        renderOption={(props, option, state) => {
           const { "aria-selected": _, onClick, ...otherProps } = props;
+          const isLast = state.index === suggestions.length - 1;
+          const highlightMatch = (text: string, query: string) => {
+            if (!query) return text;
+            const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")})`, "gi");
+            const parts = text.split(regex);
+            return parts.map((part, i) =>
+              regex.test(part) ? <span key={i} style={{ fontWeight: 700, color: fullConfig.theme.colors["frenchviolet"] }}>{part}</span> : part
+            );
+          };
           return (
             <li
               {...otherProps}
               onClick={(e) => {
                 if (onClick) onClick(e);
               }}
-              className={`${props.className} hover:bg-[#f0f0f0] cursor-pointer`}
+              className={`${props.className} cursor-pointer`}
               key={option}
+              style={{
+                padding: "12px 4px",
+                fontSize: "0.95rem",
+                color: fullConfig.theme.colors["smokegray"],
+                transition: "background-color 0.2s ease",
+                borderBottom: isLast ? "none" : "1px solid #e5e5e5",
+              }}
               onMouseEnter={(e) => {
-                (e.currentTarget as HTMLElement).style.backgroundColor = "#f0f0f0";
+                (e.currentTarget as HTMLElement).style.backgroundColor =
+                  "#f5f5f5";
               }}
               onMouseLeave={(e) => {
-                (e.currentTarget as HTMLElement).style.backgroundColor = "transparent";
+                (e.currentTarget as HTMLElement).style.backgroundColor =
+                  "transparent";
               }}
             >
-              <span className="px-1">{option}</span>
+              {highlightMatch(option, inputValue)}
             </li>
           );
         }}
@@ -167,72 +180,84 @@ const SearchInput: React.FC<SearchInputProps> = ({
             InputProps={{
               ...params.InputProps,
               startAdornment: (
-                <InputAdornment position="start">
-                  <Tooltip
-                    title={
-                      searchBlocked
-                        ? "Please wait for the current search to complete"
-                        : !aiSearch
-                        ? "Currently using keyword search"
-                        : "Switch to keyword search"
-                    }
+                <InputAdornment position="start" sx={{ ml: "-0.25rem" }}>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      cursor: searchBlocked ? "not-allowed" : "pointer",
+                      opacity: searchBlocked ? 0.5 : 1,
+                    }}
+                    onClick={searchBlocked ? undefined : handleModeSwitch}
                   >
-                    <IconButton
+                    <Box
+                      className={`${classes.searchBox}`}
                       sx={{
-                        mr: "m",
-                        cursor: searchBlocked ? "not-allowed" : "pointer",
-                        opacity: searchBlocked ? 0.5 : 1,
-                        color: fullConfig.theme.colors["frenchviolet"],
+                        fontSize: "0.875rem",
+                        fontWeight: 600,
+                        color: !aiSearch
+                          ? fullConfig.theme.colors["frenchviolet"]
+                          : fullConfig.theme.colors["smokegray"],
+                        transition: "color 0.3s ease-in-out",
+                        mr: "0.5rem",
+                        ml: "1rem",
+                        width: "4rem",
+                        textAlign: "right",
                       }}
-                      onClick={handleModeSwitch}
-                      className={`${classes.aiModeButton} ${!aiSearch ? "active" : ""}`}
                     >
-                      <SearchIcon />
-                    </IconButton>
-                  </Tooltip>
-                  <Box component="span" className="mx-2">
-                    <Tooltip
-                      title={
-                        searchBlocked
-                          ? "Please wait for the current search to complete"
-                          : aiSearch
-                          ? "Currently using AI-Inspired search"
-                          : "Switch to AI-Inspired search"
-                      }
+                      Keyword
+                    </Box>
+                    <Box
+                      sx={{
+                        position: "relative",
+                        width: "4rem",
+                        height: "1.5rem",
+                        display: "flex",
+                        alignItems: "center",
+                        backgroundColor: "#ECE6F0",
+                        borderRadius: "0.75rem",
+                      }}
                     >
-                      <IconButton
+                      <Box
                         sx={{
-                          mr: ".2em",
-                          cursor: searchBlocked ? "not-allowed" : "pointer",
-                          opacity: searchBlocked ? 0.5 : 1,
-                          color: fullConfig.theme.colors["frenchviolet"],
-                        }}
-                        onClick={handleModeSwitch}
-                        className={`${classes.aiModeButton} ${aiSearch ? "active" : ""}`}
-                      >
-                        <QuestionAnswerIcon />
-                      </IconButton>
-                    </Tooltip>
-                    <Tooltip
-                      title={
-                        aiSearch
-                          ? "Learn more about AI-Inspired search"
-                          : "Learn more about keyword search"
-                      }
-                    >
-                      <IconButton
-                        sx={{
-                          color: fullConfig.theme.colors["frenchviolet"],
-                        }}
-                        className={`${classes.aiModeButton} font-black`}
-                        onClick={() => {
-                          dispatch(setShowInfoPanel(true));
-                          dispatch(setInfoPanelTab(aiSearch ? 2 : 1));
+                          position: "absolute",
+                          left: !aiSearch ? "0" : "calc(100% - 2rem)",
+                          width: "2rem",
+                          height: "2rem",
+                          backgroundColor:
+                            fullConfig.theme.colors["frenchviolet"],
+                          borderRadius: "50%",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          transition: "left 0.3s ease-in-out",
+                          boxShadow: "0 0.125rem 0.25rem rgba(0, 0, 0, 0.2)",
                         }}
                       >
-                        <InfoOutlinedIcon />
-                      </IconButton>
-                    </Tooltip>
+                        <LightbulbOutlined
+                          sx={{
+                            color: "white",
+                            fontSize: "1.125rem",
+                          }}
+                        />
+                      </Box>
+                    </Box>
+                    <Box
+                      className={`${classes.searchBox}`}
+                      sx={{
+                        fontSize: "0.875rem",
+                        fontWeight: 600,
+                        color: aiSearch
+                          ? fullConfig.theme.colors["frenchviolet"]
+                          : fullConfig.theme.colors["smokegray"],
+                        transition: "color 0.3s ease-in-out",
+                        ml: "0.5rem",
+                        width: "2rem",
+                        textAlign: "left",
+                      }}
+                    >
+                      Ask
+                    </Box>
                   </Box>
                 </InputAdornment>
               ),
@@ -308,7 +333,10 @@ const SearchInput: React.FC<SearchInputProps> = ({
                         >
                           {isLoading ? (
                             <span>
-                              <CircularProgress className={`text-l ${classes.loadingButton}`} />
+                              <CircularProgress
+                                size={28}
+                                className={classes.loadingButton}
+                              />
                             </span>
                           ) : (
                             <ArrowCircleRightIcon className="text-xxl" />
@@ -328,4 +356,4 @@ const SearchInput: React.FC<SearchInputProps> = ({
   );
 };
 
-export default SearchInput; 
+export default SearchInput;
