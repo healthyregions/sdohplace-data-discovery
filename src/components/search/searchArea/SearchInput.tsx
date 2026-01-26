@@ -48,6 +48,7 @@ interface SearchInputProps {
   onAutocompleteBlur: (event: React.FocusEvent) => void;
   isLocalLoading: boolean;
   isSearching: boolean;
+  isMobile?: boolean;
 }
 
 const SearchInput: React.FC<SearchInputProps> = ({
@@ -71,6 +72,7 @@ const SearchInput: React.FC<SearchInputProps> = ({
   onAutocompleteBlur,
   isLocalLoading,
   isSearching,
+  isMobile = false,
 }) => {
   const classes = useSearchStyles();
   const maxLength = MAX_SEARCH_LENGTH;
@@ -155,7 +157,9 @@ const SearchInput: React.FC<SearchInputProps> = ({
             variant="outlined"
             fullWidth
             placeholder={
-              aiSearch
+              isMobile
+                ? ""
+                : aiSearch
                 ? `Ask a research question (max ${maxLength} characters)...`
                 : "Type keyword for recommended term and exact search (e.g. 'poverty' or 'socioeconomic')"
             }
@@ -168,6 +172,7 @@ const SearchInput: React.FC<SearchInputProps> = ({
               "& .MuiOutlinedInput-root": {
                 borderRadius: "1.75em",
                 color: fullConfig.theme.colors["smokegray"],
+                paddingRight: isMobile ? "0 !important" : undefined,
                 "&:hover .MuiOutlinedInput-notchedOutline": {
                   borderColor: "transparent",
                 },
@@ -179,7 +184,7 @@ const SearchInput: React.FC<SearchInputProps> = ({
             }}
             InputProps={{
               ...params.InputProps,
-              startAdornment: (
+              startAdornment: isMobile ? null : (
                 <InputAdornment position="start" sx={{ ml: "-0.25rem" }}>
                   <Box
                     sx={{
@@ -262,7 +267,11 @@ const SearchInput: React.FC<SearchInputProps> = ({
                 </InputAdornment>
               ),
               endAdornment: (
-                <Box display="flex" alignItems="center">
+                <Box
+                  display="flex"
+                  alignItems="center"
+                  sx={{ mr: isMobile ? "0.5rem" : 0 }}
+                >
                   {showClearButton && (
                     <InputAdornment position="end">
                       <Tooltip
@@ -320,6 +329,8 @@ const SearchInput: React.FC<SearchInputProps> = ({
                             backgroundColor: "transparent",
                             color: fullConfig.theme.colors["frenchviolet"],
                             boxShadow: "none",
+                            minWidth: isMobile ? "auto" : undefined,
+                            padding: isMobile ? "6px" : undefined,
                             "&:hover": {
                               backgroundColor: "transparent",
                               boxShadow: "none",

@@ -230,10 +230,11 @@ const NavBar = (): JSX.Element => {
           </li>
         </ul>
 
-        {/* Mobile Button */}
+        {/* Mobile Button - hidden, triggered from MobileHeader */}
         <div
           onClick={handleNav}
-          className="block min-[940px]:hidden pl-[25px] z-50"
+          className="hidden min-[940px]:hidden pl-[25px] z-50"
+          id="navbar-mobile-trigger"
         >
           {nav ? (
               <AiOutlineClose size={35} color={"white"} className={'animate-fade-in'} />
