@@ -63,13 +63,13 @@ export const makeClusteredLayerSet = function (props: ClusteredLayerProps) {
         //     '#f28cb1'
         // ],
         'circle-radius': [
-            'step',
-            ['get', 'point_count'],
-            8,
-            50,
-            15,
-            100,
-            20
+          'step',
+          ['get', 'point_count'],
+          10,
+          50,
+          16,
+          100,
+          22
         ]
     }
   }
@@ -107,10 +107,10 @@ export const makeClusteredLayerSet = function (props: ClusteredLayerProps) {
     "source-layer": sourceLayerId,
     filter: ['!', ['has', 'point_count']],
     paint: {
-        'circle-color': circleColor,
-        'circle-radius': 4,
+      'circle-color': circleColor,
+      'circle-radius': 4,
         'circle-stroke-width': 1,
-        'circle-stroke-color': "#333333",
+        'circle-stroke-color': "#D1D5DB",
     }
   }
   const unclusteredLayerDef: LayerDef = {

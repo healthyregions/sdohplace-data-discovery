@@ -7,6 +7,8 @@ interface Props {
   resultsList: SolrObject[];
   showMap: string;
   schema: any;
+  mobileViewMode?: "list" | "map";
+  onMobileViewChange?: (mode: "list" | "map") => void;
 }
 
 export default function MapPanel(props: Props) {

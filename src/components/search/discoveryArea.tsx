@@ -6,8 +6,9 @@ import { Collapse, Grid } from "@mui/material";
 import SearchArea from "./searchArea";
 import DetailPanel from "./detailPanel";
 import { initializeSearch, setSchema } from "@/store/slices/searchSlice";
-import MapPanel from "./mapPanel/mapPanelContent";
+import MapPanel from "./mapPanel";
 import dynamic from "next/dynamic";
+import MapListToggle from "./mapPanel/MapListToggle";
 import * as React from "react";
 import styled from "@emotion/styled";
 
@@ -41,6 +42,8 @@ export default function DiscoveryArea({ schema }): JSX.Element {
     (state: RootState) => state.search
   );
   const [isMounted, setIsMounted] = useState(false);
+  const [isMobileView, setIsMobileView] = useState(false);
+  const [mobileViewMode, setMobileViewMode] = useState<"list" | "map">("map");
   useEffect(() => {
     if (isMounted && typeof window !== "undefined")
       dispatch(initializeSearch({ schema }));
@@ -49,6 +52,15 @@ export default function DiscoveryArea({ schema }): JSX.Element {
   useEffect(() => {
     setIsMounted(true);
   }, []);
+
+  useEffect(() => {
+    if (isMounted && typeof window !== "undefined") {
+      const check = () => setIsMobileView(window.innerWidth < 640);
+      check();
+      window.addEventListener("resize", check);
+      return () => window.removeEventListener("resize", check);
+    }
+  }, [isMounted]);
 
   if (!isMounted) {
     return (
@@ -79,22 +91,33 @@ export default function DiscoveryArea({ schema }): JSX.Element {
       <Grid
         className="w-full px-[1em] sm:px-[2em] transition-all duration-300"
       >
+        <div className="block sm:px-4 sm:mb-4 sm:hidden container mx-auto ">
+          <MapListToggle value={mobileViewMode} onChange={(m) => setMobileViewMode(m)} />
+        </div>
         <Grid container className="container mx-auto pt-[1.5rem]">
           <Grid item xs={12} sm={6}>
-            <DynamicResultsPanel schema={schema} />
+            {(!isMobileView || mobileViewMode === "list") && (
+              <DynamicResultsPanel schema={schema} />
+            )}
           </Grid>
           <Grid item xs={12} sm={6} className="sm:ml-[0.5em]">
-            <MapPanel
-              resultsList={results}
-              showMap={
-                showDetailPanel && (results && results.find((r) => r.id === showDetailPanel))
-                  ? "none"
-                  : "block"
-              }
-              schema={schema}
-            />
-            {showDetailPanel && showDetailPanel.length > 0 && (
-              <DetailPanel resultList={results} relatedList={relatedResults} />
+            {(!isMobileView || mobileViewMode === "map") && (
+              <>
+                <MapPanel
+                  resultsList={results}
+                  showMap={
+                    showDetailPanel && (results && results.find((r) => r.id === showDetailPanel))
+                      ? "none"
+                      : "block"
+                  }
+                  schema={schema}
+                  mobileViewMode={mobileViewMode}
+                  onMobileViewChange={(m) => setMobileViewMode(m)}
+                />
+                {showDetailPanel && showDetailPanel.length > 0 && (
+                  <DetailPanel resultList={results} relatedList={relatedResults} />
+                )}
+              </>
             )}
           </Grid>
         </Grid>

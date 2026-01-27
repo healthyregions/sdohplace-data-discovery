@@ -1,7 +1,4 @@
-import React, { useState, useEffect } from 'react';
-
-import CloseIcon from "@mui/icons-material/Close";
-import SearchIcon from "@mui/icons-material/Search";
+import React, { useState, useEffect, useRef } from 'react';
 
 import { useDispatch, useSelector } from "react-redux";
 import { setGeocodeFeature } from "@/store/slices/mapSlice";
@@ -10,9 +7,11 @@ import { AppDispatch, RootState } from "@/store";
 
 import { config, geocoding } from '@maptiler/client';
 
-import resolveConfig from "tailwindcss/resolveConfig";
-import tailwindConfig from "tailwind.config.js";
-const fullConfig = resolveConfig(tailwindConfig);
+import {
+  LocationSearchInput,
+  LocationSearchDropdown,
+  LocationResult,
+} from './locationSearch';
 
 interface Props {
   apiKey: string;
@@ -20,100 +19,128 @@ interface Props {
 }
 
 export default function GeocodeControl(props: Props): JSX.Element {
-  config.apiKey = props.apiKey
+  config.apiKey = props.apiKey;
 
   const dispatch = useDispatch<AppDispatch>();
   const { geocodeFeature } = useSelector((state: RootState) => state.map);
 
-  const [geocodeResults, setGeocodeResults] = useState([])
+  const [inputValue, setInputValue] = useState('');
+  const [geocodeResults, setGeocodeResults] = useState<LocationResult[]>([]);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [hasSearched, setHasSearched] = useState(false);
 
-  const handleInputChange = (event) => {
-    const inputVal = event.target.value;
+  const inputRef = useRef<HTMLInputElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
-    if (inputVal.length && inputVal.length >= 2) {
-      (async () => {
-        const result = await geocoding.forward(inputVal, {
+  const handleInputChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const value = event.target.value;
+    setInputValue(value);
+
+    if (value.length >= 2) {
+      try {
+        const result = await geocoding.forward(value, {
           country: ["us"],
           types: ["region", "county", "postal_code", "municipality", "municipal_district", "joint_municipality", "joint_submunicipality", "locality", "neighbourhood"],
         });
-        setGeocodeResults(result.features)
-      })()
+        setGeocodeResults(result.features as LocationResult[]);
+        setShowDropdown(true);
+        setHasSearched(true);
+      } catch (error) {
+        console.error('Geocoding error:', error);
+        setGeocodeResults([]);
+        setHasSearched(true);
+      }
+    } else {
+      setGeocodeResults([]);
+      setShowDropdown(false);
+      setHasSearched(false);
     }
   };
 
-  const handleSelectFromResultList = (item) => {
-    (async () => {
+  const handleSelectFromResultList = async (item: LocationResult) => {
+    try {
       const resultById = await geocoding.forward(item.id, {
         country: ["us"],
         types: ["region", "county", "postal_code", "municipality", "municipal_district", "joint_municipality", "joint_submunicipality", "locality", "neighbourhood"],
       });
-      const selectedPlace = resultById.features[0]
+      const selectedPlace = resultById.features[0];
+
       dispatch(setGeocodeFeature({
-        "label": selectedPlace.place_name,
-        "bbox": selectedPlace.bbox,
-        "geometry": selectedPlace.geometry
-      }))
-      setGeocodeResults([])
-    })()
-  }
+        label: selectedPlace.place_name,
+        bbox: selectedPlace.bbox,
+        geometry: selectedPlace.geometry,
+      }));
+
+      setInputValue(selectedPlace.place_name);
+      setGeocodeResults([]);
+      setShowDropdown(false);
+    } catch (error) {
+      console.error('Selection error:', error);
+    }
+  };
+
+  const handleFocus = () => {
+    if (geocodeResults.length > 0) {
+      setShowDropdown(true);
+    }
+  };
+
+  const handleBlur = () => {
+    setTimeout(() => {
+      setShowDropdown(false);
+    }, 200);
+  };
+
+  const handleClearGeocode = () => {
+    setInputValue('');
+    setGeocodeResults([]);
+    setShowDropdown(false);
+    setHasSearched(false);
+    props.onClear();
+    dispatch(setGeocodeFeature(null));
+    dispatch(setSearchBbox(null));
+    dispatch(setEnableMapBboxFilter(false));
+  };
 
   useEffect(() => {
     if (geocodeFeature) {
-      (document.getElementById("geocode-input") as HTMLInputElement).value = geocodeFeature.label;
+      setInputValue(geocodeFeature.label);
     } else {
-      (document.getElementById("geocode-input") as HTMLInputElement).value = "";
+      setInputValue('');
     }
-  }, [geocodeFeature])
+  }, [geocodeFeature]);
 
-  const handleClearGeocode = () => {
-    props.onClear()
-    dispatch(setGeocodeFeature(null))
-    dispatch(setSearchBbox(null))
-    dispatch(setEnableMapBboxFilter(false))
-  }
-
-  return <div className="maplibregl-ctrl geocode-ctrl">
-    <div style={{
-        backgroundColor:"white",
-        width: "250px",
-        borderRadius:"50px",
-        border: "1px solid #ECE6F0",
-        height: 'min-content',
-        display: "flex",
-        alignItems: "center",
-        }}>
-        {/* <div style={{width:"20px"}}> */}
-        <SearchIcon sx={{
-          height: "18px",
-          marginLeft: "6px",
-          color: fullConfig.theme.colors["frenchviolet"]
-          }} />
-
-        {/* </div> */}
-      <input id="geocode-input" style={{width: "190px", border:"none", 
-        height: "38px", background:"none"}} type="text" onChange={handleInputChange} />
-      {geocodeFeature && 
-        <button id="clearButton" style={{width: "20px"}} onClick={handleClearGeocode}>
-          <CloseIcon sx={{
-          height: "18px",
-          marginLeft: "-2px",
-          color: fullConfig.theme.colors["frenchviolet"]
-          }} />
-        </button>
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        setShowDropdown(false);
       }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  return (
+    <div ref={containerRef} className="maplibregl-ctrl geocode-ctrl relative">
+      <LocationSearchInput
+        ref={inputRef}
+        value={inputValue}
+        onChange={handleInputChange}
+        onFocus={handleFocus}
+        onBlur={handleBlur}
+        onClear={handleClearGeocode}
+        showClearButton={!!geocodeFeature || inputValue.length > 0}
+        placeholder="Search location..."
+      />
+      <LocationSearchDropdown
+        results={geocodeResults}
+        onSelect={handleSelectFromResultList}
+        visible={showDropdown}
+        showNoResults={hasSearched}
+      />
     </div>
-    {geocodeResults.length > 0 && (
-    <div style={{marginTop: "1em", backgroundColor:"rgba(255,255,255,.9)", width:"250px"}}>
-      <ul>
-      {geocodeResults.map((item, index) => {
-          return <li key={index} >
-            <button onClick={() => handleSelectFromResultList(item)}>
-            {item.place_name}
-          </button>
-        </li>
-      })}
-      </ul>
-    </div>
-    )}
-  </div>
+  );
 }
