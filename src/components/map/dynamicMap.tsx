@@ -5,7 +5,7 @@ import {
   setSearchBbox,
   setEnableMapBboxFilter,
 } from "@/store/slices/searchSlice";
-import { setShowBboxFilter, setOverlayIds } from "@/store/slices/mapSlice";
+import { setShowBboxFilter, setOverlayIds, setGeocodeFeature } from "@/store/slices/mapSlice";
 import LocationOnIcon from "@mui/icons-material/LocationOn";
 import CloseIcon from "@mui/icons-material/Close";
 import { AppDispatch, RootState } from "@/store";
@@ -33,6 +33,7 @@ import {
 } from "./helper/layers";
 import GeocodeControl from "./geocodeControl";
 import AssetPopupComponent from "./AssetPopupComponent";
+import { config, geocoding } from '@maptiler/client';
 import { createRoot, Root } from "react-dom/client";
 
 import resolveConfig from "tailwindcss/resolveConfig";
@@ -40,6 +41,32 @@ import tailwindConfig from "tailwind.config.js";
 const fullConfig = resolveConfig(tailwindConfig);
 
 const apiKey = process.env.NEXT_PUBLIC_MAPTILER_API_KEY;
+
+const LABEL_LAYER_PATTERNS = [
+  'place_country',
+  'place_state',
+  'place_region',
+  'place_province',
+  'place_city',
+  'place_town',
+  'place_village',
+  'place_hamlet',
+  'place_suburb',
+  'place_neighbourhood',
+  'place_locality',
+  'place_other',
+  'State labels',
+  'Country labels',
+  'City labels',
+  'Place labels',
+];
+
+const US_BOUNDS = {
+  minLng: -125.0,
+  maxLng: -66.0,
+  minLat: 24.0,
+  maxLat: 50.0,
+};
 
 interface Props {
   initialBounds: LngLatBoundsLike;
@@ -62,6 +89,7 @@ export default function DynamicMap(props: Props): JSX.Element {
   const styleInjectedRef = useRef(false);
   const [mapLoaded, setMapLoaded] = useState(false);
   const [bboxFilterLabel, setBboxFilterLabel] = useState("");
+  const pendingGeocodeRef = useRef<{ label: string; bbox: number[]; geometry: any } | null>(null);
 
   const mapDivRef = useRef(null);
   const mapRef = useRef(null);
@@ -119,6 +147,10 @@ export default function DynamicMap(props: Props): JSX.Element {
     dispatch(setEnableMapBboxFilter(newState));
     if (newState) {
       dispatch(setSearchBbox(getCurrentMapBbox()));
+      if (pendingGeocodeRef.current) {
+        dispatch(setGeocodeFeature(pendingGeocodeRef.current));
+        pendingGeocodeRef.current = null;
+      }
     } else {
       dispatch(setSearchBbox(null));
     }
@@ -413,6 +445,47 @@ export default function DynamicMap(props: Props): JSX.Element {
   // don't include props.initialBounds here because it causes unwanted re-zooming
   useEffect(handleGeocodeFeatureZoom, [dispatch, geocodeFeature, mapLoaded]);
 
+  const isPointWithinUS = useCallback((lng: number, lat: number) => {
+    return (
+      lng >= US_BOUNDS.minLng &&
+      lng <= US_BOUNDS.maxLng &&
+      lat >= US_BOUNDS.minLat &&
+      lat <= US_BOUNDS.maxLat
+    );
+  }, []);
+
+  const handleMapLabelClick = useCallback(async (placeName: string, clickLngLat: { lng: number; lat: number }) => {
+    if (!placeName || !mapRef.current) return;
+
+    if (!isPointWithinUS(clickLngLat.lng, clickLngLat.lat)) return;
+
+    config.apiKey = apiKey;
+
+    try {
+      const result = await geocoding.forward(placeName, {
+        country: ["us"],
+        types: ["country", "region", "subregion", "county", "municipality", "municipal_district", "locality"],
+        proximity: [clickLngLat.lng, clickLngLat.lat],
+        limit: 1,
+      });
+
+      if (result.features && result.features.length > 0) {
+        const feature = result.features[0];
+        if (feature.bbox) {
+          mapRef.current.fitBounds(feature.bbox as LngLatBoundsLike, { padding: 40 });
+          pendingGeocodeRef.current = {
+            label: feature.place_name,
+            bbox: feature.bbox,
+            geometry: feature.geometry,
+          };
+          dispatch(setShowBboxFilter(true));
+        }
+      }
+    } catch (error) {
+      console.error('Error geocoding label click:', error);
+    }
+  }, [dispatch, isPointWithinUS]);
+
   const initMap = () => {
     if (mapRef.current) return; // stops map from intializing more than once
 
@@ -518,11 +591,58 @@ export default function DynamicMap(props: Props): JSX.Element {
         (attributionControlEl as HTMLElement).style.visibility = "visible";
       }
 
+      const styleLayers = mapRef.current.getStyle().layers;
+      const labelLayerIds = styleLayers
+        .filter((layer) => {
+          if (layer.type !== 'symbol') return false;
+          const layerId = layer.id.toLowerCase();
+          return LABEL_LAYER_PATTERNS.some(pattern =>
+            layerId.includes(pattern.toLowerCase())
+          );
+        })
+        .map((layer) => layer.id);
+
+      mapRef.current.on('click', (e) => {
+        if (labelLayerIds.length === 0) return;
+
+        const features = mapRef.current.queryRenderedFeatures(e.point, {
+          layers: labelLayerIds,
+        });
+
+        if (features.length > 0) {
+          const feature = features[0];
+          const placeName = feature.properties?.name ||
+                           feature.properties?.name_en ||
+                           feature.properties?.['name:en'];
+          if (placeName) {
+            handleMapLabelClick(placeName, { lng: e.lngLat.lng, lat: e.lngLat.lat });
+          }
+        }
+      });
+
+      labelLayerIds.forEach((layerId) => {
+        mapRef.current.on('mouseenter', layerId, (e) => {
+          if (isPointWithinUS(e.lngLat.lng, e.lngLat.lat)) {
+            mapRef.current.getCanvas().style.cursor = 'pointer';
+          }
+        });
+        mapRef.current.on('mousemove', layerId, (e) => {
+          if (isPointWithinUS(e.lngLat.lng, e.lngLat.lat)) {
+            mapRef.current.getCanvas().style.cursor = 'pointer';
+          } else {
+            mapRef.current.getCanvas().style.cursor = 'default';
+          }
+        });
+        mapRef.current.on('mouseleave', layerId, () => {
+          mapRef.current.getCanvas().style.cursor = 'default';
+        });
+      });
+
       // finally set the map loaded state to true to enable other map interactions
       setMapLoaded(true);
     });
   };
-  useEffect(initMap, [props.initialBounds]);
+  useEffect(initMap, [props.initialBounds, handleMapLabelClick, isPointWithinUS]);
 
   return (
     <>

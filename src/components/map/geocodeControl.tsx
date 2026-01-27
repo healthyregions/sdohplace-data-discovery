@@ -102,6 +102,10 @@ export default function GeocodeControl(props: Props): JSX.Element {
     dispatch(setEnableMapBboxFilter(false));
   };
 
+  // After the redesign: The search box text represents "the last location you explicitly selected"
+  // (via search or label click), not "the current map viewport". This is intentional -
+  // otherwise the search box would need to do reverse geocoding on every map move
+  // to figure out what location name to show.
   useEffect(() => {
     if (geocodeFeature) {
       setInputValue(geocodeFeature.label);
