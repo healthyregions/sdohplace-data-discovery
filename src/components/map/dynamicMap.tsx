@@ -19,6 +19,7 @@ import maplibregl, {
   ScaleControl,
 } from "maplibre-gl";
 import { Protocol } from "pmtiles";
+import AddIcon from '@mui/icons-material/Add';
 import "maplibre-gl/dist/maplibre-gl.css";
 
 import * as turf from "@turf/turf";
@@ -424,30 +425,6 @@ export default function DynamicMap(props: Props): JSX.Element {
       touchZoomRotate: false,
     });
 
-    // test to modify map styles by changing the + - as the background image 
-    mapRef.current.on("load", () => {
-      const zoomInButton = document.getElementsByClassName(
-        ".maplibregl-ctrl button.maplibregl-ctrl-zoom-in .maplibregl-ctrl-icon"
-      )[0];
-      const zoomOutButton = document.getElementsByClassName(
-        "maplibregl-ctrl-zoom-out"
-      )[0];
-      if (zoomInButton && zoomOutButton) {
-        console.log("modifying zoom control styles!!", zoomInButton, zoomOutButton);
-        zoomInButton.setAttribute(
-          "backgroundImage",
-            `url('/public/greenSpace.svg')`
-          // greenSpace.svg in public folder
-        );
-        zoomOutButton.setAttribute(
-          "backgroundImage",
-           `url('/public/greenSpace.svg')`
-        );
-      } else{
-        console.log("could not find zoom buttons to modify");
-      }
-    });
-
     const nav = new NavigationControl({
       showCompass: false,
     });
@@ -500,13 +477,52 @@ export default function DynamicMap(props: Props): JSX.Element {
       previewSources.map((src) => {
         mapRef.current.addSource(src.id, src.spec);
       });
+     
+      // change the border color and text color of the scale control
+      const scaleControlEl = document.getElementsByClassName(
+        "maplibregl-ctrl-scale"
+      )[0];
+      if (scaleControlEl) {
+        (scaleControlEl as HTMLElement).style.borderColor =
+          "#AAAAAA";
+        (scaleControlEl as HTMLElement).style.color =
+          "#444444";
+        (scaleControlEl as HTMLElement).style.fontFamily =
+          "Nunito, sans-serif";
+      }
 
+      // change the icon that zoom control uses addIcon and minusIcon
+      const zoomInButton = document.getElementsByClassName(
+        "maplibregl-ctrl-zoom-in"
+      )[0].getElementsByClassName("maplibregl-ctrl-icon")[0];
+      const zoomOutButton = document.getElementsByClassName(
+        "maplibregl-ctrl-zoom-out"
+      )[0].getElementsByClassName("maplibregl-ctrl-icon")[0];
+      if (zoomInButton && zoomOutButton) {
+        (zoomInButton as HTMLElement).style.backgroundImage = 
+          "url('/icons/composite.svg')";
+        (zoomOutButton as HTMLElement).style.backgroundImage =
+          "url('/icons/minus.svg')";
+      }
+     
+      const attributionControlEl = document.getElementsByClassName(
+        "maplibregl-ctrl-attrib-button"
+      )[0];
+      if (attributionControlEl) {
+        (attributionControlEl as HTMLElement).style.backgroundImage =
+          "url('/icons/map_info.svg')";
+        (attributionControlEl as HTMLElement).style.backgroundRepeat =
+          "no-repeat";
+        (attributionControlEl as HTMLElement).style.backgroundPosition =
+          "center";
+        (attributionControlEl as HTMLElement).style.visibility = "visible";
+      }
+
+      // finally set the map loaded state to true to enable other map interactions
       setMapLoaded(true);
     });
   };
   useEffect(initMap, [props.initialBounds]);
-
-  console.log(overlayRegistry);
 
   return (
     <>
