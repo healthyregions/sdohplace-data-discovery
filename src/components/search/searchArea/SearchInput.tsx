@@ -114,13 +114,34 @@ const SearchInput: React.FC<SearchInputProps> = ({
         renderOption={(props, option, state) => {
           const { "aria-selected": _, onClick, ...otherProps } = props;
           const isLast = state.index === suggestions.length - 1;
+          const stripHtml = (html: string): string => {
+            const tmp = document.createElement("div");
+            tmp.innerHTML = html;
+            return tmp.textContent || tmp.innerText || "";
+          };
+          const plainText = stripHtml(option);
           const highlightMatch = (text: string, query: string) => {
             if (!query) return text;
-            const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")})`, "gi");
-            const parts = text.split(regex);
-            return parts.map((part, i) =>
-              regex.test(part) ? <span key={i} style={{ fontWeight: 700, color: fullConfig.theme.colors["frenchviolet"] }}>{part}</span> : part
-            );
+            const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+            const regex = new RegExp(escapedQuery, "gi");
+            const result: React.ReactNode[] = [];
+            let lastIndex = 0;
+            let match;
+            while ((match = regex.exec(text)) !== null) {
+              if (match.index > lastIndex) {
+                result.push(text.slice(lastIndex, match.index));
+              }
+              result.push(
+                <span key={match.index} style={{ fontWeight: 700, color: fullConfig.theme.colors["frenchviolet"] }}>
+                  {match[0]}
+                </span>
+              );
+              lastIndex = regex.lastIndex;
+            }
+            if (lastIndex < text.length) {
+              result.push(text.slice(lastIndex));
+            }
+            return result.length > 0 ? result : text;
           };
           return (
             <li
@@ -146,7 +167,7 @@ const SearchInput: React.FC<SearchInputProps> = ({
                   "transparent";
               }}
             >
-              {highlightMatch(option, inputValue)}
+              {highlightMatch(plainText, inputValue)}
             </li>
           );
         }}
