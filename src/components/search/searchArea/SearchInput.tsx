@@ -11,6 +11,7 @@ import {
   InputAdornment,
   TextField,
   Tooltip,
+  Typography,
 } from "@mui/material";
 import {
   CustomPaper,
@@ -121,27 +122,46 @@ const SearchInput: React.FC<SearchInputProps> = ({
           };
           const plainText = stripHtml(option);
           const highlightMatch = (text: string, query: string) => {
-            if (!query) return text;
+            if (!query) {
+              return <Typography component="span">{text}</Typography>;
+            }
             const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
             const regex = new RegExp(escapedQuery, "gi");
             const result: React.ReactNode[] = [];
             let lastIndex = 0;
-            let match;
+            let match: RegExpExecArray | null;
             while ((match = regex.exec(text)) !== null) {
               if (match.index > lastIndex) {
                 result.push(text.slice(lastIndex, match.index));
               }
               result.push(
-                <span key={match.index} style={{ fontWeight: 700, color: fullConfig.theme.colors["frenchviolet"] }}>
+                <Box
+                  component="span"
+                  key={`${match.index}-${match[0]}`}
+                  sx={{
+                    color: fullConfig.theme.colors["frenchviolet"],
+                    fontWeight: 900,
+                  }}
+                >
                   {match[0]}
-                </span>
+                </Box>
               );
               lastIndex = regex.lastIndex;
             }
             if (lastIndex < text.length) {
               result.push(text.slice(lastIndex));
             }
-            return result.length > 0 ? result : text;
+            return (
+              <Typography
+                component="span"
+                sx={{
+                  fontWeight: 400,
+                  fontFamily: "Nunito, sans-serif",
+                }}
+              >
+                {result.length > 0 ? result : text}
+              </Typography>
+            );
           };
           return (
             <li
