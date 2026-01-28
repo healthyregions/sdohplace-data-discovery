@@ -493,6 +493,7 @@ export default function DynamicMap(props: Props): JSX.Element {
       container: mapDivRef.current,
       style: `https://api.maptiler.com/maps/3d4a663a-95c3-42d0-9ee6-6a4cce2ba220/style.json?key=${apiKey}`,
       bounds: props.initialBounds,
+      attributionControl: { compact: true },
       dragRotate: false,
       touchPitch: false,
       touchZoomRotate: false,
@@ -578,17 +579,25 @@ export default function DynamicMap(props: Props): JSX.Element {
           "url('/icons/minus.svg')";
       }
      
+      // force the attribution control to use compact mode after initial load
       const attributionControlEl = document.getElementsByClassName(
         "maplibregl-ctrl-attrib-button"
       )[0];
       if (attributionControlEl) {
-        (attributionControlEl as HTMLElement).style.backgroundImage =
-          "url('/icons/map_info.svg')";
-        (attributionControlEl as HTMLElement).style.backgroundRepeat =
-          "no-repeat";
-        (attributionControlEl as HTMLElement).style.backgroundPosition =
-          "center";
-        (attributionControlEl as HTMLElement).style.visibility = "visible";
+        const attribBtn = attributionControlEl as HTMLElement;
+        attribBtn.style.backgroundImage = "url('/icons/map_info.svg')";
+        attribBtn.style.backgroundRepeat = "no-repeat";
+        attribBtn.style.backgroundPosition = "center";
+        attribBtn.style.visibility = "visible";
+        const attribEl = attribBtn.closest('.maplibregl-ctrl-attrib') as HTMLElement | null;
+        if (attribEl) {
+          attribEl.classList.add('maplibregl-compact');
+          attribEl.classList.remove('maplibregl-compact-show');
+          try {
+            (attribEl as HTMLDetailsElement).open = false;
+          } catch (e) {}
+          attribEl.removeAttribute('open');
+        }
       }
 
       const styleLayers = mapRef.current.getStyle().layers;
