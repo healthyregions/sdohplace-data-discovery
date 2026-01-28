@@ -35,11 +35,11 @@
     "yarn": ">=1.22.5"
   },
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev -p 3000",
     "build": "next build",
-    "start": "next start",
+    "start": "next start -p 8888",
     "dev:edge": "netlify dev",
-    "dev:full": "concurrently \"next dev\" \"netlify dev --targetPort 3000 --port 8888\"",
+    "dev:full": "netlify dev --port=8888",
     "clean": "rm -rf .next out",
     "build:local": "next build && next export",
     "lint": "next lint",

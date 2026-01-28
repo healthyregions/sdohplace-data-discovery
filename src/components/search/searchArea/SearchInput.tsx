@@ -115,29 +115,29 @@ const SearchInput: React.FC<SearchInputProps> = ({
         renderOption={(props, option, state) => {
           const { "aria-selected": _, onClick, ...otherProps } = props;
           const isLast = state.index === suggestions.length - 1;
-          const stripHtml = (html: string): string => {
-            const tmp = document.createElement("div");
-            tmp.innerHTML = html;
-            return tmp.textContent || tmp.innerText || "";
-          };
-          const plainText = stripHtml(option);
+          const plainText = option;
           const highlightMatch = (text: string, query: string) => {
             if (!query) {
-              return <Typography component="span">{text}</Typography>;
+              return <Typography component="span" sx={{ whiteSpace: "pre-wrap" }}>{text}</Typography>;
             }
             const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
             const regex = new RegExp(escapedQuery, "gi");
             const result: React.ReactNode[] = [];
             let lastIndex = 0;
             let match: RegExpExecArray | null;
+            let keyIndex = 0;
             while ((match = regex.exec(text)) !== null) {
               if (match.index > lastIndex) {
-                result.push(text.slice(lastIndex, match.index));
+                result.push(
+                  <span key={`text-${keyIndex++}`}>
+                    {text.slice(lastIndex, match.index)}
+                  </span>
+                );
               }
               result.push(
                 <Box
                   component="span"
-                  key={`${match.index}-${match[0]}`}
+                  key={`match-${keyIndex++}`}
                   sx={{
                     color: fullConfig.theme.colors["frenchviolet"],
                     fontWeight: 900,
@@ -149,7 +149,11 @@ const SearchInput: React.FC<SearchInputProps> = ({
               lastIndex = regex.lastIndex;
             }
             if (lastIndex < text.length) {
-              result.push(text.slice(lastIndex));
+              result.push(
+                <span key={`text-${keyIndex++}`}>
+                  {text.slice(lastIndex)}
+                </span>
+              );
             }
             return (
               <Typography
@@ -157,6 +161,7 @@ const SearchInput: React.FC<SearchInputProps> = ({
                 sx={{
                   fontWeight: 400,
                   fontFamily: "Nunito, sans-serif",
+                  whiteSpace: "pre-wrap",
                 }}
               >
                 {result.length > 0 ? result : text}
