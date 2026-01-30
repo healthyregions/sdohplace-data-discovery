@@ -1,5 +1,6 @@
 import * as React from "react";
 import LightbulbOutlined from "@mui/icons-material/LightbulbOutlined";
+import SearchIcon from "@mui/icons-material/Search";
 import ArrowCircleRightIcon from "@mui/icons-material/ArrowCircleRight";
 import CloseIcon from "@mui/icons-material/Close";
 import {
@@ -218,6 +219,7 @@ const SearchInput: React.FC<SearchInputProps> = ({
               "& .MuiOutlinedInput-root": {
                 borderRadius: "1.75em",
                 color: fullConfig.theme.colors["smokegray"],
+                paddingLeft: isMobile ? "0.5em" : "1em",
                 paddingRight: isMobile ? "0 !important" : undefined,
                 "&:hover .MuiOutlinedInput-notchedOutline": {
                   borderColor: "transparent",
@@ -285,12 +287,21 @@ const SearchInput: React.FC<SearchInputProps> = ({
                           boxShadow: "0 0.125rem 0.25rem rgba(0, 0, 0, 0.2)",
                         }}
                       >
-                        <LightbulbOutlined
-                          sx={{
-                            color: "white",
-                            fontSize: "1.125rem",
-                          }}
-                        />
+                        {aiSearch ? (
+                          <LightbulbOutlined
+                            sx={{
+                              color: "white",
+                              fontSize: "1.125rem",
+                            }}
+                          />
+                        ) : (
+                          <SearchIcon
+                            sx={{
+                              color: "white",
+                              fontSize: "1.125rem",
+                            }}
+                          />
+                        )}
                       </Box>
                     </Box>
                     <Box
@@ -307,7 +318,7 @@ const SearchInput: React.FC<SearchInputProps> = ({
                         textAlign: "left",
                       }}
                     >
-                      Ask
+                      Ask AI
                     </Box>
                   </Box>
                 </InputAdornment>
