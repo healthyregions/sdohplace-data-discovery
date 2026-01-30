@@ -226,6 +226,9 @@ const SearchInput: React.FC<SearchInputProps> = ({
                 },
                 transition: "all 0.2s ease-in-out",
               },
+              "& .MuiOutlinedInput-root .MuiAutocomplete-input": {
+                paddingLeft: isMobile ? "0.5em" : "1em",
+              },
               "& .MuiOutlinedInput-notchedOutline": {
                 borderColor: "transparent",
               },
