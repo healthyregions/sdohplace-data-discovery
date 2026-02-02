@@ -94,15 +94,36 @@ const getAddress = (props: any) =>
   props.address || props.ADDRESS || props.formatted_address || props.display || "";
 
 const getAccuracy = (props: any) => {
-  const v =
-    props.accuracy ||
-    props.match_score ||
-    props.score ||
-    props.confidence ||
-    props.accuracy_pct;
-  if (!v && v !== 0) return null;
-  if (typeof v === "number") return `${Math.round(v)}%`;
-  return v;
+  const v = getRawAccuracy(props);
+  return formatPercentValue(v);
+};
+
+const getRawAccuracy = (props: any) =>
+  props.accuracy ||
+  props.match_score ||
+  props.score ||
+  props.confidence ||
+  props.accuracy_pct;
+
+const formatPercentValue = (value: unknown) => {
+  if (value === null || value === undefined || value === "") return null;
+  if (typeof value === "number" && Number.isFinite(value)) {
+    const percent = value >= 0 && value <= 1 ? value * 100 : value;
+    return `${Math.round(percent)}%`;
+  }
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (!trimmed) return null;
+    const isPercentString = trimmed.endsWith("%");
+    const numeric = Number(isPercentString ? trimmed.slice(0, -1) : trimmed);
+    if (Number.isFinite(numeric)) {
+      const percent =
+        isPercentString || numeric > 1 || numeric < 0 ? numeric : numeric * 100;
+      return `${Math.round(percent)}%`;
+    }
+    return trimmed;
+  }
+  return null;
 };
 
 export function assetPopupHTML(props: any, fullConfig?: any) {
@@ -159,18 +180,9 @@ export default function AssetPopupComponent({
   const name = getName(props);
   const type = getType(props);
   const address = getAddress(props);
-  const raw =
-    props.accuracy ||
-    props.match_score ||
-    props.score ||
-    props.confidence ||
-    props.accuracy_pct;
-  const confidence =
-    raw || raw === 0
-      ? typeof raw === "number"
-        ? `${Math.round(raw)}% confidence`
-        : `${raw} confidence`
-      : null;
+  const raw = getRawAccuracy(props);
+  const formatted = formatPercentValue(raw);
+  const confidence = formatted ? `${formatted} confidence` : null;
 
   const displayType = type || "info not available";
   const displayAddress = address || "info not available";
