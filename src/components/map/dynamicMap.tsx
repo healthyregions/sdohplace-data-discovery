@@ -5,7 +5,11 @@ import {
   setSearchBbox,
   setEnableMapBboxFilter,
 } from "@/store/slices/searchSlice";
-import { setShowBboxFilter, setOverlayIds, setGeocodeFeature } from "@/store/slices/mapSlice";
+import {
+  setShowBboxFilter,
+  setOverlayIds,
+  setGeocodeFeature,
+} from "@/store/slices/mapSlice";
 import LocationOnIcon from "@mui/icons-material/LocationOn";
 import CloseIcon from "@mui/icons-material/Close";
 import { AppDispatch, RootState } from "@/store";
@@ -19,7 +23,7 @@ import maplibregl, {
   ScaleControl,
 } from "maplibre-gl";
 import { Protocol } from "pmtiles";
-import AddIcon from '@mui/icons-material/Add';
+import AddIcon from "@mui/icons-material/Add";
 import "maplibre-gl/dist/maplibre-gl.css";
 
 import * as turf from "@turf/turf";
@@ -33,7 +37,7 @@ import {
 } from "./helper/layers";
 import GeocodeControl from "./geocodeControl";
 import AssetPopupComponent from "./AssetPopupComponent";
-import { config, geocoding } from '@maptiler/client';
+import { config, geocoding } from "@maptiler/client";
 import { createRoot, Root } from "react-dom/client";
 
 import resolveConfig from "tailwindcss/resolveConfig";
@@ -43,22 +47,22 @@ const fullConfig = resolveConfig(tailwindConfig);
 const apiKey = process.env.NEXT_PUBLIC_MAPTILER_API_KEY;
 
 const LABEL_LAYER_PATTERNS = [
-  'place_country',
-  'place_state',
-  'place_region',
-  'place_province',
-  'place_city',
-  'place_town',
-  'place_village',
-  'place_hamlet',
-  'place_suburb',
-  'place_neighbourhood',
-  'place_locality',
-  'place_other',
-  'State labels',
-  'Country labels',
-  'City labels',
-  'Place labels',
+  "place_country",
+  "place_state",
+  "place_region",
+  "place_province",
+  "place_city",
+  "place_town",
+  "place_village",
+  "place_hamlet",
+  "place_suburb",
+  "place_neighbourhood",
+  "place_locality",
+  "place_other",
+  "State labels",
+  "Country labels",
+  "City labels",
+  "Place labels",
 ];
 
 const US_BOUNDS = {
@@ -89,7 +93,11 @@ export default function DynamicMap(props: Props): JSX.Element {
   const styleInjectedRef = useRef(false);
   const [mapLoaded, setMapLoaded] = useState(false);
   const [bboxFilterLabel, setBboxFilterLabel] = useState("");
-  const pendingGeocodeRef = useRef<{ label: string; bbox: number[]; geometry: any } | null>(null);
+  const pendingGeocodeRef = useRef<{
+    label: string;
+    bbox: number[];
+    geometry: any;
+  } | null>(null);
 
   const mapDivRef = useRef(null);
   const mapRef = useRef(null);
@@ -371,7 +379,9 @@ export default function DynamicMap(props: Props): JSX.Element {
           fullConfig={fullConfig}
         />
       );
-      popup.setLngLat([popupInfo.longitude, popupInfo.latitude]).setDOMContent(container);
+      popup
+        .setLngLat([popupInfo.longitude, popupInfo.latitude])
+        .setDOMContent(container);
       popup.addTo(mapRef.current);
     } else {
       if (popupRootRef.current) {
@@ -454,37 +464,50 @@ export default function DynamicMap(props: Props): JSX.Element {
     );
   }, []);
 
-  const handleMapLabelClick = useCallback(async (placeName: string, clickLngLat: { lng: number; lat: number }) => {
-    if (!placeName || !mapRef.current) return;
+  const handleMapLabelClick = useCallback(
+    async (placeName: string, clickLngLat: { lng: number; lat: number }) => {
+      if (!placeName || !mapRef.current) return;
 
-    if (!isPointWithinUS(clickLngLat.lng, clickLngLat.lat)) return;
+      if (!isPointWithinUS(clickLngLat.lng, clickLngLat.lat)) return;
 
-    config.apiKey = apiKey;
+      config.apiKey = apiKey;
 
-    try {
-      const result = await geocoding.forward(placeName, {
-        country: ["us"],
-        types: ["country", "region", "subregion", "county", "municipality", "municipal_district", "locality"],
-        proximity: [clickLngLat.lng, clickLngLat.lat],
-        limit: 1,
-      });
+      try {
+        const result = await geocoding.forward(placeName, {
+          country: ["us"],
+          types: [
+            "country",
+            "region",
+            "subregion",
+            "county",
+            "municipality",
+            "municipal_district",
+            "locality",
+          ],
+          proximity: [clickLngLat.lng, clickLngLat.lat],
+          limit: 1,
+        });
 
-      if (result.features && result.features.length > 0) {
-        const feature = result.features[0];
-        if (feature.bbox) {
-          mapRef.current.fitBounds(feature.bbox as LngLatBoundsLike, { padding: 40 });
-          pendingGeocodeRef.current = {
-            label: feature.place_name,
-            bbox: feature.bbox,
-            geometry: feature.geometry,
-          };
-          dispatch(setShowBboxFilter(true));
+        if (result.features && result.features.length > 0) {
+          const feature = result.features[0];
+          if (feature.bbox) {
+            mapRef.current.fitBounds(feature.bbox as LngLatBoundsLike, {
+              padding: 40,
+            });
+            pendingGeocodeRef.current = {
+              label: feature.place_name,
+              bbox: feature.bbox,
+              geometry: feature.geometry,
+            };
+            dispatch(setShowBboxFilter(true));
+          }
         }
+      } catch (error) {
+        console.error("Error geocoding label click:", error);
       }
-    } catch (error) {
-      console.error('Error geocoding label click:', error);
-    }
-  }, [dispatch, isPointWithinUS]);
+    },
+    [dispatch, isPointWithinUS]
+  );
 
   const initMap = () => {
     if (mapRef.current) return; // stops map from intializing more than once
@@ -551,34 +574,44 @@ export default function DynamicMap(props: Props): JSX.Element {
       previewSources.map((src) => {
         mapRef.current.addSource(src.id, src.spec);
       });
-     
+
       // change the border color and text color of the scale control
       const scaleControlEl = document.getElementsByClassName(
         "maplibregl-ctrl-scale"
       )[0];
       if (scaleControlEl) {
-        (scaleControlEl as HTMLElement).style.borderColor =
-          "#AAAAAA";
-        (scaleControlEl as HTMLElement).style.color =
-          "#444444";
-        (scaleControlEl as HTMLElement).style.fontFamily =
-          "Nunito, sans-serif";
+        (scaleControlEl as HTMLElement).style.borderColor = "#AAAAAA";
+        (scaleControlEl as HTMLElement).style.color = "#444444";
+        (scaleControlEl as HTMLElement).style.fontFamily = "Nunito, sans-serif";
       }
 
       // change the icon that zoom control uses addIcon and minusIcon
-      const zoomInButton = document.getElementsByClassName(
-        "maplibregl-ctrl-zoom-in"
-      )[0].getElementsByClassName("maplibregl-ctrl-icon")[0];
-      const zoomOutButton = document.getElementsByClassName(
-        "maplibregl-ctrl-zoom-out"
-      )[0].getElementsByClassName("maplibregl-ctrl-icon")[0];
+      const zoomInButton = document
+        .getElementsByClassName("maplibregl-ctrl-zoom-in")[0]
+        ?.getElementsByClassName("maplibregl-ctrl-icon")[0];
+      const zoomOutButton = document
+        .getElementsByClassName("maplibregl-ctrl-zoom-out")[0]
+        ?.getElementsByClassName("maplibregl-ctrl-icon")[0];
       if (zoomInButton && zoomOutButton) {
-        (zoomInButton as HTMLElement).style.backgroundImage = 
-          "url('/icons/composite.svg')";
-        (zoomOutButton as HTMLElement).style.backgroundImage =
-          "url('/icons/minus.svg')";
+        const zoomIconColor = "#AAAAAA";
+        const zoomIconSvg = (path: string) =>
+          `url("data:image/svg+xml,${encodeURIComponent(
+            `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="${zoomIconColor}" d="${path}"/></svg>`
+          )}")`;
+        const zoomInEl = zoomInButton as HTMLElement;
+        const zoomOutEl = zoomOutButton as HTMLElement;
+        zoomInEl.style.backgroundSize = "1rem 1rem";
+        zoomOutEl.style.backgroundSize = "1rem 1rem";
+        zoomInEl.style.backgroundRepeat = "no-repeat";
+        zoomOutEl.style.backgroundRepeat = "no-repeat";
+        zoomInEl.style.backgroundPosition = "center";
+        zoomOutEl.style.backgroundPosition = "center";
+        zoomInEl.style.backgroundImage = zoomIconSvg(
+          "M19 13H13V19H11V13H5V11H11V5H13V11H19V13Z"
+        );
+        zoomOutEl.style.backgroundImage = zoomIconSvg("M19 13H5V11H19V13Z");
       }
-     
+
       // force the attribution control to use compact mode after initial load
       const attributionControlEl = document.getElementsByClassName(
         "maplibregl-ctrl-attrib-button"
@@ -589,29 +622,31 @@ export default function DynamicMap(props: Props): JSX.Element {
         attribBtn.style.backgroundRepeat = "no-repeat";
         attribBtn.style.backgroundPosition = "center";
         attribBtn.style.visibility = "visible";
-        const attribEl = attribBtn.closest('.maplibregl-ctrl-attrib') as HTMLElement | null;
+        const attribEl = attribBtn.closest(
+          ".maplibregl-ctrl-attrib"
+        ) as HTMLElement | null;
         if (attribEl) {
-          attribEl.classList.add('maplibregl-compact');
-          attribEl.classList.remove('maplibregl-compact-show');
+          attribEl.classList.add("maplibregl-compact");
+          attribEl.classList.remove("maplibregl-compact-show");
           try {
             (attribEl as HTMLDetailsElement).open = false;
           } catch (e) {}
-          attribEl.removeAttribute('open');
+          attribEl.removeAttribute("open");
         }
       }
 
       const styleLayers = mapRef.current.getStyle().layers;
       const labelLayerIds = styleLayers
         .filter((layer) => {
-          if (layer.type !== 'symbol') return false;
+          if (layer.type !== "symbol") return false;
           const layerId = layer.id.toLowerCase();
-          return LABEL_LAYER_PATTERNS.some(pattern =>
+          return LABEL_LAYER_PATTERNS.some((pattern) =>
             layerId.includes(pattern.toLowerCase())
           );
         })
         .map((layer) => layer.id);
 
-      mapRef.current.on('click', (e) => {
+      mapRef.current.on("click", (e) => {
         if (labelLayerIds.length === 0) return;
 
         const features = mapRef.current.queryRenderedFeatures(e.point, {
@@ -620,30 +655,34 @@ export default function DynamicMap(props: Props): JSX.Element {
 
         if (features.length > 0) {
           const feature = features[0];
-          const placeName = feature.properties?.name ||
-                           feature.properties?.name_en ||
-                           feature.properties?.['name:en'];
+          const placeName =
+            feature.properties?.name ||
+            feature.properties?.name_en ||
+            feature.properties?.["name:en"];
           if (placeName) {
-            handleMapLabelClick(placeName, { lng: e.lngLat.lng, lat: e.lngLat.lat });
+            handleMapLabelClick(placeName, {
+              lng: e.lngLat.lng,
+              lat: e.lngLat.lat,
+            });
           }
         }
       });
 
       labelLayerIds.forEach((layerId) => {
-        mapRef.current.on('mouseenter', layerId, (e) => {
+        mapRef.current.on("mouseenter", layerId, (e) => {
           if (isPointWithinUS(e.lngLat.lng, e.lngLat.lat)) {
-            mapRef.current.getCanvas().style.cursor = 'pointer';
+            mapRef.current.getCanvas().style.cursor = "pointer";
           }
         });
-        mapRef.current.on('mousemove', layerId, (e) => {
+        mapRef.current.on("mousemove", layerId, (e) => {
           if (isPointWithinUS(e.lngLat.lng, e.lngLat.lat)) {
-            mapRef.current.getCanvas().style.cursor = 'pointer';
+            mapRef.current.getCanvas().style.cursor = "pointer";
           } else {
-            mapRef.current.getCanvas().style.cursor = 'default';
+            mapRef.current.getCanvas().style.cursor = "default";
           }
         });
-        mapRef.current.on('mouseleave', layerId, () => {
-          mapRef.current.getCanvas().style.cursor = 'default';
+        mapRef.current.on("mouseleave", layerId, () => {
+          mapRef.current.getCanvas().style.cursor = "default";
         });
       });
 
@@ -651,7 +690,11 @@ export default function DynamicMap(props: Props): JSX.Element {
       setMapLoaded(true);
     });
   };
-  useEffect(initMap, [props.initialBounds, handleMapLabelClick, isPointWithinUS]);
+  useEffect(initMap, [
+    props.initialBounds,
+    handleMapLabelClick,
+    isPointWithinUS,
+  ]);
 
   return (
     <>
@@ -732,7 +775,13 @@ export default function DynamicMap(props: Props): JSX.Element {
           </div>
         </div>
       )}
-      <div style={{ width: "100%", height: overlayIds.length > 0 ? "calc(100% - 2.5em)" : "100%", position: "relative" }}>
+      <div
+        style={{
+          width: "100%",
+          height: overlayIds.length > 0 ? "calc(100% - 2.5em)" : "100%",
+          position: "relative",
+        }}
+      >
         <div ref={mapDivRef} style={{ width: "100%", height: "100%" }}>
           {mapLoaded && (
             <div style={{ marginTop: "1em", marginLeft: "1em" }}>

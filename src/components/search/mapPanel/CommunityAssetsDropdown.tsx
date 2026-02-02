@@ -31,7 +31,10 @@ const CommunityAssetsDropdown: React.FC<Props> = ({
     const entry = overlayRegistry[key];
     if (!entry) return;
     const urlSpec = entry.source?.spec?.url || "";
-    const downloadUrl = urlSpec.replace(/^pmtiles:\/\//, "");
+    const cleanedUrl = urlSpec.replace(/^pmtiles:\/\//, "");
+    const fileName = cleanedUrl.split("/").pop() || "";
+    const csvName = fileName.replace(/\.pmtiles$/i, ".csv");
+    const downloadUrl = `/data/${csvName}`;
     const a = document.createElement("a");
     a.href = downloadUrl;
     a.target = "_blank";
