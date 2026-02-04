@@ -93,6 +93,10 @@ export default function DynamicMap(props: Props): JSX.Element {
   const styleInjectedRef = useRef(false);
   const [mapLoaded, setMapLoaded] = useState(false);
   const [bboxFilterLabel, setBboxFilterLabel] = useState("");
+  const [bboxStale, setBboxStale] = useState(false); // whether the current bbox results are stale or fresh
+  const suppressStaleUntilRef = useRef(0); // timestamp to prevent moveend from immediately marking stale (such as programmetic moves)
+  const enableMapBboxFilterRef = useRef(enableMapBboxFilter); // keep a ref version of the enableMapBboxFilter for use in callbacks
+  enableMapBboxFilterRef.current = enableMapBboxFilter;
   const pendingGeocodeRef = useRef<{
     label: string;
     bbox: number[];
@@ -122,53 +126,67 @@ export default function DynamicMap(props: Props): JSX.Element {
     return newBbox;
   }
 
-  const setBboxOnMoveEnd = useCallback(() => {
-    dispatch(setSearchBbox(getCurrentMapBbox()));
-  }, [dispatch]);
+  /* Changed logic in #44: check to see if user has moved the map or not since the last search.
+  zoom/pan moveend handler to mark bbox as stale and no result update yet
+  */
+  const markBboxStale = useCallback(() => {
+    if (Date.now() < suppressStaleUntilRef.current) return;
+    setBboxStale(true);
+    setBboxFilterLabel("Show results in this area");
+  }, []);
 
   const handleSearchWithinMap = () => {
     if (!mapLoaded) return;
     if (enableMapBboxFilter) {
-      mapRef.current.on("moveend", setBboxOnMoveEnd);
+      mapRef.current.on("moveend", markBboxStale);
     } else {
-      mapRef.current.off("moveend", setBboxOnMoveEnd);
+      mapRef.current.off("moveend", markBboxStale);
     }
   };
   useEffect(handleSearchWithinMap, [
     mapLoaded,
     enableMapBboxFilter,
-    setBboxOnMoveEnd,
+    markBboxStale,
   ]);
 
   const handleBboxFilterLabel = () => {
-    if (enableMapBboxFilter) {
-      setBboxFilterLabel("Showing results in this area");
-    } else {
+    if (!enableMapBboxFilter) {
       setBboxFilterLabel("Show results in this area");
+      setBboxStale(false);
     }
   };
   useEffect(handleBboxFilterLabel, [enableMapBboxFilter]);
 
+  /*  When the move moveend happens, mark the markBboxStale and change the button label with NO search happens.
+  Then for the BbboxFilterButton:
+  Filter on + results fresh (!bboxStale) → acts as "Clear", turns everything off
+  Filter on + results stale (bboxStale) → re-searches with the current viewport
+  Filter off → enables filter, searches current viewport
+  */
   const handleBboxFilterButton = () => {
     if (!mapLoaded) return;
-    const newState = !enableMapBboxFilter;
-    dispatch(setEnableMapBboxFilter(newState));
-    if (newState) {
-      dispatch(setSearchBbox(getCurrentMapBbox()));
-      if (pendingGeocodeRef.current) {
-        dispatch(setGeocodeFeature(pendingGeocodeRef.current));
-        pendingGeocodeRef.current = null;
-      }
-    } else {
+    if (enableMapBboxFilter && !bboxStale) {
+      dispatch(setEnableMapBboxFilter(false));
       dispatch(setSearchBbox(null));
+      setBboxStale(false);
+      return;
+    }
+    suppressStaleUntilRef.current = Date.now() + 1000; // prevent immediate stale marking
+    if (!enableMapBboxFilter) {
+      dispatch(setEnableMapBboxFilter(true));
+    }
+    dispatch(setSearchBbox(getCurrentMapBbox()));
+    setBboxStale(false);
+    setBboxFilterLabel("Showing results in this area");
+    if (pendingGeocodeRef.current) {
+      dispatch(setGeocodeFeature(pendingGeocodeRef.current));
+      pendingGeocodeRef.current = null;
     }
   };
 
   const handleBboxFilterToggle = () => {
     if (!mapLoaded) return;
-    if (enableMapBboxFilter) {
-      dispatch(setSearchBbox(getCurrentMapBbox()));
-    } else {
+    if (!enableMapBboxFilter) {
       dispatch(setSearchBbox(null));
     }
   };
@@ -436,9 +454,16 @@ export default function DynamicMap(props: Props): JSX.Element {
   };
   useEffect(handleGeocodeFeatureDisplay, [geocodeFeature, mapLoaded]);
 
+  // zoom to geocode feature when it changes, button appears but no search
   const handleGeocodeFeatureZoom = () => {
     if (!mapLoaded) return;
     if (geocodeFeature) {
+      suppressStaleUntilRef.current = Date.now() + 1000; // prevent immediate stale marking
+      dispatch(setShowBboxFilter(true));
+      if (!enableMapBboxFilterRef.current) {
+        setBboxFilterLabel("Show results in this area");
+        setBboxStale(true);
+      }
       mapRef.current.fitBounds(geocodeFeature.bbox, { padding: 40 });
       dispatch(setEnableMapBboxFilter(true));
     } else {
@@ -494,6 +519,7 @@ export default function DynamicMap(props: Props): JSX.Element {
             mapRef.current.fitBounds(feature.bbox as LngLatBoundsLike, {
               padding: 40,
             });
+            // Map label click → stores geocode, waits for button click in handleBboxFilterButton without search yet
             pendingGeocodeRef.current = {
               label: feature.place_name,
               bbox: feature.bbox,
@@ -806,7 +832,8 @@ export default function DynamicMap(props: Props): JSX.Element {
           >
             <button
               style={{
-                background: enableMapBboxFilter ? "white" : "#FFE5C4",
+                background:
+                  enableMapBboxFilter && !bboxStale ? "white" : "#FFE5C4",
                 height: "fit-content",
                 padding: ".5em 1em",
                 borderRadius: "8px",
@@ -824,7 +851,7 @@ export default function DynamicMap(props: Props): JSX.Element {
                 />
                 {bboxFilterLabel}
               </span>
-              {enableMapBboxFilter && (
+              {enableMapBboxFilter && !bboxStale && (
                 <span
                   style={{
                     marginLeft: "2em",
