@@ -1,10 +1,5 @@
 import { createSlice } from "@reduxjs/toolkit";
 
-interface MapPreviewLyr {
-  lyrId: string;
-  filterIds: string[];
-}
-
 interface UIState {
   pageFirstLoad: boolean;
   showInfoPanel: boolean;
@@ -13,8 +8,6 @@ interface UIState {
   showFilter: boolean;
   showClearButton: boolean;
   showSharedLink: boolean;
-  mapPreview: MapPreviewLyr[];
-  geosearchSelection: string;
 }
 
 const initialState: UIState = {
@@ -25,8 +18,6 @@ const initialState: UIState = {
   showFilter: false,
   showClearButton: false,
   showSharedLink: false,
-  mapPreview: [],
-  geosearchSelection: null,
 };
 
 const uiSlice = createSlice({
@@ -54,15 +45,6 @@ const uiSlice = createSlice({
     setShowSharedLink: (state, action) => {
       state.showSharedLink = action.payload;
     },
-    clearMapPreview: (state) => {
-      state.mapPreview = [];
-    },
-    setMapPreview: (state, action) => {
-      state.mapPreview = action.payload;
-    },
-    setGeosearchSelection: (state, action) => {
-      state.geosearchSelection = action.payload;
-    },
   },
 });
 
@@ -74,9 +56,6 @@ export const {
   setShowFilter,
   setShowClearButton,
   setShowSharedLink,
-  setMapPreview,
-  clearMapPreview,
-  setGeosearchSelection,
 } = uiSlice.actions;
 
 export default uiSlice.reducer;

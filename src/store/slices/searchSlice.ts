@@ -349,11 +349,11 @@ const searchSlice = createSlice({
       state.sort.sortBy = field;
       state.sort.sortOrder = direction;
     },
-    setBbox: (state, action) => {
-      state.bbox = action.payload;
+    setSearchBbox: (state, action) => {
+      state.searchBbox = action.payload;
     },
-    setVisOverlays: (state, action) => {
-      state.visOverlays = action.payload;
+    setEnableMapBboxFilter: (state, action) => {
+      state.enableMapBboxFilter = action.payload;
     },
     setSubject: (state, action) => {
       state.subject = action.payload;
@@ -513,7 +513,7 @@ const searchSlice = createSlice({
         state.suggestions = [];
       })
       .addCase(batchResetFilters, (state, action) => {
-        state.bbox = null;
+        state.searchBbox = null;
         state.spatialResolution = [];
         state.indexYear = [];
         state.filterQueries = [];
@@ -556,8 +556,8 @@ export const {
   setThoughts,
   setFilterQueries,
   setSort,
-  setBbox,
-  setVisOverlays,
+  setSearchBbox,
+  setEnableMapBboxFilter,
   setSubject,
   setSpatialResolution,
   setIndexYear,

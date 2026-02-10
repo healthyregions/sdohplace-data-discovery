@@ -5,20 +5,8 @@ import { makeStyles } from "@mui/styles";
 import tailwindConfig from "../../../../tailwind.config";
 import resolveConfig from "tailwindcss/resolveConfig";
 import SearchIcon from "@mui/icons-material/Search";
-import {
-  clearMapPreview,
-  setGeosearchSelection,
-  setShowFilter,
-} from "@/store/slices/uiSlice";
-import {
-  Box,
-  SvgIcon,
-  CircularProgress,
-  Fade,
-  Collapse,
-  Alert,
-  Button,
-} from "@mui/material";
+import { setShowFilter } from "@/store/slices/uiSlice";
+import { Box, SvgIcon, CircularProgress, Fade, Collapse, Alert, Button } from "@mui/material";
 import FilterAltIcon from "@mui/icons-material/FilterAlt";
 import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline";
 import React from "react";
@@ -32,11 +20,8 @@ import {
 import ThemeIcons from "../helper/themeIcons";
 import { EventType } from "@/lib/event";
 import { usePlausible } from "next-plausible";
-import {
-  clearError,
-  reloadAiSearchFromUrl,
-  setAISearch,
-} from "@/store/slices/searchSlice";
+import { clearError, reloadAiSearchFromUrl, setAISearch } from "@/store/slices/searchSlice";
+import { setGeocodeFeature } from "@/store/slices/mapSlice";
 
 interface Props {
   schema: any;
@@ -201,8 +186,7 @@ const ResultsPanel = (props: Props): JSX.Element => {
   };
 
   const handleClearFilters = async () => {
-    dispatch(clearMapPreview());
-    dispatch(setGeosearchSelection(null));
+    dispatch(setGeocodeFeature(null))
     setIsResetting(true);
     await resetFilters(store);
     setTimeout(() => {

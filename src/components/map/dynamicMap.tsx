@@ -1,32 +1,76 @@
 "use client";
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { setBbox } from "@/store/slices/searchSlice";
-import { clearMapPreview, setGeosearchSelection } from "@/store/slices/uiSlice";
+import {
+  setSearchBbox,
+  setEnableMapBboxFilter,
+} from "@/store/slices/searchSlice";
+import {
+  setShowBboxFilter,
+  setOverlayIds,
+  setGeocodeFeature,
+} from "@/store/slices/mapSlice";
+import LocationOnIcon from "@mui/icons-material/LocationOn";
+import CloseIcon from "@mui/icons-material/Close";
 import { AppDispatch, RootState } from "@/store";
 import maplibregl, {
-    LngLatBoundsLike,
-    FilterSpecification,
-    GeoJSONSource,
-    Map,
-    NavigationControl,
-    Popup,
-    ScaleControl,
+  LngLatBoundsLike,
+  FilterSpecification,
+  GeoJSONSource,
+  Map,
+  NavigationControl,
+  Popup,
+  ScaleControl,
 } from "maplibre-gl";
 import { Protocol } from "pmtiles";
+import AddIcon from "@mui/icons-material/Add";
 import "maplibre-gl/dist/maplibre-gl.css";
 
 import * as turf from "@turf/turf";
 
-import { GeocodingControl } from "@maptiler/geocoding-control/maplibregl";
-import "@maptiler/geocoding-control/style.css";
+import { usePlausible } from "next-plausible";
 
-import {EventType} from "@/lib/event";
-import {usePlausible} from "next-plausible";
+import {
+  overlayRegistry,
+  makePreviewLyrs,
+  previewSources,
+} from "./helper/layers";
+import GeocodeControl from "./geocodeControl";
+import AssetPopupComponent from "./AssetPopupComponent";
+import { config, geocoding } from "@maptiler/client";
+import { createRoot, Root } from "react-dom/client";
 
-import { overlayRegistry, makePreviewLyrs, previewSources } from "./helper/layers";
+import resolveConfig from "tailwindcss/resolveConfig";
+import tailwindConfig from "tailwind.config.js";
+const fullConfig = resolveConfig(tailwindConfig);
 
 const apiKey = process.env.NEXT_PUBLIC_MAPTILER_API_KEY;
+
+const LABEL_LAYER_PATTERNS = [
+  "place_country",
+  "place_state",
+  "place_region",
+  "place_province",
+  "place_city",
+  "place_town",
+  "place_village",
+  "place_hamlet",
+  "place_suburb",
+  "place_neighbourhood",
+  "place_locality",
+  "place_other",
+  "State labels",
+  "Country labels",
+  "City labels",
+  "Place labels",
+];
+
+const US_BOUNDS = {
+  minLng: -125.0,
+  maxLng: -66.0,
+  minLat: 24.0,
+  maxLat: 50.0,
+};
 
 interface Props {
   initialBounds: LngLatBoundsLike;
@@ -35,15 +79,32 @@ interface Props {
 export default function DynamicMap(props: Props): JSX.Element {
   const dispatch = useDispatch<AppDispatch>();
   const plausible = usePlausible();
-  const { bbox, visOverlays } = useSelector((state: RootState) => state.search);
-  const { mapPreview, geosearchSelection} = useSelector((state: RootState) => state.ui);
+
+  const { geocodeFeature, overlayIds, previewLyrs, showBboxFilter } =
+    useSelector((state: RootState) => state.map);
+  const { enableMapBboxFilter } = useSelector(
+    (state: RootState) => state.search
+  );
+
   const [popup, setPopup] = useState(null);
   const [popupInfo, setPopupInfo] = useState(null);
+  const popupRootRef = useRef<Root | null>(null);
+  const popupContainerRef = useRef<HTMLDivElement | null>(null);
+  const styleInjectedRef = useRef(false);
   const [mapLoaded, setMapLoaded] = useState(false);
+  const [bboxFilterLabel, setBboxFilterLabel] = useState("");
+  const [bboxStale, setBboxStale] = useState(false); // whether the current bbox results are stale or fresh
+  const suppressStaleUntilRef = useRef(0); // timestamp to prevent moveend from immediately marking stale (such as programmetic moves)
+  const enableMapBboxFilterRef = useRef(enableMapBboxFilter); // keep a ref version of the enableMapBboxFilter for use in callbacks
+  enableMapBboxFilterRef.current = enableMapBboxFilter;
+  const pendingGeocodeRef = useRef<{
+    label: string;
+    bbox: number[];
+    geometry: any;
+  } | null>(null);
 
-  const mapDivRef = useRef(null)
-  const mapRef = useRef(null)
-  const gcRef = useRef(null)
+  const mapDivRef = useRef(null);
+  const mapRef = useRef(null);
 
   // create ability to load pmtiles layers
   useEffect(() => {
@@ -52,27 +113,86 @@ export default function DynamicMap(props: Props): JSX.Element {
     return () => {
       maplibregl.removeProtocol("pmtiles");
     };
+  });
+
+  function getCurrentMapBbox() {
+    const bounds = mapRef.current.getBounds();
+    const newBbox: [number, number, number, number] = [
+      Math.round(bounds._sw.lng * 1000) / 1000,
+      Math.round(bounds._sw.lat * 1000) / 1000,
+      Math.round(bounds._ne.lng * 1000) / 1000,
+      Math.round(bounds._ne.lat * 1000) / 1000,
+    ];
+    return newBbox;
+  }
+
+  /* Changed logic in #44: check to see if user has moved the map or not since the last search.
+  zoom/pan moveend handler to mark bbox as stale and no result update yet
+  */
+  const markBboxStale = useCallback(() => {
+    if (Date.now() < suppressStaleUntilRef.current) return;
+    setBboxStale(true);
+    setBboxFilterLabel("Show results in this area");
   }, []);
 
-  const overlayLayerIds = []
-  Object.keys(overlayRegistry).forEach(key => {
-    overlayRegistry[key].layers.forEach(layer => {
-      overlayLayerIds.push(layer.spec.id)
-    })
-  })
+  const handleSearchWithinMap = () => {
+    if (!mapLoaded) return;
+    if (enableMapBboxFilter) {
+      mapRef.current.on("moveend", markBboxStale);
+    } else {
+      mapRef.current.off("moveend", markBboxStale);
+    }
+  };
+  useEffect(handleSearchWithinMap, [
+    mapLoaded,
+    enableMapBboxFilter,
+    markBboxStale,
+  ]);
 
-  const setBboxOnMoveEnd = useCallback( () => {
-      const bounds = mapRef.current.getBounds();
-      const newBbox: [number, number, number, number] = [
-        Math.round(bounds._sw.lng * 1000) / 1000,
-        Math.round(bounds._sw.lat * 1000) / 1000,
-        Math.round(bounds._ne.lng * 1000) / 1000,
-        Math.round(bounds._ne.lat * 1000) / 1000,
-      ];
-      dispatch(setBbox(newBbox));
-    }, [dispatch]);
+  const handleBboxFilterLabel = () => {
+    if (!enableMapBboxFilter) {
+      setBboxFilterLabel("Show results in this area");
+      setBboxStale(false);
+    }
+  };
+  useEffect(handleBboxFilterLabel, [enableMapBboxFilter]);
 
-  useEffect(() => {
+  /*  When the move moveend happens, mark the markBboxStale and change the button label with NO search happens.
+  Then for the BbboxFilterButton:
+  Filter on + results fresh (!bboxStale) → acts as "Clear", turns everything off
+  Filter on + results stale (bboxStale) → re-searches with the current viewport
+  Filter off → enables filter, searches current viewport
+  */
+  const handleBboxFilterButton = () => {
+    if (!mapLoaded) return;
+    if (enableMapBboxFilter && !bboxStale) {
+      dispatch(setEnableMapBboxFilter(false));
+      dispatch(setSearchBbox(null));
+      setBboxStale(false);
+      return;
+    }
+    suppressStaleUntilRef.current = Date.now() + 1000; // prevent immediate stale marking
+    if (!enableMapBboxFilter) {
+      dispatch(setEnableMapBboxFilter(true));
+    }
+    dispatch(setSearchBbox(getCurrentMapBbox()));
+    setBboxStale(false);
+    setBboxFilterLabel("Showing results in this area");
+    if (pendingGeocodeRef.current) {
+      dispatch(setGeocodeFeature(pendingGeocodeRef.current));
+      pendingGeocodeRef.current = null;
+    }
+  };
+
+  const handleBboxFilterToggle = () => {
+    if (!mapLoaded) return;
+    if (!enableMapBboxFilter) {
+      dispatch(setSearchBbox(null));
+    }
+  };
+  useEffect(handleBboxFilterToggle, [dispatch, mapLoaded, enableMapBboxFilter]);
+
+  const handlePreviewIds = () => {
     if (!mapLoaded) return;
     const map = mapRef.current;
     map.getStyle().layers.map((lyr) => {
@@ -88,12 +208,10 @@ export default function DynamicMap(props: Props): JSX.Element {
       "150": "bg-2018",
       "860": "zcta-2018",
     };
-    mapPreview.map((previewLyr) => {
+
+    previewLyrs.map((previewLyr) => {
       // Just look at first id here (we shouldn't see minus mixed with non-minus)
       const firstId = previewLyr.filterIds[0];
-      const source = firstId.startsWith("-")
-        ? lookup[firstId.slice(1, 4)]
-        : lookup[firstId.slice(0, 3)];
       const operator = firstId.startsWith("-") ? "all" : "any";
       let clauses: FilterSpecification[] = [];
       previewLyr.filterIds.forEach((id: string) => {
@@ -130,6 +248,10 @@ export default function DynamicMap(props: Props): JSX.Element {
 
       const expression = [operator, ...clauses];
 
+      const source = firstId.startsWith("-")
+        ? lookup[firstId.slice(1, 4)]
+        : lookup[firstId.slice(0, 3)];
+
       const previewLyrs = makePreviewLyrs(
         previewLyr.lyrId,
         source,
@@ -139,9 +261,13 @@ export default function DynamicMap(props: Props): JSX.Element {
       // determine where in the layer stack to add the preview layers.
       // they must be before any overlay clusters for the best presentation.
       // get list of all currently visible overlay ids
-      const currentOverlayLayerIds = visOverlays.map(overlayName => {
-        return overlayRegistry[overlayName].layers.map(layer => layer.spec.id)
-      }).flat()
+      const currentOverlayLayerIds = overlayIds
+        .map((overlayName) => {
+          return overlayRegistry[overlayName].layers.map(
+            (layer) => layer.spec.id
+          );
+        })
+        .flat();
 
       // find the first overlay id in the overall list of map layers.
       // if no overlays, this will be undefined.
@@ -157,103 +283,157 @@ export default function DynamicMap(props: Props): JSX.Element {
         map.addLayer(lyr, addBefore);
       });
     });
-  }, [mapPreview, mapLoaded, visOverlays]);
+  };
+  useEffect(handlePreviewIds, [mapLoaded, previewLyrs, overlayIds]);
 
-  useEffect(() => {
+  const handleOverlayInteraction = () => {
     if (!mapLoaded) return;
+
     const map = mapRef.current;
     const mapLyrIds = map.getStyle().layers.map((lyr) => lyr.id);
 
-    visOverlays.forEach((lyr) => {
+    overlayIds.forEach((lyr) => {
       if (overlayRegistry[lyr]) {
         overlayRegistry[lyr].layers.forEach((lyrDef) => {
           if (!mapLyrIds.includes(lyrDef.spec.id)) {
             map.addLayer(lyrDef.spec, lyrDef.addBefore);
 
             // Change the cursor to a pointer when the mouse is over this layer.
-            map.on('mouseenter', lyrDef.spec.id, () => {
-                map.getCanvas().style.cursor = 'pointer';
+            map.on("mouseenter", lyrDef.spec.id, () => {
+              map.getCanvas().style.cursor = "pointer";
             });
 
             // Change it back to a default style when it leaves.
-            map.on('mouseleave', lyrDef.spec.id, () => {
-                map.getCanvas().style.cursor = 'default';
+            map.on("mouseleave", lyrDef.spec.id, () => {
+              map.getCanvas().style.cursor = "default";
             });
 
             // set the click handling for the cluster layer
-            if(lyrDef.spec.id.endsWith("-clusters")) {
-              map.on('click', lyrDef.spec.id, async (e) => {
+            if (lyrDef.spec.id.endsWith("-clusters")) {
+              map.on("click", lyrDef.spec.id, async (e) => {
                 const features = map.queryRenderedFeatures(e.point, {
-                    layers: [lyrDef.spec.id]
+                  layers: [lyrDef.spec.id],
                 });
                 map.easeTo({
-                    center: features[0].toJSON().geometry.coordinates,
-                    zoom: map.getZoom() + 1
+                  center: features[0].toJSON().geometry.coordinates,
+                  zoom: map.getZoom() + 1,
                 });
-              })
+              });
             }
             // set the click handling for the non-clustered or label layer, this sets the pop content
-            else if (!lyrDef.spec.id.includes("-clustered") && !lyrDef.spec.id.includes("-cluster-count")) {
-              map.on('click', lyrDef.spec.id, async (e) => {
+            else if (
+              !lyrDef.spec.id.includes("-clustered") &&
+              !lyrDef.spec.id.includes("-cluster-count")
+            ) {
+              map.on("click", lyrDef.spec.id, async (e) => {
                 const features = map.queryRenderedFeatures(e.point, {
-                    layers: [lyrDef.spec.id]
+                  layers: [lyrDef.spec.id],
                 });
+                const props = features[0].properties || {};
                 setPopupInfo({
                   longitude: features[0].geometry["coordinates"][0],
                   latitude: features[0].geometry["coordinates"][1],
-                  content: `<ul style="font-family:Nunito;">${Object.keys(features[0].properties).map(key => `<li><strong>${key}:</strong> ${features[0].properties[key]}</li>`).join("")}</ul>`,
-                })
-              })
+                  props: props,
+                  overlayKey: lyr,
+                });
+              });
             }
           }
-        })
+        });
       }
     });
-
     for (const [key, data] of Object.entries(overlayRegistry)) {
       data.layers.forEach((lyrDef) => {
-        if (
-          mapLyrIds.includes(lyrDef.spec.id) &&
-          !visOverlays.includes(key)
-        ) {
+        if (mapLyrIds.includes(lyrDef.spec.id) && !overlayIds.includes(key)) {
           map.removeLayer(lyrDef.spec.id);
         }
-      })
+      });
     }
-  }, [visOverlays, mapLoaded]);
+  };
+  useEffect(handleOverlayInteraction, [overlayIds, mapLoaded]);
 
-  useEffect(() => {
+  const handlePopup = () => {
     if (!mapRef.current) return;
     if (!popup) {
-        const popupInstance = new Popup({
-            closeButton: false,
-            className: 'text-base'
-        });
-        popupInstance.addTo(mapRef.current);
-        setPopup(popupInstance);
-        return
+      const popupInstance = new Popup({
+        closeButton: false,
+        className: "asset-popup",
+        offset: 15,
+        anchor: "bottom",
+      });
+      if (!styleInjectedRef.current) {
+        const style = document.createElement("style");
+        style.id = "asset-popup-styles";
+        style.innerHTML = `
+          .asset-popup { z-index: 99999 !important; }
+          .asset-popup .maplibregl-popup-content { background: transparent !important; padding: 0 !important; box-shadow: none !important; }
+          .asset-popup .maplibregl-popup-tip { border-top-color: white !important; border-bottom-color: white !important; }
+        `;
+        document.head.appendChild(style);
+        styleInjectedRef.current = true;
+      }
+      popupInstance.addTo(mapRef.current);
+      setPopup(popupInstance);
+      return;
     }
     if (popupInfo) {
-        popup.setLngLat([popupInfo.longitude, popupInfo.latitude])
-            .setHTML(popupInfo.content);
-        popup.addTo(mapRef.current);
+      if (popupRootRef.current) {
+        popupRootRef.current.unmount();
+        popupRootRef.current = null;
+        popupContainerRef.current = null;
+      }
+      const container = document.createElement("div");
+      popupContainerRef.current = container;
+      const root = createRoot(container);
+      popupRootRef.current = root;
+      const overlayKey = popupInfo.overlayKey;
+      const overlayMeta = overlayRegistry[overlayKey] || {};
+      root.render(
+        <AssetPopupComponent
+          props={popupInfo.props}
+          overlayKey={overlayKey}
+          overlayColor={overlayMeta.mainColor}
+          overlayDescription={overlayMeta.description}
+          fullConfig={fullConfig}
+        />
+      );
+      popup
+        .setLngLat([popupInfo.longitude, popupInfo.latitude])
+        .setDOMContent(container);
+      popup.addTo(mapRef.current);
     } else {
-        popup.remove();
+      if (popupRootRef.current) {
+        popupRootRef.current.unmount();
+        popupRootRef.current = null;
+      }
+      if (popup) popup.remove();
     }
-  }, [popupInfo, popup]);
+  };
+  useEffect(handlePopup, [popupInfo, popup]);
 
-  const handleGeoSearchSelection = useCallback(
-    (e) => {
-      dispatch(clearMapPreview());
-      const highlightSource = mapRef.current.getSource(
-        "geoSearchHighlight"
-      ) as GeoJSONSource;
+  useEffect(() => {
+    if (popupInfo && !overlayIds.includes(popupInfo.overlayKey)) {
+      setPopupInfo(null);
+    }
+  }, [overlayIds, popupInfo]);
+
+  const handleGeocodeFeatureDisplay = () => {
+    if (!mapLoaded) return;
+
+    const highlightSource = mapRef.current.getSource(
+      "geoSearchHighlight"
+    ) as GeoJSONSource;
+
+    // start by clearing the highlight source data
+    highlightSource.setData({ type: "FeatureCollection", features: [] });
+
+    // add an inverted boundary if the geocode feature has a polygon
+    if (geocodeFeature) {
       if (
-        e.feature &&
-        (e.feature.geometry.type == "MultiPolygon" ||
-          e.feature.geometry.type == "Polygon")
+        geocodeFeature.geometry["type"] == "MultiPolygon" ||
+        geocodeFeature.geometry["type"] == "Polygon"
       ) {
-        let feat = turf.feature(e.feature.geometry);
+        let feat = turf.feature(geocodeFeature.geometry);
         let diffGeom = turf.difference(
           turf.featureCollection([
             turf.polygon([
@@ -269,153 +449,423 @@ export default function DynamicMap(props: Props): JSX.Element {
           ])
         );
         highlightSource.setData(diffGeom);
-      } else {
-        highlightSource.setData({ type: "FeatureCollection", features: [] });
       }
-      if (e.feature) {
-        dispatch(setGeosearchSelection(e.feature.text_en));
-        mapRef.current.on("moveend", setBboxOnMoveEnd);
-      } else {
-        dispatch(setGeosearchSelection(null));
-        mapRef.current.off("moveend", setBboxOnMoveEnd);
-        dispatch(setBbox(null));
-      };
+    }
+  };
+  useEffect(handleGeocodeFeatureDisplay, [geocodeFeature, mapLoaded]);
 
-      if (e?.feature?.properties) {
-        plausible(EventType.SubmittedLocationSearch, {
-          props: {
-            ...e.feature.properties
-          }
+  // zoom to geocode feature when it changes, button appears but no search
+  const handleGeocodeFeatureZoom = () => {
+    if (!mapLoaded) return;
+    if (geocodeFeature) {
+      suppressStaleUntilRef.current = Date.now() + 1000; // prevent immediate stale marking
+      dispatch(setShowBboxFilter(true));
+      if (!enableMapBboxFilterRef.current) {
+        setBboxFilterLabel("Show results in this area");
+        setBboxStale(true);
+      }
+      mapRef.current.fitBounds(geocodeFeature.bbox, { padding: 40 });
+      dispatch(setEnableMapBboxFilter(true));
+    } else {
+      mapRef.current.fitBounds(props.initialBounds, { padding: 40 });
+      dispatch(setShowBboxFilter(false));
+      dispatch(setEnableMapBboxFilter(false));
+      setTimeout(() => {
+        mapRef.current.once("moveend", () => {
+          dispatch(setShowBboxFilter(true));
         });
+      }, 5000);
+    }
+  };
+  // don't include props.initialBounds here because it causes unwanted re-zooming
+  useEffect(handleGeocodeFeatureZoom, [dispatch, geocodeFeature, mapLoaded]);
+
+  const isPointWithinUS = useCallback((lng: number, lat: number) => {
+    return (
+      lng >= US_BOUNDS.minLng &&
+      lng <= US_BOUNDS.maxLng &&
+      lat >= US_BOUNDS.minLat &&
+      lat <= US_BOUNDS.maxLat
+    );
+  }, []);
+
+  const handleMapLabelClick = useCallback(
+    async (placeName: string, clickLngLat: { lng: number; lat: number }) => {
+      if (!placeName || !mapRef.current) return;
+
+      if (!isPointWithinUS(clickLngLat.lng, clickLngLat.lat)) return;
+
+      config.apiKey = apiKey;
+
+      try {
+        const result = await geocoding.forward(placeName, {
+          country: ["us"],
+          types: [
+            "country",
+            "region",
+            "subregion",
+            "county",
+            "municipality",
+            "municipal_district",
+            "locality",
+          ],
+          proximity: [clickLngLat.lng, clickLngLat.lat],
+          limit: 1,
+        });
+
+        if (result.features && result.features.length > 0) {
+          const feature = result.features[0];
+          if (feature.bbox) {
+            mapRef.current.fitBounds(feature.bbox as LngLatBoundsLike, {
+              padding: 40,
+            });
+            // Map label click → stores geocode, waits for button click in handleBboxFilterButton without search yet
+            pendingGeocodeRef.current = {
+              label: feature.place_name,
+              bbox: feature.bbox,
+              geometry: feature.geometry,
+            };
+            dispatch(setShowBboxFilter(true));
+          }
+        }
+      } catch (error) {
+        console.error("Error geocoding label click:", error);
       }
     },
-    [dispatch, plausible, setBboxOnMoveEnd]
+    [dispatch, isPointWithinUS]
   );
 
-   const addOverlaySources = useCallback(() => {
-        for (const [key, data] of Object.entries(overlayRegistry)) {
-            mapRef.current.addSource(data.source.id, overlayRegistry[key].source.spec);
-        }
-   }, []);
+  const initMap = () => {
+    if (mapRef.current) return; // stops map from intializing more than once
 
-   const addPreviewSources = useCallback(() => {
-        previewSources.map((src) => {
-            mapRef.current.addSource(src.id, src.spec);
-        })
-   }, []);
+    mapRef.current = new Map({
+      container: mapDivRef.current,
+      style: `https://api.maptiler.com/maps/3d4a663a-95c3-42d0-9ee6-6a4cce2ba220/style.json?key=${apiKey}`,
+      bounds: props.initialBounds,
+      attributionControl: { compact: true },
+      dragRotate: false,
+      touchPitch: false,
+      touchZoomRotate: false,
+    });
 
-   const initializeGeocodeControl = useCallback(() => {
-        const map = mapRef.current;
-        const gc = new GeocodingControl({
-            apiKey: apiKey,
-            country: "us",
-            types: ["region", "county", "postal_code", "municipality", "municipal_district", "joint_municipality", "joint_submunicipality", "locality", "neighbourhood"],
-            marker: false,
-            markerOnSelected: false,
-            showResultMarkers: false,
-            fullGeometryStyle: null,
-            selectFirst: true,
-            placeholder: "Filter by state, county, city, or zip",
-            noResultsMessage: "No matching locations found...",
-            class: "geosearch-control",
-        });
-        gc.on('pick', handleGeoSearchSelection)
+    const nav = new NavigationControl({
+      showCompass: false,
+    });
+    mapRef.current.addControl(nav);
 
-        map.addControl(gc, 'top-left')
+    const scale = new ScaleControl({
+      maxWidth: 80,
+      unit: "imperial",
+    });
+    mapRef.current.addControl(scale);
 
-        map.addSource("geoSearchHighlight", { type: "geojson", data: null });
-        map.addLayer({
+    mapRef.current.getCanvas().style.cursor = "default";
+
+    // final callback to be run after the map element has been fully loaded.
+    mapRef.current.on("load", () => {
+      // add sources and layers to the map to be used to display geocode selection
+      mapRef.current.addSource("geoSearchHighlight", {
+        type: "geojson",
+        data: null,
+      });
+      mapRef.current.addLayer({
         id: "geoSearchHighlightLyr-fill",
         type: "fill",
         source: "geoSearchHighlight",
         paint: {
-            "fill-color": "#000",
-            "fill-opacity": 0.1,
+          "fill-color": "#000",
+          "fill-opacity": 0.1,
         },
-        });
-        map.addLayer({
+      });
+      mapRef.current.addLayer({
         id: "geoSearchHighlightLyr-line",
         type: "line",
         source: "geoSearchHighlight",
         paint: {
-            "line-width": ["case", ["==", ["geometry-type"], "Polygon"], 2, 3],
-            "line-dasharray": [1, 1],
-            "line-color": "#FF9C77",
+          "line-width": ["case", ["==", ["geometry-type"], "Polygon"], 2, 3],
+          "line-dasharray": [1, 1],
+          "line-color": "#FF9C77",
         },
+      });
+
+      // add all community asset overlay sources to the map
+      for (const [key, data] of Object.entries(overlayRegistry)) {
+        mapRef.current.addSource(
+          data.source.id,
+          overlayRegistry[key].source.spec
+        );
+      }
+
+      // add all preview sources to the map
+      previewSources.map((src) => {
+        mapRef.current.addSource(src.id, src.spec);
+      });
+
+      // change the border color and text color of the scale control
+      const scaleControlEl = document.getElementsByClassName(
+        "maplibregl-ctrl-scale"
+      )[0];
+      if (scaleControlEl) {
+        (scaleControlEl as HTMLElement).style.borderColor = "#AAAAAA";
+        (scaleControlEl as HTMLElement).style.color = "#444444";
+        (scaleControlEl as HTMLElement).style.fontFamily = "Nunito, sans-serif";
+      }
+
+      // change the icon that zoom control uses addIcon and minusIcon
+      const zoomInButton = document
+        .getElementsByClassName("maplibregl-ctrl-zoom-in")[0]
+        ?.getElementsByClassName("maplibregl-ctrl-icon")[0];
+      const zoomOutButton = document
+        .getElementsByClassName("maplibregl-ctrl-zoom-out")[0]
+        ?.getElementsByClassName("maplibregl-ctrl-icon")[0];
+      if (zoomInButton && zoomOutButton) {
+        const zoomIconColor = "#AAAAAA";
+        const zoomIconSvg = (path: string) =>
+          `url("data:image/svg+xml,${encodeURIComponent(
+            `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="${zoomIconColor}" d="${path}"/></svg>`
+          )}")`;
+        const zoomInEl = zoomInButton as HTMLElement;
+        const zoomOutEl = zoomOutButton as HTMLElement;
+        zoomInEl.style.backgroundSize = "1rem 1rem";
+        zoomOutEl.style.backgroundSize = "1rem 1rem";
+        zoomInEl.style.backgroundRepeat = "no-repeat";
+        zoomOutEl.style.backgroundRepeat = "no-repeat";
+        zoomInEl.style.backgroundPosition = "center";
+        zoomOutEl.style.backgroundPosition = "center";
+        zoomInEl.style.backgroundImage = zoomIconSvg(
+          "M19 13H13V19H11V13H5V11H11V5H13V11H19V13Z"
+        );
+        zoomOutEl.style.backgroundImage = zoomIconSvg("M19 13H5V11H19V13Z");
+      }
+
+      // force the attribution control to use compact mode after initial load
+      const attributionControlEl = document.getElementsByClassName(
+        "maplibregl-ctrl-attrib-button"
+      )[0];
+      if (attributionControlEl) {
+        const attribBtn = attributionControlEl as HTMLElement;
+        attribBtn.style.backgroundImage = "url('/icons/map_info.svg')";
+        attribBtn.style.backgroundRepeat = "no-repeat";
+        attribBtn.style.backgroundPosition = "center";
+        attribBtn.style.visibility = "visible";
+        const attribEl = attribBtn.closest(
+          ".maplibregl-ctrl-attrib"
+        ) as HTMLElement | null;
+        if (attribEl) {
+          attribEl.classList.add("maplibregl-compact");
+          attribEl.classList.remove("maplibregl-compact-show");
+          try {
+            (attribEl as HTMLDetailsElement).open = false;
+          } catch (e) {}
+          attribEl.removeAttribute("open");
+        }
+      }
+
+      const styleLayers = mapRef.current.getStyle().layers;
+      const labelLayerIds = styleLayers
+        .filter((layer) => {
+          if (layer.type !== "symbol") return false;
+          const layerId = layer.id.toLowerCase();
+          return LABEL_LAYER_PATTERNS.some((pattern) =>
+            layerId.includes(pattern.toLowerCase())
+          );
+        })
+        .map((layer) => layer.id);
+
+      mapRef.current.on("click", (e) => {
+        if (labelLayerIds.length === 0) return;
+
+        const features = mapRef.current.queryRenderedFeatures(e.point, {
+          layers: labelLayerIds,
         });
 
-        gcRef.current = gc;
-   }, [handleGeoSearchSelection])
-
-   // add hook that responds to a clearing of the geosearchSelection state,
-   // and clears the geocode control input and map
-   useEffect(() => {
-        if (gcRef.current && !geosearchSelection) {
-            gcRef.current.clearMap()
-            mapRef.current.fitBounds(props.initialBounds)
-            gcRef.current.setOptions({apiKey:apiKey, clearOnBlur:true});
-            setTimeout(() => {
-                gcRef.current.focus()
-                gcRef.current.blur()
-                gcRef.current.setOptions({apiKey:apiKey, clearOnBlur:false});
-            }, 1000);
+        if (features.length > 0) {
+          const feature = features[0];
+          const placeName =
+            feature.properties?.name ||
+            feature.properties?.name_en ||
+            feature.properties?.["name:en"];
+          if (placeName) {
+            handleMapLabelClick(placeName, {
+              lng: e.lngLat.lng,
+              lat: e.lngLat.lat,
+            });
+          }
         }
-        // Code linter wants props.initialBounds to be included in dependency array, but this causes
-        // a max recursion depth error. Leaving it out for now...
-   }, [geosearchSelection])
+      });
 
-   const handleMapLoad = useCallback(() => {
-        initializeGeocodeControl();
-        addOverlaySources();
-        addPreviewSources();
-        setMapLoaded(true);
-   }, [initializeGeocodeControl, addOverlaySources, addPreviewSources])
+      labelLayerIds.forEach((layerId) => {
+        mapRef.current.on("mouseenter", layerId, (e) => {
+          if (isPointWithinUS(e.lngLat.lng, e.lngLat.lat)) {
+            mapRef.current.getCanvas().style.cursor = "pointer";
+          }
+        });
+        mapRef.current.on("mousemove", layerId, (e) => {
+          if (isPointWithinUS(e.lngLat.lng, e.lngLat.lat)) {
+            mapRef.current.getCanvas().style.cursor = "pointer";
+          } else {
+            mapRef.current.getCanvas().style.cursor = "default";
+          }
+        });
+        mapRef.current.on("mouseleave", layerId, () => {
+          mapRef.current.getCanvas().style.cursor = "default";
+        });
+      });
 
-  useEffect(() => {
-    if (mapRef.current) return; // stops map from intializing more than once
-
-    mapRef.current = new Map({
-        container: mapDivRef.current,
-        style: `https://api.maptiler.com/maps/3d4a663a-95c3-42d0-9ee6-6a4cce2ba220/style.json?key=${apiKey}`,
-        bounds: props.initialBounds,
-        dragRotate: false,
-        touchPitch: false,
-        touchZoomRotate: false,
-    })
-
-    const nav = new NavigationControl({
-        showCompass: false
+      // finally set the map loaded state to true to enable other map interactions
+      setMapLoaded(true);
     });
-    mapRef.current.addControl(nav)
-    const scale = new ScaleControl({
-        maxWidth: 80,
-        unit: 'imperial'
-    });
-    mapRef.current.addControl(scale);
-
-    mapRef.current.getCanvas().style.cursor = 'default';
-
-    // final callback to be run after the map element has been fully loaded.
-    mapRef.current.on('load', () => {
-        initializeGeocodeControl();
-        addOverlaySources();
-        addPreviewSources();
-        setMapLoaded(true);
-    })
-
-  }, [props.initialBounds, handleMapLoad, setBboxOnMoveEnd, initializeGeocodeControl, addOverlaySources, addPreviewSources])
+  };
+  useEffect(initMap, [
+    props.initialBounds,
+    handleMapLabelClick,
+    isPointWithinUS,
+  ]);
 
   return (
-    <div ref={mapDivRef} style={{ width: "100%", height: "100%" }}>
-        {bbox && mapLoaded && (
-            <div
-            className={`z-1000 mt-[54px] ml-[10px] text-almostblack s py-1 px-2 rounded relative font-sans text-sm bg-white bg-opacity-75 inline-flex`}
+    <>
+      {overlayIds.length > 0 && (
+        <div style={{ marginBottom: ".5em" }}>
+          <div
+            style={{
+              display: "flex",
+              gap: "0.5em",
+              alignItems: "center",
+              flexWrap: "wrap",
+            }}
+          >
+            <span style={{ marginRight: ".25em" }}>Showing:</span>
+            {overlayIds.map((id, index) => {
+              return (
+                <div
+                  key={index}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: ".5em",
+                    padding: ".35em .6em",
+                    borderRadius: "0.5rem",
+                    background: "white",
+                    border: `1px solid ${fullConfig.theme.colors["salmonpink"]}`,
+                    fontFamily: fullConfig.theme.fontFamily["sans"],
+                    fontSize: ".9em",
+                  }}
+                >
+                  <svg
+                    height="14"
+                    width="14"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <circle
+                      r="6"
+                      cx="7"
+                      cy="7"
+                      fill={overlayRegistry[id].mainColor}
+                    />
+                  </svg>
+                  <span>{id}</span>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      dispatch(
+                        setOverlayIds(overlayIds.filter((k) => k !== id))
+                      )
+                    }
+                    className="flex items-center justify-center p-1 hover:bg-lightviolet rounded-full transition-colors"
+                  >
+                    <CloseIcon
+                      sx={{
+                        height: "20px",
+                        width: "20px",
+                        color: fullConfig.theme.colors["frenchviolet"],
+                      }}
+                    />
+                  </button>
+                </div>
+              );
+            })}
+            <button
+              style={{
+                color: fullConfig.theme.colors["frenchviolet"],
+                fontWeight: "800",
+                background: "transparent",
+                border: "none",
+                cursor: "pointer",
+              }}
+              onClick={() => {
+                dispatch(setOverlayIds([]));
+              }}
             >
-                <span>
-                    results filtered by current map extent
-                </span>
+              Clear all
+            </button>
+          </div>
+        </div>
+      )}
+      <div
+        style={{
+          width: "100%",
+          height: overlayIds.length > 0 ? "calc(100% - 2.5em)" : "100%",
+          position: "relative",
+        }}
+      >
+        <div ref={mapDivRef} style={{ width: "100%", height: "100%" }}>
+          {mapLoaded && (
+            <div style={{ marginTop: "1em", marginLeft: "1em" }}>
+              <GeocodeControl
+                apiKey={apiKey}
+                onClear={() => {
+                  setEnableMapBboxFilter(false);
+                }}
+              />
             </div>
+          )}
+        </div>
+        {showBboxFilter && (
+          <div
+            style={{
+              position: "absolute",
+              bottom: "2em",
+              left: "50%",
+              transform: "translateX(-50%)",
+              zIndex: 10,
+            }}
+          >
+            <button
+              style={{
+                background:
+                  enableMapBboxFilter && !bboxStale ? "white" : "#FFE5C4",
+                height: "fit-content",
+                padding: ".5em 1em",
+                borderRadius: "8px",
+                border: `1px solid ${fullConfig.theme.colors["salmonpink"]}`,
+              }}
+              onClick={handleBboxFilterButton}
+            >
+              <span>
+                <LocationOnIcon
+                  style={{
+                    verticalAlign: "middle",
+                    marginRight: ".2em",
+                    color: fullConfig.theme.colors["frenchviolet"],
+                  }}
+                />
+                {bboxFilterLabel}
+              </span>
+              {enableMapBboxFilter && !bboxStale && (
+                <span
+                  style={{
+                    marginLeft: "2em",
+                    fontWeight: "800",
+                    color: fullConfig.theme.colors["frenchviolet"],
+                  }}
+                >
+                  Clear
+                </span>
+              )}
+            </button>
+          </div>
         )}
-    </div>
+      </div>
+    </>
   );
 }

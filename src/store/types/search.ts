@@ -35,8 +35,8 @@ export interface SearchState {
   indexYear: string[];
 
   // map
-  visOverlays: string[];
-  bbox: [number, number, number, number] | null;
+  searchBbox: [number, number, number, number] | null;
+  enableMapBboxFilter: boolean;
 
   // status
   currentRequestId: string;
@@ -68,10 +68,11 @@ export const initialState: SearchState = {
     sortBy: null,
     sortOrder: null,
   },
-  bbox: null,
+  //map
+  searchBbox: null,
+  enableMapBboxFilter: false,
   subject: [],
   spatialResolution: [],
-  visOverlays: [],
   indexYear: [],
   spellCheck: "",
   originalQuery: "",

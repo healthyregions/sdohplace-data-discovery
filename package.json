@@ -54,7 +54,7 @@
     "@emotion/server": "^11.11.0",
     "@emotion/styled": "^11.11.0",
     "@heroicons/react": "2.0.13",
-    "@maptiler/geocoding-control": "^2.0.1",
+    "@maptiler/client": "^2.6.0",
     "@mui/core": "^5.0.0-alpha.54",
     "@mui/icons-material": "^5.15.7",
     "@mui/material": "^5.14.13",

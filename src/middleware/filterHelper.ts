@@ -10,7 +10,7 @@ export const hasActiveFilters = filterService.hasActiveFilters.bind(filterServic
 const selectSpatialResolution = (state: RootState) =>
   state.search.spatialResolution;
 const selectSubject = (state: RootState) => state.search.subject;
-const selectBbox = (state: RootState) => state.search.bbox;
+const selectBbox = (state: RootState) => state.search.searchBbox;
 const selectIndexYear = (state: RootState) => state.search.indexYear;
 
 export const getFilterState = createSelector(

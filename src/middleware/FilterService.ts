@@ -25,7 +25,7 @@ const getStateKeyFromAction = (actionType: string): string => {
 const selectSpatialResolution = (state: RootState) =>
   state.search.spatialResolution;
 const selectSubject = (state: RootState) => state.search.subject;
-const selectBbox = (state: RootState) => state.search.bbox;
+const selectBbox = (state: RootState) => state.search.searchBbox;
 const selectIndexYear = (state: RootState) => state.search.indexYear;
 
 export const getFilterState = createSelector(
@@ -95,12 +95,12 @@ export class FilterService {
         });
       });
     }
-    if (searchState.bbox) {
+    if (searchState.searchBbox) {
       let bboxValues: number[];
-      if (typeof searchState.bbox === "string") {
-        bboxValues = searchState.bbox.split(",").map(Number);
-      } else if (Array.isArray(searchState.bbox)) {
-        bboxValues = searchState.bbox.map(Number);
+      if (typeof searchState.searchBbox === "string") {
+        bboxValues = searchState.searchBbox.split(",").map(Number);
+      } else if (Array.isArray(searchState.searchBbox)) {
+        bboxValues = searchState.searchBbox.map(Number);
       }
       if (
         bboxValues &&

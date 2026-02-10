@@ -402,3 +402,7 @@ article table td {
 /* for some reason, this class is not built into tailwind CSS... */
 .before\:border-1:before{content:var(--tw-content);border-width:1px}
 
+.maplibregl-ctrl-attrib-button {
+  visibility: hidden;
+}
+
