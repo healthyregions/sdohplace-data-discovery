@@ -198,7 +198,7 @@ const MapPanelContent = (props: Props): JSX.Element => {
       </Box>
       <Box className="sm:my-[1.68em]">
         <div className="sm:mb-[1.5em] sm:flex-col">
-          <Box height="100%" className="sm:mt-[2em] sm:ml-[1.1em]">
+          <Box id="sdoh-learn-more" height="100%" className="sm:mt-[2em] sm:ml-[1.1em]">
             <Box className="text-2xl sm:mb-[0.6em]">
               Want to learn more about SDOH data?
             </Box>
