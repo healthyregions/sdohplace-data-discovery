@@ -22,8 +22,13 @@ const AIHintText: React.FC<AIHintTextProps> = ({ isMobile = false }) => {
         {!isMobile && (
           <>
             <br />
-            e.g. &quot;What impact does housing stability{" "}
-            <i>have on the health outcomes of low-income populations?</i>&quot;
+            e.g. &quot;
+            <i>
+              What impact does housing stability have on the health outcomes of
+              low-income populations?
+            </i>
+            {" "}
+            &quot;
           </>
         )}
       </p>
