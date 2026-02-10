@@ -25,10 +25,9 @@ NEXT_USE_NETLIFY_EDGE = "true"
 NODE_VERSION = "18"
 
 [dev]
-framework = "#static"
+framework = "next"
 targetPort = 3000
 port = 8888
-publish = "out"
 
 [[plugins]]
 package = "@netlify/plugin-nextjs"

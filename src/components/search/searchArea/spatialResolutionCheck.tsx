@@ -16,6 +16,7 @@ interface SpatialResolutionCheck {
 interface Props {
   src: SpatialResolutionCheck[];
   schema: any;
+  isMobile?: boolean;
 }
 const fullConfig = resolveConfig(tailwindConfig);
 
@@ -69,74 +70,92 @@ const SpatialResolutionCheck = (props: Props): JSX.Element => {
     });
   };
 
+  const checkboxSize = props.isMobile ? "18px" : "24px";
+  const checkmarkSize = props.isMobile ? "12px" : "16px";
+
+  const checkboxArray = Array.from(checkboxes);
+
+  const renderCheckbox = (checkbox: CheckBoxObject, index: number) => (
+    <div key={index} className={`flex items-center ${props.isMobile ? "mr-4" : ""}`}>
+      <Checkbox
+        id={`sr-checkbox-${index}`}
+        checked={checkbox.checked}
+        value={checkbox.value}
+        disabled={isSearching}
+        onChange={(event) =>
+          handleSelectionChange(checkbox.value, event.target.checked)
+        }
+        sx={{ padding: props.isMobile ? "4px" : "9px" }}
+        icon={
+          <span
+            style={{
+              borderRadius: "4px",
+              border: `2px solid ${fullConfig.theme.colors["frenchviolet"]}`,
+              width: checkboxSize,
+              height: checkboxSize,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              backgroundColor: "transparent",
+            }}
+          ></span>
+        }
+        checkedIcon={
+          <span
+            style={{
+              borderRadius: "4px",
+              border: `2px solid ${fullConfig.theme.colors["frenchviolet"]}`,
+              width: checkboxSize,
+              height: checkboxSize,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              backgroundColor: `${fullConfig.theme.colors["frenchviolet"]}`,
+            }}
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="white"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              style={{ width: checkmarkSize, height: checkmarkSize }}
+            >
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+          </span>
+        }
+      />
+      <div
+        className={`cursor-pointer select-none pl-1 pr-2 ${props.isMobile ? "text-sm" : "text-l"}`}
+        style={{ letterSpacing: 0.5 }}
+        onClick={() =>
+          !isSearching && handleSelectionChange(checkbox.value, !checkbox.checked)
+        }
+      >
+        {checkbox.displayName}
+      </div>
+    </div>
+  );
+
+  if (props.isMobile) {
+    return (
+      <div className="flex flex-col">
+        <div className="text-sm whitespace-nowrap mb-1">Filter by:</div>
+        <div className="flex flex-row flex-wrap">
+          {checkboxArray.map((checkbox, index) => renderCheckbox(checkbox, index))}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={`flex flex-col items-start ml-4`}>
-      <div className="text-sm whitespace-nowrap">Filter by:</div>
+      <div className="text-sm whitespace-nowrap ml-2">Filter by:</div>
       <div className="flex flex-col sm:flex-row flex-wrap">
-        {Array.from(checkboxes).map((checkbox, index) => (
-          <div key={index} className="flex items-center">
-            <Checkbox
-              id={`sr-checkbox-${index}`}
-              checked={checkbox.checked}
-              value={checkbox.value}
-              disabled={isSearching}
-              onChange={(event) =>
-                handleSelectionChange(checkbox.value, event.target.checked)
-              }
-              icon={
-                <span
-                  style={{
-                    borderRadius: "4px",
-                    border: `2px solid ${fullConfig.theme.colors["frenchviolet"]}`,
-                    width: "24px",
-                    height: "24px",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    backgroundColor: "transparent",
-                  }}
-                ></span>
-              }
-              checkedIcon={
-                <span
-                  style={{
-                    borderRadius: "4px",
-                    border: `2px solid ${fullConfig.theme.colors["frenchviolet"]}`,
-                    width: "24px",
-                    height: "24px",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    backgroundColor: `${fullConfig.theme.colors["frenchviolet"]}`,
-                  }}
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="white"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    style={{ width: "16px", height: "16px" }}
-                  >
-                    <polyline points="20 6 9 17 4 12" />
-                  </svg>
-                </span>
-              }
-            />
-
-            <div
-              className="text-l cursor-pointer select-none pl-1 pr-2"
-              style={{ letterSpacing: 0.5 }}
-              onClick={() =>
-                !isSearching && handleSelectionChange(checkbox.value, !checkbox.checked)
-              }
-            >
-              {checkbox.displayName}
-            </div>
-          </div>
-        ))}
+        {checkboxArray.map((checkbox, index) => renderCheckbox(checkbox, index))}
       </div>
     </div>
   );

@@ -23,9 +23,11 @@ import {
 import { CustomListbox } from "./searchUiComponents";
 import SearchInput from "./SearchInput";
 import AIThoughtsPanel from "./AIThoughtsPanel";
+import MobileSearchToggle from "./MobileSearchToggle";
 
 interface Props {
   schema: any;
+  isMobile?: boolean;
 }
 
 const fullConfig = resolveConfig(tailwindConfig);
@@ -107,7 +109,7 @@ const useStyles = makeStyles((theme) => ({
   },
 }));
 
-const EnhancedSearchBox = ({ schema }: Props): JSX.Element => {
+const EnhancedSearchBox = ({ schema, isMobile = false }: Props): JSX.Element => {
   const dispatch = useDispatch<AppDispatch>();
   const plausible = usePlausible();
   const textFieldRef = React.useRef<HTMLInputElement>(null);
@@ -409,9 +411,18 @@ const EnhancedSearchBox = ({ schema }: Props): JSX.Element => {
   };
 
   return (
-    <div className="flex flex-col w-full sm:mt-6">
+    <div className={`flex flex-col w-full ${isMobile ? "" : "sm:mt-6"}`}>
       <SpellCheckMessage />
-      <SearchInput 
+      {isMobile && (
+        <div className="mb-3">
+          <MobileSearchToggle
+            aiSearch={aiSearch}
+            disabled={searchBlockedState}
+            onToggle={handleSearchModeSwitch}
+          />
+        </div>
+      )}
+      <SearchInput
         textFieldRef={textFieldRef}
         inputValue={inputValue}
         aiSearch={aiSearch}
@@ -432,8 +443,9 @@ const EnhancedSearchBox = ({ schema }: Props): JSX.Element => {
         onAutocompleteBlur={handleAutocompleteBlur}
         isLocalLoading={isLocalLoading}
         isSearching={isSearching}
+        isMobile={isMobile}
       />
-      <AIThoughtsPanel 
+      <AIThoughtsPanel
         isLoading={isLoading}
         thoughts={thoughts}
         aiSearch={aiSearch}
