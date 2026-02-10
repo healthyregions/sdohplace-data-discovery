@@ -205,7 +205,7 @@ export const overlayRegistry = {
       id: "us-adult-education-source",
       spec: {
         type: "vector",
-        url: "pmtiles://https://raw.githubusercontent.com/healthyregions/overture-poi-extract/v0.0.1/output/us-adult-education.pmtiles",
+        url: "pmtiles://https://raw.githubusercontent.com/healthyregions/overture-poi-extract/discovery-asset/output/us-adult-education.pmtiles",
       }
     },
     mainColor: "#D3DF85",
@@ -223,7 +223,7 @@ export const overlayRegistry = {
   //     id: "us-airports-source",
   //     spec: {
   //       type: "vector",
-  //       url: "pmtiles://https://raw.githubusercontent.com/healthyregions/overture-poi-extract/v0.0.1/output/us-airports.pmtiles",
+  //       url: "pmtiles://https://raw.githubusercontent.com/healthyregions/overture-poi-extract/discovery-asset/output/us-airports.pmtiles",
   //     }
   //   },
   //   layers: makeClusteredLayerSet({
@@ -240,7 +240,7 @@ export const overlayRegistry = {
       id: "us-child-enrichment-source",
       spec: {
         type: "vector",
-        url: "pmtiles://https://raw.githubusercontent.com/healthyregions/overture-poi-extract/v0.0.1/output/us-child-enrichment.pmtiles",
+        url: "pmtiles://https://raw.githubusercontent.com/healthyregions/overture-poi-extract/discovery-asset/output/us-child-enrichment.pmtiles",
       }
     },
     mainColor: "#95D5FF",
@@ -275,7 +275,7 @@ export const overlayRegistry = {
       id: "us-exercise-source",
       spec: {
         type: "vector",
-        url: "pmtiles://https://raw.githubusercontent.com/healthyregions/overture-poi-extract/v0.0.1/output/us-exercise.pmtiles",
+        url: "pmtiles://https://raw.githubusercontent.com/healthyregions/overture-poi-extract/discovery-asset/output/us-exercise.pmtiles",
       }
     },
     mainColor: "#B769CA",
@@ -294,7 +294,7 @@ export const overlayRegistry = {
       id: "us-libraries-source",
       spec: {
         type: "vector",
-        url: "pmtiles://https://raw.githubusercontent.com/healthyregions/overture-poi-extract/v0.0.1/output/us-libraries.pmtiles",
+        url: "pmtiles://https://raw.githubusercontent.com/healthyregions/overture-poi-extract/discovery-asset/output/us-libraries.pmtiles",
       }
     },
     mainColor: "#FFDA95",
@@ -312,7 +312,7 @@ export const overlayRegistry = {
       id: "us-parks-source",
       spec: {
         type: "vector",
-        url: "pmtiles://https://raw.githubusercontent.com/healthyregions/overture-poi-extract/v0.0.1/output/us-parks.pmtiles",
+        url: "pmtiles://https://raw.githubusercontent.com/healthyregions/overture-poi-extract/discovery-asset/output/us-parks.pmtiles",
       }
     },
     mainColor: "#8BC980",
@@ -330,7 +330,7 @@ export const overlayRegistry = {
       id: "us-schools-source",
       spec: {
         type: "vector",
-        url: "pmtiles://https://raw.githubusercontent.com/healthyregions/overture-poi-extract/v0.0.1/output/us-schools.pmtiles",
+        url: "pmtiles://https://raw.githubusercontent.com/healthyregions/overture-poi-extract/discovery-asset/output/us-schools.pmtiles",
       }
     },
     mainColor: "#D07778",
@@ -349,7 +349,7 @@ export const overlayRegistry = {
       id: "us-grocery-source",
       spec: {
         type: "vector",
-        url: "pmtiles://https://raw.githubusercontent.com/healthyregions/overture-poi-extract/v0.0.1/output/us-grocery.pmtiles",
+        url: "pmtiles://https://raw.githubusercontent.com/healthyregions/overture-poi-extract/discovery-asset/output/us-grocery.pmtiles",
       }
     },
     mainColor: "#A6A7F9",
