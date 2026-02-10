@@ -230,10 +230,11 @@ const NavBar = (): JSX.Element => {
           </li>
         </ul>
 
-        {/* Mobile Button */}
+        {/* Mobile Button - hidden, triggered from MobileHeader */}
         <div
           onClick={handleNav}
-          className="block min-[940px]:hidden pl-[25px] z-50"
+          className="hidden min-[940px]:hidden pl-[25px] z-50"
+          id="navbar-mobile-trigger"
         >
           {nav ? (
               <AiOutlineClose size={35} color={"white"} className={'animate-fade-in'} />
@@ -250,10 +251,17 @@ const NavBar = (): JSX.Element => {
           h-screen bg-frenchviolet ease-in duration-300 `}
         >
           <ul className="navbar-mobile">
-            <li>
+            <li className="flex justify-between items-center w-full pr-4">
               <Link href="/">
                 <Image width={150} height={75} src={'./logos/sdoh-logo-navbar-mobile.svg'} alt={'LOGO'} />
               </Link>
+              <button
+                onClick={handleNav}
+                className="p-2 bg-transparent border-none cursor-pointer"
+                aria-label="Close menu"
+              >
+                <AiOutlineClose size={28} color="white" />
+              </button>
             </li>
 
             {/* Resources Menu */}

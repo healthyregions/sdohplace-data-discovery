@@ -1,10 +1,8 @@
 import * as React from "react";
-import { useDispatch } from "react-redux";
+import LightbulbOutlined from "@mui/icons-material/LightbulbOutlined";
 import SearchIcon from "@mui/icons-material/Search";
 import ArrowCircleRightIcon from "@mui/icons-material/ArrowCircleRight";
-import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import CloseIcon from "@mui/icons-material/Close";
-import QuestionAnswerIcon from "@mui/icons-material/QuestionAnswer";
 import {
   Autocomplete,
   Box,
@@ -14,16 +12,20 @@ import {
   InputAdornment,
   TextField,
   Tooltip,
+  Typography,
 } from "@mui/material";
-import { AppDispatch } from "@/store";
 import {
-  setInfoPanelTab,
-  setShowInfoPanel,
-} from "@/store/slices/uiSlice";
-import { CustomPaper, CustomPopper, useSearchStyles } from "./searchUiComponents";
+  CustomPaper,
+  CustomPopper,
+  useSearchStyles,
+} from "./searchUiComponents";
 import tailwindConfig from "../../../../tailwind.config";
 import resolveConfig from "tailwindcss/resolveConfig";
-import { MAX_SEARCH_LENGTH, isSearchAllowed, isSearchBlocked } from "./searchUtils";
+import {
+  MAX_SEARCH_LENGTH,
+  isSearchAllowed,
+  isSearchBlocked,
+} from "./searchUtils";
 
 const fullConfig = resolveConfig(tailwindConfig);
 
@@ -48,6 +50,7 @@ interface SearchInputProps {
   onAutocompleteBlur: (event: React.FocusEvent) => void;
   isLocalLoading: boolean;
   isSearching: boolean;
+  isMobile?: boolean;
 }
 
 const SearchInput: React.FC<SearchInputProps> = ({
@@ -71,17 +74,13 @@ const SearchInput: React.FC<SearchInputProps> = ({
   onAutocompleteBlur,
   isLocalLoading,
   isSearching,
+  isMobile = false,
 }) => {
   const classes = useSearchStyles();
-  const dispatch = useDispatch<AppDispatch>();
   const maxLength = MAX_SEARCH_LENGTH;
-  
-  const searchBlocked = isSearchBlocked(
-    isLocalLoading,
-    isSearching,
-    aiSearch
-  );
-  
+
+  const searchBlocked = isSearchBlocked(isLocalLoading, isSearching, aiSearch);
+
   const noSearchAllowed = !isSearchAllowed(aiSearch, inputValue, maxLength);
 
   return (
@@ -114,24 +113,87 @@ const SearchInput: React.FC<SearchInputProps> = ({
         onKeyDown={onKeyDown}
         onFocus={onAutocompleteFocus}
         onBlur={onAutocompleteBlur}
-        renderOption={(props, option) => {
+        renderOption={(props, option, state) => {
           const { "aria-selected": _, onClick, ...otherProps } = props;
+          const isLast = state.index === suggestions.length - 1;
+          const plainText = option;
+          const highlightMatch = (text: string, query: string) => {
+            if (!query) {
+              return <Typography component="span" sx={{ whiteSpace: "pre-wrap" }}>{text}</Typography>;
+            }
+            const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+            const regex = new RegExp(escapedQuery, "gi");
+            const result: React.ReactNode[] = [];
+            let lastIndex = 0;
+            let match: RegExpExecArray | null;
+            let keyIndex = 0;
+            while ((match = regex.exec(text)) !== null) {
+              if (match.index > lastIndex) {
+                result.push(
+                  <span key={`text-${keyIndex++}`}>
+                    {text.slice(lastIndex, match.index)}
+                  </span>
+                );
+              }
+              result.push(
+                <Box
+                  component="span"
+                  key={`match-${keyIndex++}`}
+                  sx={{
+                    color: fullConfig.theme.colors["frenchviolet"],
+                    fontWeight: 900,
+                  }}
+                >
+                  {match[0]}
+                </Box>
+              );
+              lastIndex = regex.lastIndex;
+            }
+            if (lastIndex < text.length) {
+              result.push(
+                <span key={`text-${keyIndex++}`}>
+                  {text.slice(lastIndex)}
+                </span>
+              );
+            }
+            return (
+              <Typography
+                component="span"
+                sx={{
+                  fontWeight: 400,
+                  fontFamily: "Nunito, sans-serif",
+                  whiteSpace: "pre-wrap",
+                }}
+              >
+                {result.length > 0 ? result : text}
+              </Typography>
+            );
+          };
           return (
             <li
               {...otherProps}
               onClick={(e) => {
                 if (onClick) onClick(e);
               }}
-              className={`${props.className} hover:bg-[#f0f0f0] cursor-pointer`}
+              className={`${props.className} cursor-pointer`}
               key={option}
+              style={{
+                padding: "12px 4px",
+                fontSize: "0.95rem",
+                color: fullConfig.theme.colors["smokegray"],
+                transition: "background-color 0.2s ease",
+                borderBottom: isLast ? "none" : "1px solid #e5e5e5",
+              }}
               onMouseEnter={(e) => {
-                (e.currentTarget as HTMLElement).style.backgroundColor = "#f0f0f0";
+                (e.currentTarget as HTMLElement).style.backgroundColor =
+                  "#f5f5f5";
               }}
               onMouseLeave={(e) => {
-                (e.currentTarget as HTMLElement).style.backgroundColor = "transparent";
+                (e.currentTarget as HTMLElement).style.backgroundColor =
+                  "transparent";
               }}
             >
-              <span className="px-1">{option}</span>
+              {highlightMatch(plainText, inputValue)}
             </li>
           );
         }}
@@ -142,7 +204,9 @@ const SearchInput: React.FC<SearchInputProps> = ({
             variant="outlined"
             fullWidth
             placeholder={
-              aiSearch
+              isMobile
+                ? ""
+                : aiSearch
                 ? `Ask a research question (max ${maxLength} characters)...`
                 : "Type keyword for recommended term and exact search (e.g. 'poverty' or 'socioeconomic')"
             }
@@ -155,10 +219,15 @@ const SearchInput: React.FC<SearchInputProps> = ({
               "& .MuiOutlinedInput-root": {
                 borderRadius: "1.75em",
                 color: fullConfig.theme.colors["smokegray"],
+                paddingLeft: isMobile ? "0.5em" : "1em",
+                paddingRight: isMobile ? "0 !important" : undefined,
                 "&:hover .MuiOutlinedInput-notchedOutline": {
                   borderColor: "transparent",
                 },
                 transition: "all 0.2s ease-in-out",
+              },
+              "& .MuiOutlinedInput-root .MuiAutocomplete-input": {
+                paddingLeft: isMobile ? "0.5em" : "1em",
               },
               "& .MuiOutlinedInput-notchedOutline": {
                 borderColor: "transparent",
@@ -166,78 +235,103 @@ const SearchInput: React.FC<SearchInputProps> = ({
             }}
             InputProps={{
               ...params.InputProps,
-              startAdornment: (
-                <InputAdornment position="start">
-                  <Tooltip
-                    title={
-                      searchBlocked
-                        ? "Please wait for the current search to complete"
-                        : !aiSearch
-                        ? "Currently using keyword search"
-                        : "Switch to keyword search"
-                    }
+              startAdornment: isMobile ? null : (
+                <InputAdornment position="start" sx={{ ml: "-0.25rem" }}>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      cursor: searchBlocked ? "not-allowed" : "pointer",
+                      opacity: searchBlocked ? 0.5 : 1,
+                    }}
+                    onClick={searchBlocked ? undefined : handleModeSwitch}
                   >
-                    <IconButton
+                    <Box
+                      className={`${classes.searchBox}`}
                       sx={{
-                        mr: "m",
-                        cursor: searchBlocked ? "not-allowed" : "pointer",
-                        opacity: searchBlocked ? 0.5 : 1,
-                        color: fullConfig.theme.colors["frenchviolet"],
+                        fontSize: "0.875rem",
+                        fontWeight: 600,
+                        color: !aiSearch
+                          ? fullConfig.theme.colors["frenchviolet"]
+                          : fullConfig.theme.colors["smokegray"],
+                        transition: "color 0.3s ease-in-out",
+                        mr: "0.5rem",
+                        ml: "1rem",
+                        width: "4rem",
+                        textAlign: "right",
                       }}
-                      onClick={handleModeSwitch}
-                      className={`${classes.aiModeButton} ${!aiSearch ? "active" : ""}`}
                     >
-                      <SearchIcon />
-                    </IconButton>
-                  </Tooltip>
-                  <Box component="span" className="mx-2">
-                    <Tooltip
-                      title={
-                        searchBlocked
-                          ? "Please wait for the current search to complete"
-                          : aiSearch
-                          ? "Currently using AI-Inspired search"
-                          : "Switch to AI-Inspired search"
-                      }
+                      Keyword
+                    </Box>
+                    <Box
+                      sx={{
+                        position: "relative",
+                        width: "4rem",
+                        height: "1.5rem",
+                        display: "flex",
+                        alignItems: "center",
+                        backgroundColor: "#ECE6F0",
+                        borderRadius: "0.75rem",
+                      }}
                     >
-                      <IconButton
+                      <Box
                         sx={{
-                          mr: ".2em",
-                          cursor: searchBlocked ? "not-allowed" : "pointer",
-                          opacity: searchBlocked ? 0.5 : 1,
-                          color: fullConfig.theme.colors["frenchviolet"],
-                        }}
-                        onClick={handleModeSwitch}
-                        className={`${classes.aiModeButton} ${aiSearch ? "active" : ""}`}
-                      >
-                        <QuestionAnswerIcon />
-                      </IconButton>
-                    </Tooltip>
-                    <Tooltip
-                      title={
-                        aiSearch
-                          ? "Learn more about AI-Inspired search"
-                          : "Learn more about keyword search"
-                      }
-                    >
-                      <IconButton
-                        sx={{
-                          color: fullConfig.theme.colors["frenchviolet"],
-                        }}
-                        className={`${classes.aiModeButton} font-black`}
-                        onClick={() => {
-                          dispatch(setShowInfoPanel(true));
-                          dispatch(setInfoPanelTab(aiSearch ? 2 : 1));
+                          position: "absolute",
+                          left: !aiSearch ? "0" : "calc(100% - 2rem)",
+                          width: "2rem",
+                          height: "2rem",
+                          backgroundColor:
+                            fullConfig.theme.colors["frenchviolet"],
+                          borderRadius: "50%",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          transition: "left 0.3s ease-in-out",
+                          boxShadow: "0 0.125rem 0.25rem rgba(0, 0, 0, 0.2)",
                         }}
                       >
-                        <InfoOutlinedIcon />
-                      </IconButton>
-                    </Tooltip>
+                        {aiSearch ? (
+                          <LightbulbOutlined
+                            sx={{
+                              color: "white",
+                              fontSize: "1.125rem",
+                            }}
+                          />
+                        ) : (
+                          <SearchIcon
+                            sx={{
+                              color: "white",
+                              fontSize: "1.125rem",
+                            }}
+                          />
+                        )}
+                      </Box>
+                    </Box>
+                    <Box
+                      className={`${classes.searchBox}`}
+                      sx={{
+                        fontSize: "0.875rem",
+                        fontWeight: 600,
+                        color: aiSearch
+                          ? fullConfig.theme.colors["frenchviolet"]
+                          : fullConfig.theme.colors["smokegray"],
+                        transition: "color 0.3s ease-in-out",
+                        ml: "0.5rem",
+                        width: "2rem",
+                        textAlign: "left",
+                      }}
+                    >
+                      Ask AI
+                    </Box>
                   </Box>
                 </InputAdornment>
               ),
               endAdornment: (
-                <Box display="flex" alignItems="center">
+                <Box
+                  display="flex"
+                  alignItems="center"
+                  sx={{ mr: isMobile ? "0.5rem" : 0 }}
+                >
                   {showClearButton && (
                     <InputAdornment position="end">
                       <Tooltip
@@ -295,6 +389,8 @@ const SearchInput: React.FC<SearchInputProps> = ({
                             backgroundColor: "transparent",
                             color: fullConfig.theme.colors["frenchviolet"],
                             boxShadow: "none",
+                            minWidth: isMobile ? "auto" : undefined,
+                            padding: isMobile ? "6px" : undefined,
                             "&:hover": {
                               backgroundColor: "transparent",
                               boxShadow: "none",
@@ -308,7 +404,10 @@ const SearchInput: React.FC<SearchInputProps> = ({
                         >
                           {isLoading ? (
                             <span>
-                              <CircularProgress className={`text-l ${classes.loadingButton}`} />
+                              <CircularProgress
+                                size={28}
+                                className={classes.loadingButton}
+                              />
                             </span>
                           ) : (
                             <ArrowCircleRightIcon className="text-xxl" />
@@ -328,4 +427,4 @@ const SearchInput: React.FC<SearchInputProps> = ({
   );
 };
 
-export default SearchInput; 
+export default SearchInput;
