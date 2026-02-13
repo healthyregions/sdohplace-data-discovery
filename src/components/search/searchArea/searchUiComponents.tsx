@@ -1,12 +1,17 @@
 import * as React from "react";
 import { Popper, Paper } from "@mui/material";
-import { makeStyles } from "@mui/styles";
+import { keyframes } from "@emotion/react";
 import tailwindConfig from "../../../../tailwind.config";
 import resolveConfig from "tailwindcss/resolveConfig";
 
 const fullConfig = resolveConfig(tailwindConfig);
 
-export const useSearchStyles = makeStyles((theme) => ({
+const spin = keyframes`
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+`;
+
+export const searchStyles = {
   searchBox: {
     fontFamily: `${fullConfig.theme.fontFamily["sans"]} !important`,
     "& input": {
@@ -49,7 +54,7 @@ export const useSearchStyles = makeStyles((theme) => ({
   },
   paper: {
     fontFamily: `${fullConfig.theme.fontFamily["sans"]} !important`,
-    fontColor: `${fullConfig.theme.colors["smokegray"]}`,
+    color: `${fullConfig.theme.colors["smokegray"]}`,
     fontSize: "0.875em",
     marginTop: "0.5em",
     width: "100%",
@@ -75,28 +80,18 @@ export const useSearchStyles = makeStyles((theme) => ({
   },
   loadingButton: {
     color: fullConfig.theme.colors["frenchviolet"],
-    animation: "$spin 1s linear infinite",
+    animation: `${spin} 1s linear infinite`,
   },
-  "@keyframes spin": {
-    "0%": {
-      transform: "rotate(0deg)",
-    },
-    "100%": {
-      transform: "rotate(360deg)",
-    },
-  },
-}));
+};
 
 export const CustomPopper = (props) => {
-  const classes = useSearchStyles();
   return (
-    <Popper {...props} className={classes.popper} placement="bottom-start" />
+    <Popper {...props} sx={searchStyles.popper} placement="bottom-start" />
   );
 };
 
 export const CustomPaper = (props) => {
-  const classes = useSearchStyles();
-  return <Paper {...props} className={classes.paper} />;
+  return <Paper {...props} sx={searchStyles.paper} />;
 };
 
 export const CustomListbox = React.forwardRef<
@@ -121,4 +116,4 @@ export const CustomListbox = React.forwardRef<
   );
 });
 
-CustomListbox.displayName = "CustomListbox"; 
+CustomListbox.displayName = "CustomListbox";

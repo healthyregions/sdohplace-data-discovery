@@ -17,7 +17,7 @@ import {
 import {
   CustomPaper,
   CustomPopper,
-  useSearchStyles,
+  searchStyles,
 } from "./searchUiComponents";
 import tailwindConfig from "../../../../tailwind.config";
 import resolveConfig from "tailwindcss/resolveConfig";
@@ -76,7 +76,6 @@ const SearchInput: React.FC<SearchInputProps> = ({
   isSearching,
   isMobile = false,
 }) => {
-  const classes = useSearchStyles();
   const maxLength = MAX_SEARCH_LENGTH;
 
   const searchBlocked = isSearchBlocked(isLocalLoading, isSearching, aiSearch);
@@ -87,8 +86,11 @@ const SearchInput: React.FC<SearchInputProps> = ({
     <form id="search-form" onSubmit={onSubmit}>
       <Autocomplete
         ref={autocompleteRef}
-        PopperComponent={CustomPopper}
-        PaperComponent={CustomPaper}
+        slots={{
+          popper: CustomPopper,
+          paper: CustomPaper,
+          listbox: CustomListbox,
+        }}
         freeSolo
         open={shouldShowDropdown && !aiSearch}
         options={aiSearch ? [] : suggestions}
@@ -105,7 +107,6 @@ const SearchInput: React.FC<SearchInputProps> = ({
         includeInputInList={true}
         openOnFocus={false}
         disableCloseOnSelect={false}
-        ListboxComponent={CustomListbox}
         clearOnBlur={false}
         clearOnEscape={false}
         forcePopupIcon={false}
@@ -197,46 +198,58 @@ const SearchInput: React.FC<SearchInputProps> = ({
             </li>
           );
         }}
-        renderInput={(params) => (
-          <TextField
-            {...params}
-            inputRef={textFieldRef}
-            variant="outlined"
-            fullWidth
-            placeholder={
-              isMobile
-                ? ""
-                : aiSearch
-                ? `Ask a research question (max ${maxLength} characters)...`
-                : "Type keyword for recommended term and exact search (e.g. 'poverty' or 'socioeconomic')"
-            }
-            className={`${classes.searchBox} bg-white`}
-            inputProps={{ maxLength: maxLength, ...params.inputProps }}
-            sx={{
-              paddingRight: "0",
-              borderRadius: "1.75em",
-              border: `1px solid ${fullConfig.theme.colors["frenchviolet"]}`,
-              "& .MuiOutlinedInput-root": {
+        renderInput={(params) => {
+          const {
+            InputProps: autocompleteInputProps,
+            inputProps: autocompleteHtmlInputProps,
+            ...textFieldParams
+          } = params;
+
+          return (
+            <TextField
+              {...textFieldParams}
+              inputRef={textFieldRef}
+              variant="outlined"
+              fullWidth
+              placeholder={
+                isMobile
+                  ? ""
+                  : aiSearch
+                  ? `Ask a research question (max ${maxLength} characters)...`
+                  : "Type keyword for recommended term and exact search (e.g. 'poverty' or 'socioeconomic')"
+              }
+              className="bg-white"
+              sx={{
+                ...searchStyles.searchBox,
+                paddingRight: "0",
                 borderRadius: "1.75em",
-                color: fullConfig.theme.colors["smokegray"],
-                paddingLeft: isMobile ? "0.5em" : "1em",
-                paddingRight: isMobile ? "0 !important" : undefined,
-                "&:hover .MuiOutlinedInput-notchedOutline": {
+                border: `1px solid ${fullConfig.theme.colors["frenchviolet"]}`,
+                "& .MuiOutlinedInput-root": {
+                  borderRadius: "1.75em",
+                  color: fullConfig.theme.colors["smokegray"],
+                  paddingLeft: isMobile ? "0.5em" : "1em",
+                  paddingRight: isMobile ? "0 !important" : undefined,
+                  "&:hover .MuiOutlinedInput-notchedOutline": {
+                    borderColor: "transparent",
+                  },
+                  transition: "all 0.2s ease-in-out",
+                },
+                "& .MuiOutlinedInput-root .MuiAutocomplete-input": {
+                  paddingLeft: isMobile ? "0.5em" : "1em",
+                },
+                "& .MuiOutlinedInput-notchedOutline": {
                   borderColor: "transparent",
                 },
-                transition: "all 0.2s ease-in-out",
-              },
-              "& .MuiOutlinedInput-root .MuiAutocomplete-input": {
-                paddingLeft: isMobile ? "0.5em" : "1em",
-              },
-              "& .MuiOutlinedInput-notchedOutline": {
-                borderColor: "transparent",
-              },
-            }}
-            InputProps={{
-              ...params.InputProps,
-              startAdornment: isMobile ? null : (
-                <InputAdornment position="start" sx={{ ml: "-0.25rem" }}>
+              }}
+              slotProps={{
+                htmlInput: {
+                  ...autocompleteHtmlInputProps,
+                  maxLength: maxLength,
+                },
+                input: {
+                  ...autocompleteInputProps,
+                  startAdornment: isMobile ? null : (
+                <InputAdornment position="start" sx={{ ml: "-0.25rem", mr: "0.5rem" }}>
                   <Box
                     sx={{
                       display: "flex",
@@ -247,8 +260,8 @@ const SearchInput: React.FC<SearchInputProps> = ({
                     onClick={searchBlocked ? undefined : handleModeSwitch}
                   >
                     <Box
-                      className={`${classes.searchBox}`}
                       sx={{
+                        ...searchStyles.searchBox,
                         fontSize: "0.875rem",
                         fontWeight: 600,
                         color: !aiSearch
@@ -308,8 +321,8 @@ const SearchInput: React.FC<SearchInputProps> = ({
                       </Box>
                     </Box>
                     <Box
-                      className={`${classes.searchBox}`}
                       sx={{
+                        ...searchStyles.searchBox,
                         fontSize: "0.875rem",
                         fontWeight: 600,
                         color: aiSearch
@@ -317,7 +330,10 @@ const SearchInput: React.FC<SearchInputProps> = ({
                           : fullConfig.theme.colors["smokegray"],
                         transition: "color 0.3s ease-in-out",
                         ml: "0.5rem",
-                        width: "2rem",
+                        width: "3rem",
+                        minWidth: "3rem",
+                        whiteSpace: "nowrap",
+                        flexShrink: 0,
                         textAlign: "left",
                       }}
                     >
@@ -326,102 +342,104 @@ const SearchInput: React.FC<SearchInputProps> = ({
                   </Box>
                 </InputAdornment>
               ),
-              endAdornment: (
-                <Box
-                  display="flex"
-                  alignItems="center"
-                  sx={{ mr: isMobile ? "0.5rem" : 0 }}
-                >
-                  {showClearButton && (
-                    <InputAdornment position="end">
-                      <Tooltip
-                        title={
-                          searchBlocked
-                            ? "Please wait for the current search to complete"
-                            : "Clear search"
-                        }
-                      >
-                        <span>
-                          <IconButton
-                            onClick={handleClear}
-                            disabled={searchBlocked}
-                            sx={{
-                              opacity: searchBlocked ? 0.5 : 1,
-                              cursor: searchBlocked ? "not-allowed" : "pointer",
-                            }}
-                          >
-                            <CloseIcon className="text-2xl text-frenchviolet" />
-                          </IconButton>
-                        </span>
-                      </Tooltip>
-                    </InputAdornment>
-                  )}
-                  <InputAdornment position="end">
-                    <Tooltip
-                      title={
-                        isLoading || noSearchAllowed
-                          ? aiSearch &&
-                            (!inputValue ||
-                              inputValue === "*" ||
-                              inputValue.length > maxLength)
-                            ? !inputValue
-                              ? "Please enter your question first"
-                              : inputValue.length > maxLength
-                              ? `Question must be within ${maxLength} characters`
-                              : "Please enter a valid question"
-                            : ""
-                          : ""
-                      }
-                      enterDelay={0}
-                      leaveDelay={200}
+                  endAdornment: (
+                    <Box
+                      display="flex"
+                      alignItems="center"
+                      sx={{ mr: isMobile ? "0.5rem" : 0 }}
                     >
-                      <span style={{ display: "inline-flex" }}>
-                        <Button
-                          type="submit"
-                          variant="contained"
-                          color="primary"
-                          disabled={isLoading || noSearchAllowed}
-                          sx={{
-                            display: "flex",
-                            flexDirection: "column",
-                            alignItems: "flex-end",
-                            justifyContent: "center",
-                            backgroundColor: "transparent",
-                            color: fullConfig.theme.colors["frenchviolet"],
-                            boxShadow: "none",
-                            minWidth: isMobile ? "auto" : undefined,
-                            padding: isMobile ? "6px" : undefined,
-                            "&:hover": {
-                              backgroundColor: "transparent",
-                              boxShadow: "none",
-                            },
-                            "&:disabled": {
-                              color: fullConfig.theme.colors["frenchviolet"],
-                              opacity: noSearchAllowed ? 0.1 : 1.0,
-                              backgroundColor: "transparent",
-                            },
-                          }}
-                        >
-                          {isLoading ? (
+                      {showClearButton && (
+                        <InputAdornment position="end">
+                          <Tooltip
+                            title={
+                              searchBlocked
+                                ? "Please wait for the current search to complete"
+                                : "Clear search"
+                            }
+                          >
                             <span>
-                              <CircularProgress
-                                size={28}
-                                className={classes.loadingButton}
-                              />
+                              <IconButton
+                                onClick={handleClear}
+                                disabled={searchBlocked}
+                                sx={{
+                                  opacity: searchBlocked ? 0.5 : 1,
+                                  cursor: searchBlocked ? "not-allowed" : "pointer",
+                                }}
+                              >
+                                <CloseIcon className="text-2xl text-frenchviolet" />
+                              </IconButton>
                             </span>
-                          ) : (
-                            <ArrowCircleRightIcon className="text-xxl" />
-                          )}
-                        </Button>
-                      </span>
-                    </Tooltip>
-                  </InputAdornment>
-                </Box>
-              ),
-              type: "search",
-            }}
-          />
-        )}
+                          </Tooltip>
+                        </InputAdornment>
+                      )}
+                      <InputAdornment position="end">
+                        <Tooltip
+                          title={
+                            isLoading || noSearchAllowed
+                              ? aiSearch &&
+                                (!inputValue ||
+                                  inputValue === "*" ||
+                                  inputValue.length > maxLength)
+                                ? !inputValue
+                                  ? "Please enter your question first"
+                                  : inputValue.length > maxLength
+                                  ? `Question must be within ${maxLength} characters`
+                                  : "Please enter a valid question"
+                                : ""
+                              : ""
+                          }
+                          enterDelay={0}
+                          leaveDelay={200}
+                        >
+                          <span style={{ display: "inline-flex" }}>
+                            <Button
+                              type="submit"
+                              variant="contained"
+                              color="primary"
+                              disabled={isLoading || noSearchAllowed}
+                              sx={{
+                                display: "flex",
+                                flexDirection: "column",
+                                alignItems: "flex-end",
+                                justifyContent: "center",
+                                backgroundColor: "transparent",
+                                color: fullConfig.theme.colors["frenchviolet"],
+                                boxShadow: "none",
+                                minWidth: isMobile ? "auto" : undefined,
+                                padding: isMobile ? "6px" : undefined,
+                                "&:hover": {
+                                  backgroundColor: "transparent",
+                                  boxShadow: "none",
+                                },
+                                "&:disabled": {
+                                  color: fullConfig.theme.colors["frenchviolet"],
+                                  opacity: noSearchAllowed ? 0.1 : 1.0,
+                                  backgroundColor: "transparent",
+                                },
+                              }}
+                            >
+                              {isLoading ? (
+                                <span>
+                                  <CircularProgress
+                                    size={28}
+                                    sx={searchStyles.loadingButton}
+                                  />
+                                </span>
+                              ) : (
+                                <ArrowCircleRightIcon className="text-xxl" />
+                              )}
+                            </Button>
+                          </span>
+                        </Tooltip>
+                      </InputAdornment>
+                    </Box>
+                  ),
+                  type: "search",
+                },
+              }}
+            />
+          );
+        }}
       />
     </form>
   );

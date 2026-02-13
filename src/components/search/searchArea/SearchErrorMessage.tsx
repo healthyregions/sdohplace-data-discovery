@@ -1,17 +1,28 @@
 import React from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { RootState } from "@/store";
-import { setAISearch, clearError } from '@/store/slices/searchSlice';
+import { AppDispatch, RootState } from "@/store";
+import { setAISearch, clearError, clearSearch } from '@/store/slices/searchSlice';
 import { Alert, Button, Box } from '@mui/material';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import SearchIcon from '@mui/icons-material/Search';
 
 const SearchErrorMessage = () => {
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
   const { hasError, errorMessage, errorType, aiSearch } = useSelector((state: RootState) => state.search);
   if (!hasError) return null;
   const handleSwitchToKeywordSearch = () => {
     dispatch(setAISearch(false));
+    dispatch(clearSearch());
+    if (typeof window !== "undefined") {
+      const searchParams = new URLSearchParams(window.location.search);
+      searchParams.delete("query");
+      searchParams.set("ai_search", "false");
+      const serialized = searchParams.toString();
+      const newUrl = serialized
+        ? `${window.location.pathname}?${serialized}`
+        : window.location.pathname;
+      window.history.pushState({}, "", newUrl);
+    }
     dispatch(clearError());
   };
   const handleDismissError = () => {

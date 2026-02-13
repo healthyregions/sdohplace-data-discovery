@@ -1,4 +1,3 @@
-import { makeStyles } from "@mui/styles";
 import * as React from "react";
 import DOMPurify from "dompurify";
 import tailwindConfig from "../../../../../tailwind.config";
@@ -14,19 +13,16 @@ interface Props {
 }
 
 const fullConfig = resolveConfig(tailwindConfig);
-const useStyles = makeStyles((theme) => ({
-  paragraphCard: {
-    color: `${fullConfig.theme.colors["almostblack"]}`,
-    fontFamily: `${fullConfig.theme.fontFamily["sans"]}`,
-    fontSize: "0.875rem",
-  },
-  link: {
-    color: `${fullConfig.theme.colors["frenchviolet"]}`,
-  },
-}));
+const paragraphCardStyle: React.CSSProperties = {
+  color: `${fullConfig.theme.colors["almostblack"]}`,
+  fontFamily: `${fullConfig.theme.fontFamily["sans"]}`,
+  fontSize: "0.875rem",
+};
+const linkStyle: React.CSSProperties = {
+  color: `${fullConfig.theme.colors["frenchviolet"]}`,
+};
 
 const DisplayNote = ({ title, value }) => {
-  const classes = useStyles();
   return (
     <div className={`container`}>
       {title ? (
@@ -42,7 +38,7 @@ const DisplayNote = ({ title, value }) => {
       )}
       <b>{title ? title : "Notes"}:</b>{" "}
       <span
-        className={classes.paragraphCard}
+        style={paragraphCardStyle}
         dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(value) }}
       />
     </div>
@@ -50,12 +46,11 @@ const DisplayNote = ({ title, value }) => {
 };
 
 const UsageTip = ({ value }) => {
-  const classes = useStyles();
   return (
     <div className={`container`}>
       &#128161; <b>Usage Tip:</b>{" "}
       <span
-        className={classes.paragraphCard}
+        style={paragraphCardStyle}
         dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(value) }}
       />
     </div>
@@ -63,7 +58,6 @@ const UsageTip = ({ value }) => {
 };
 
 const Link = ({ value }) => {
-  const classes = useStyles();
   const links = ParseReferenceLink(value);
   if (links.downloadUrl || links.dataDictionaryUrl || links.archiveUrl) {
     return (
@@ -74,7 +68,7 @@ const Link = ({ value }) => {
             <li>
               <a
                 href={String(links.downloadUrl)}
-                className={`${classes.paragraphCard} ${classes.link}`}
+                style={{...paragraphCardStyle, ...linkStyle}}
               >
                 Data Download (Official)
               </a>
@@ -84,7 +78,7 @@ const Link = ({ value }) => {
             <li>
               <a
                 href={String(links.archiveUrl)}
-                className={`${classes.paragraphCard} ${classes.link}`}
+                style={{...paragraphCardStyle, ...linkStyle}}
               >
                 Data Archival Copy
               </a>
@@ -94,7 +88,7 @@ const Link = ({ value }) => {
             <li>
               <a
                 href={String(links.dataDictionaryUrl)}
-                className={`${classes.paragraphCard} ${classes.link}`}
+                style={{...paragraphCardStyle, ...linkStyle}}
               >
                 Technical Documentation
               </a>
@@ -109,7 +103,6 @@ const Link = ({ value }) => {
 };
 
 const ParagraphCard = (props: Props): JSX.Element => {
-  const classes = useStyles();
   return (
     <div className="container mx-auto bg-white shadow-none aspect-ratio mb-6">
       {props.type === "display_note" && (
@@ -124,12 +117,12 @@ const ParagraphCard = (props: Props): JSX.Element => {
               <summary className="text-s">
                 <b>{props.title}</b>
               </summary>
-              <span className={classes.paragraphCard}>{props.value}</span>
+              <span style={paragraphCardStyle}>{props.value}</span>
             </details>
           ) : (
             <>
               <b className="text-s">{props.title}</b>{" "}
-              <span className={classes.paragraphCard}>{props.value}</span>
+              <span style={paragraphCardStyle}>{props.value}</span>
             </>
           )}
         </div>

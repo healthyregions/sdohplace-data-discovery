@@ -3,8 +3,6 @@ import Tooltip from "@mui/material/Tooltip";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import AdjustOutlinedIcon from "@mui/icons-material/AdjustOutlined";
 import MapOutlinedIcon from "@mui/icons-material/MapOutlined";
-import { makeStyles } from "@mui/styles";
-
 type Props = {
   props: any;
   overlayKey?: string;
@@ -13,76 +11,70 @@ type Props = {
   fullConfig?: any;
 };
 
-const useStyles = (fullConfig: any) =>
-  makeStyles({
-    container: {
-      fontFamily: fullConfig?.theme?.fontFamily?.["sans"] || "Nunito, sans-serif",
-      maxWidth: 440,
-      minWidth: 320,
-      borderRadius: 8,
-      background: fullConfig?.theme?.colors?.["white"] || "white",
-      padding: "1rem 1.5rem",
-      boxShadow: "0 12px 30px rgba(0,0,0,0.12)",
-      fontSize: "0.875rem",
-      color: fullConfig?.theme?.colors?.["almostblack"] || "rgb(55, 65, 81)",
-      "@media (max-width: 640px)": {
-        maxWidth: 280,
-        minWidth: 200,
-        padding: "0.75rem 1rem",
-      },
-    },
-    header: {
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "space-between",
-      gap: 8,
-    },
-    headerContent: {
-      display: "flex",
-      flexDirection: "column",
-    },
-    name: {
-      fontWeight: 600,
-      color: fullConfig?.theme?.colors?.["almostblack"] || "rgb(55, 65, 81)",
-      fontSize: "0.875rem",
-    },
-    typeRow: {
-      display: "flex",
-      alignItems: "center",
-      gap: 8,
-      marginTop: 4,
-      color: fullConfig?.theme?.colors?.["darkgray"] || "#6B7280",
-      fontSize: "0.875rem",
-    },
-    divider: {
-      height: 1,
-      background: fullConfig?.theme?.colors?.["lightbisque"] || "#FFE5C4",
-      margin: "1rem 0",
-      borderRadius: 2,
-    },
-    infoRow: {
-      display: "flex",
-      gap: 8,
-      alignItems: "flex-start",
-    },
-    iconWrapper: {
-      flex: "0 0 18px",
-    },
-    confidenceRow: {
-      display: "flex",
-      gap: 8,
-      alignItems: "center",
-      marginTop: 8,
-      fontSize: "0.875rem",
-    },
-    confidenceIcon: {
-      flex: "0 0 16px",
-    },
-    text: {
-      color: fullConfig?.theme?.colors?.["almostblack"] || "rgb(55, 65, 81)",
-      fontSize: "0.875rem",
-    },
-  });
+const getStyles = (fullConfig: any): Record<string, React.CSSProperties> => ({
+  container: {
+    fontFamily: fullConfig?.theme?.fontFamily?.["sans"] || "Nunito, sans-serif",
+    maxWidth: 440,
+    minWidth: 320,
+    borderRadius: 8,
+    background: fullConfig?.theme?.colors?.["white"] || "white",
+    padding: "1rem 1.5rem",
+    boxShadow: "0 12px 30px rgba(0,0,0,0.12)",
+    fontSize: "0.875rem",
+    color: fullConfig?.theme?.colors?.["almostblack"] || "rgb(55, 65, 81)",
+  },
+  header: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 8,
+  },
+  headerContent: {
+    display: "flex",
+    flexDirection: "column",
+  },
+  name: {
+    fontWeight: 600,
+    color: fullConfig?.theme?.colors?.["almostblack"] || "rgb(55, 65, 81)",
+    fontSize: "0.875rem",
+  },
+  typeRow: {
+    display: "flex",
+    alignItems: "center",
+    gap: 8,
+    marginTop: 4,
+    color: fullConfig?.theme?.colors?.["darkgray"] || "#6B7280",
+    fontSize: "0.875rem",
+  },
+  divider: {
+    height: 1,
+    background: fullConfig?.theme?.colors?.["lightbisque"] || "#FFE5C4",
+    margin: "1rem 0",
+    borderRadius: 2,
+  },
+  infoRow: {
+    display: "flex",
+    gap: 8,
+    alignItems: "flex-start",
+  },
+  iconWrapper: {
+    flex: "0 0 18px",
+  },
+  confidenceRow: {
+    display: "flex",
+    gap: 8,
+    alignItems: "center",
+    marginTop: 8,
+    fontSize: "0.875rem",
+  },
+  confidenceIcon: {
+    flex: "0 0 16px",
+  },
+  text: {
+    color: fullConfig?.theme?.colors?.["almostblack"] || "rgb(55, 65, 81)",
+    fontSize: "0.875rem",
+  },
+});
 
 const getName = (props: any) =>
   props.name || props.NAME || props.title || props.label || "Untitled";
@@ -175,7 +167,7 @@ export default function AssetPopupComponent({
   overlayDescription,
   fullConfig,
 }: Props) {
-  const classes = useStyles(fullConfig)();
+  const classes = getStyles(fullConfig);
 
   const name = getName(props);
   const type = getType(props);
@@ -196,11 +188,11 @@ export default function AssetPopupComponent({
   const lightbisque = fullConfig?.theme?.colors?.["lightbisque"] || "#FFE5C4";
 
   return (
-    <div className={classes.container}>
-      <div className={classes.header}>
-        <div className={classes.headerContent}>
-          <div className={classes.name}>{name}</div>
-          <div className={classes.typeRow}>
+    <div style={classes.container}>
+      <div style={classes.header}>
+        <div style={classes.headerContent}>
+          <div style={classes.name}>{name}</div>
+          <div style={classes.typeRow}>
             <div
               style={{
                 width: 10,
@@ -236,18 +228,18 @@ export default function AssetPopupComponent({
           </Tooltip>
         </div>
       </div>
-      <div className={classes.divider} />
-      <div className={classes.infoRow}>
-        <div className={classes.iconWrapper}>
+      <div style={classes.divider} />
+      <div style={classes.infoRow}>
+        <div style={classes.iconWrapper}>
           <MapOutlinedIcon fontSize="small" sx={{ color: accentColor }} />
         </div>
-        <div className={classes.text}>{displayAddress}</div>
+        <div style={classes.text}>{displayAddress}</div>
       </div>
-      <div className={classes.confidenceRow}>
-        <div className={classes.confidenceIcon}>
+      <div style={classes.confidenceRow}>
+        <div style={classes.confidenceIcon}>
           <AdjustOutlinedIcon fontSize="small" sx={{ color: accentColor }} />
         </div>
-        <div className={classes.text}>{displayConfidence}</div>
+        <div style={classes.text}>{displayConfidence}</div>
       </div>
     </div>
   );

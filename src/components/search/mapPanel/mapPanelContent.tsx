@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { Box, Button, Grid, Menu, SvgIcon } from "@mui/material";
+import { Box, Button, Menu, SvgIcon } from "@mui/material";
 import { ArrowDropDown as ArrowDropDownIcon } from "@mui/icons-material";
 import resolveConfig from "tailwindcss/resolveConfig";
 import tailwindConfig from "../../../../tailwind.config";
@@ -39,10 +39,6 @@ export default function MapPanelContent(props: Props): JSX.Element {
     dispatch(setSchema(props.schema));
   }, [dispatch, props.schema]);
 
-  useEffect(() => {
-    dispatch(setOverlayIds(overlayIds));
-  }, [dispatch, overlayIds]);
-
   const handleOverlaysClick = (event: React.MouseEvent<HTMLButtonElement>) => {
     setOverlaysMenuAnchorEl(event.currentTarget);
   };
@@ -53,7 +49,7 @@ export default function MapPanelContent(props: Props): JSX.Element {
   };
 
   return (
-    <Grid item className="sm:px-[2em]" xs={12} display={props.showMap}>
+    <Box className="sm:px-[2em]" sx={{ display: props.showMap }}>
       <Box>
         <div className="flex flex-col mb-[0.5em] sm:mb-[1.5em] sm:ml-[1.1em] sm:flex-row items-start sm:items-center">
           <div className="flex flex-col sm:flex-row sm:flex-grow text-2xl sm:mb-0">Map search</div>
@@ -76,7 +72,15 @@ export default function MapPanelContent(props: Props): JSX.Element {
             transformOrigin={{ vertical: "top", horizontal: "right" }}
             open={overlaysOpen}
             onClose={closeOverlaysMenu}
-            PaperProps={{ sx: { boxShadow: "none", borderRadius: "12px" } }}
+            PaperProps={{
+              sx: {
+                boxShadow: "none",
+                borderRadius: "12px",
+                background: "white",
+                minWidth: 300,
+                fontFamily: "Nunito, sans-serif",
+              },
+            }}
             MenuListProps={{ "aria-labelledby": "overlays-button", className: "rounded" }}
           >
             <CommunityAssetsDropdown overlayIds={overlayIds} toggleOverlay={toggleOverlay} clearAll={() => dispatch(setOverlayIds([]))} />
@@ -90,7 +94,7 @@ export default function MapPanelContent(props: Props): JSX.Element {
 
       <Box className="my-[1.68em]">
         <div className="sm:mb-[1.5em] sm:flex-col">
-          <Box height="100%" className="sm:mt-[2em] sm:ml-[1.1em]">
+          <Box id="sdoh-learn-more" height="100%" className="sm:mt-[2em] sm:ml-[1.1em]">
             <Box className="text-2xl sm:mb-[0.6em]">Want to learn more about SDOH data?</Box>
             <Box className="text-s sm:mb-[1.5em]">
               <p className="mb-[1em]">
@@ -110,6 +114,6 @@ export default function MapPanelContent(props: Props): JSX.Element {
           </Box>
         </div>
       </Box>
-    </Grid>
+    </Box>
   );
 }
