@@ -1,7 +1,6 @@
 "use client";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState, AppDispatch, store } from "@/store";
-import { makeStyles } from "@mui/styles";
 import tailwindConfig from "../../../../tailwind.config";
 import resolveConfig from "tailwindcss/resolveConfig";
 import SearchIcon from "@mui/icons-material/Search";
@@ -20,7 +19,7 @@ import {
 import ThemeIcons from "../helper/themeIcons";
 import { EventType } from "@/lib/event";
 import { usePlausible } from "next-plausible";
-import { clearError, reloadAiSearchFromUrl, setAISearch } from "@/store/slices/searchSlice";
+import { clearError, clearSearch, reloadAiSearchFromUrl, setAISearch } from "@/store/slices/searchSlice";
 import { setGeocodeFeature } from "@/store/slices/mapSlice";
 
 interface Props {
@@ -28,16 +27,13 @@ interface Props {
 }
 
 const fullConfig = resolveConfig(tailwindConfig);
-const useStyles = makeStyles((theme) => ({
-  resultsPanel: {
-    color: `${fullConfig.theme.colors["almostblack"]}`,
-    fontFamily: `${fullConfig.theme.fontFamily["sans"]}`,
-  },
-}));
+const resultsPanelStyle: React.CSSProperties = {
+  color: `${fullConfig.theme.colors["almostblack"]}`,
+  fontFamily: `${fullConfig.theme.fontFamily["sans"]}`,
+};
 
 const ResultsPanel = (props: Props): JSX.Element => {
   const dispatch = useDispatch<AppDispatch>();
-  const classes = useStyles();
   const searchState = useSelector(selectSearchState);
   const { hasError, errorMessage, errorType, aiSearch } = useSelector(
     (state: RootState) => state.search
@@ -448,7 +444,7 @@ const ResultsPanel = (props: Props): JSX.Element => {
       className="results-panel"
       style={{ flex: "1 1 auto", overflow: "hidden" }}
     >
-      <span className={classes.resultsPanel}>
+      <span style={resultsPanelStyle}>
         <Box>
           <div className="flex flex-col sm:mb-[1.5em] sm:ml-[1.1em] sm:flex-row items-center">
             <div className="flex flex-col sm:flex-row flex-grow text-2xl">
@@ -563,6 +559,17 @@ const ResultsPanel = (props: Props): JSX.Element => {
                                 startIcon={<SearchIcon />}
                                 onClick={() => {
                                   dispatch(setAISearch(false));
+                                  dispatch(clearSearch());
+                                  if (typeof window !== "undefined") {
+                                    const searchParams = new URLSearchParams(window.location.search);
+                                    searchParams.delete("query");
+                                    searchParams.set("ai_search", "false");
+                                    const serialized = searchParams.toString();
+                                    const newUrl = serialized
+                                      ? `${window.location.pathname}?${serialized}`
+                                      : window.location.pathname;
+                                    window.history.pushState({}, "", newUrl);
+                                  }
                                   dispatch(clearError());
                                 }}
                                 sx={{

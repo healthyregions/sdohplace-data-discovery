@@ -1,4 +1,3 @@
-import { makeStyles } from "@mui/styles";
 import * as React from "react";
 import tailwindConfig from "../../../../tailwind.config";
 import resolveConfig from "tailwindcss/resolveConfig";
@@ -22,18 +21,15 @@ interface Props {
   headerIcon: any;
 }
 const fullConfig = resolveConfig(tailwindConfig);
-const useStyles = makeStyles((theme) => ({
-  introCard: {
-    color: `${fullConfig.theme.colors["almostblack"]}`,
-    fontFamily: `${fullConfig.theme.fontFamily["sans"]} !important`,
-  },
-  wide: {
-    width: "95%",
-  },
-}));
+const introCardStyle: React.CSSProperties = {
+  color: `${fullConfig.theme.colors["almostblack"]}`,
+  fontFamily: `${fullConfig.theme.fontFamily["sans"]}`,
+};
+const wideStyle: React.CSSProperties = {
+  width: "95%",
+};
 
 const HeaderRow = (props: Props): JSX.Element => {
-  const classes = useStyles();
   const dispatch = useDispatch<AppDispatch>();
   const plausible = usePlausible();
   const currentShowSharedLink = useSelector(
@@ -90,7 +86,8 @@ const HeaderRow = (props: Props): JSX.Element => {
           <Box
             sx={{ display: "inline",
             marginTop: "0.75rem"}}
-            className={`text-4xl leading-10 ml-[0.5em] ${classes.introCard}`}
+            className="text-4xl leading-10 ml-[0.5em]"
+            style={introCardStyle}
           >
             {props.resultItem.title}
           </Box>
@@ -119,6 +116,7 @@ const HeaderRow = (props: Props): JSX.Element => {
             labelColor={"white"}
             endIcon={<LaunchIcon />}
             noBox={true}
+            noHover={true}
             disabled={!links.homepageUrl}
             onClick={() => {
               window.open(links.homepageUrl, "_blank").focus();
@@ -137,7 +135,7 @@ const HeaderRow = (props: Props): JSX.Element => {
           timeout={150}
           easing={"linear"}
         >
-        <div className={`flex w-full p-0 ${classes.introCard}`}>
+        <div className="flex w-full p-0" style={introCardStyle}>
           <div
             className={`flex-1 sm:px-[1em] sm:py-[0.5em] sm:my-[1.5em]`}
             style={{

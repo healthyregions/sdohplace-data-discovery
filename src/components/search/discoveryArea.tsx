@@ -28,7 +28,7 @@ const DynamicResultsPanel = dynamic(() => import("./resultsPanel"), {
   ssr: false,
   loading: () => (
     <Grid container className="h-full">
-      <Grid item xs={12}>
+      <Grid size={12}>
         <div className="h-full w-full bg-gray-100 animate-pulse" />
       </Grid>
     </Grid>
@@ -65,7 +65,10 @@ export default function DiscoveryArea({ schema }): JSX.Element {
   if (!isMounted) {
     return (
       <Grid container>
-        <Grid className="w-full px-[1em] sm:px-[2em] sm:mt-32 max-md:max-w-full shadow-none aspect-ratio bg-lightviolet">
+        <Grid
+          size={12}
+          className="w-full px-[1em] sm:px-[2em] sm:mt-32 max-md:max-w-full shadow-none aspect-ratio bg-lightviolet"
+        >
           <div className="h-full w-full bg-gray-100 animate-pulse" />
         </Grid>
       </Grid>
@@ -73,13 +76,19 @@ export default function DiscoveryArea({ schema }): JSX.Element {
   }
   return (
     <Grid container>
-      <Grid className="w-full px-[1em] sm:px-[2em] sm:mt-32 max-md:max-w-full shadow-none aspect-ratio bg-lightviolet">
+      <Grid
+        size={12}
+        className="w-full px-[1em] sm:px-[2em] sm:mt-32 max-md:max-w-full shadow-none aspect-ratio bg-lightviolet"
+      >
         <Grid container className="container mx-auto pt-[2em] sm:pt-0">
           <SearchArea schema={schema} header="Data Discovery" />
         </Grid>
       </Grid>
 
-      <Grid className="w-full px-[1em] sm:px-[2em] max-md:max-w-full shadow-none aspect-ratio">
+      <Grid
+        size={12}
+        className="w-full px-[1em] sm:px-[2em] max-md:max-w-full shadow-none aspect-ratio"
+      >
         <Grid container className="container mx-auto py-[1em] px-4">
           <Banner>
             This platform is under development, feel free to
@@ -89,18 +98,24 @@ export default function DiscoveryArea({ schema }): JSX.Element {
       </Grid>
 
       <Grid
+        size={12}
         className="w-full px-[1em] sm:px-[2em] transition-all duration-300"
       >
         <div className="block sm:px-4 sm:mb-4 sm:hidden container mx-auto ">
           <MapListToggle value={mobileViewMode} onChange={(m) => setMobileViewMode(m)} />
         </div>
-        <Grid container className="container mx-auto pt-[1.5rem]">
-          <Grid item xs={12} sm={6}>
+        <Grid
+          container
+          className="container mx-auto pt-[1.5rem]"
+          columnSpacing={{ xs: 0, sm: 2 }}
+          sx={{ alignItems: "flex-start" }}
+        >
+          <Grid size={{ xs: 12, sm: 6 }}>
             {(!isMobileView || mobileViewMode === "list") && (
               <DynamicResultsPanel schema={schema} />
             )}
           </Grid>
-          <Grid item xs={12} sm={6} className="sm:ml-[0.5em]">
+          <Grid size={{ xs: 12, sm: 6 }}>
             {(!isMobileView || mobileViewMode === "map") && (
               <>
                 <MapPanel

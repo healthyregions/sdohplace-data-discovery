@@ -31,7 +31,7 @@
     "not IE 11"
   ],
   "engines": {
-    "node": ">=14",
+    "node": ">=20.19.0",
     "yarn": ">=1.22.5"
   },
   "scripts": {
@@ -50,15 +50,14 @@
     "dev:netlify": "netlify dev"
   },
   "dependencies": {
+    "netlify-cli": "^21.0.0",
     "@emotion/react": "^11.11.4",
     "@emotion/server": "^11.11.0",
     "@emotion/styled": "^11.11.0",
     "@heroicons/react": "2.0.13",
     "@maptiler/client": "^2.6.0",
-    "@mui/core": "^5.0.0-alpha.54",
-    "@mui/icons-material": "^5.15.7",
-    "@mui/material": "^5.14.13",
-    "@mui/styles": "^5.14.14",
+    "@mui/icons-material": "^7.3.7",
+    "@mui/material": "^7.3.7",
     "@netlify/plugin-nextjs": "^5.6.0",
     "@next/font": "13.1.0",
     "@reduxjs/toolkit": "^2.4.0",
@@ -74,7 +73,6 @@
     "gray-matter": "^4.0.3",
     "js-yaml": "^4.1.0",
     "maplibre-gl": "^4.7.1",
-    "netlify-cli": "^latest",
     "next": "14",
     "next-mdx-remote": "^4.4.1",
     "next-plausible": "^3.12.5",

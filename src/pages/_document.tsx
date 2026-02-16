@@ -2,17 +2,18 @@ import React from "react";
 import Document, { Html, Head, Main, NextScript } from "next/document";
 import { WebSite, Organization } from "schema-dts";
 import { jsonLdScriptProps } from "react-schemaorg";
-import { ServerStyleSheets } from "@mui/styles";
+import createEmotionServer from "@emotion/server/create-instance";
 import config from "@/lib/config";
+import createEmotionCache from "../createEmotionCache";
 
 export default class MyDocument extends Document {
   render() {
     return (
       <Html lang="en">
         <Head>
+            <meta name="emotion-insertion-point" content="" />
             <meta name="viewport" content="initial-scale=1, width=device-width" />
             <meta property="og:site_name" content={config.site_title} />
-            {/* Some site-wide JSON-LD entries */}
             <script
                 {...jsonLdScriptProps<WebSite>({
                     "@context": "https://schema.org",
@@ -34,7 +35,6 @@ export default class MyDocument extends Document {
                     }
                 })}
             />
-            {/* extra Plausible tag for custom events */}
             <script
                 defer
                 data-domain="search.sdohplace.org"
@@ -50,48 +50,32 @@ export default class MyDocument extends Document {
   }
 }
 
-// `getInitialProps` belongs to `_document` (instead of `_app`),
-// it's compatible with server-side generation (SSG).
 MyDocument.getInitialProps = async (ctx) => {
-  // Resolution order
-  //
-  // On the server:
-  // 1. app.getInitialProps
-  // 2. page.getInitialProps
-  // 3. document.getInitialProps
-  // 4. app.render
-  // 5. page.render
-  // 6. document.render
-  //
-  // On the server with error:
-  // 1. document.getInitialProps
-  // 2. app.render
-  // 3. page.render
-  // 4. document.render
-  //
-  // On the client
-  // 1. app.getInitialProps
-  // 2. page.getInitialProps
-  // 3. app.render
-  // 4. page.render
+  const cache = createEmotionCache();
+  const { extractCriticalToChunks } = createEmotionServer(cache);
 
-  // Render app and page and get the context of the page with collected side effects.
-  const sheets = new ServerStyleSheets();
   const originalRenderPage = ctx.renderPage;
 
   ctx.renderPage = () =>
     originalRenderPage({
-      enhanceApp: (App) => (props) => sheets.collect(<App {...props} />),
+      enhanceApp: (App: any) => (props: any) => <App emotionCache={cache} {...props} />,
     });
 
   const initialProps = await Document.getInitialProps(ctx);
+  const emotionStyles = extractCriticalToChunks(initialProps.html);
+  const emotionStyleTags = emotionStyles.styles.map((style) => (
+    <style
+      data-emotion={`${style.key} ${style.ids.join(" ")}`}
+      key={style.key}
+      dangerouslySetInnerHTML={{ __html: style.css }}
+    />
+  ));
 
   return {
     ...initialProps,
-    // Styles fragment is rendered after the app and page rendering finish.
     styles: [
       ...React.Children.toArray(initialProps.styles),
-      sheets.getStyleElement(),
+      ...emotionStyleTags,
     ],
   };
 };

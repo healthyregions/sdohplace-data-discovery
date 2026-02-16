@@ -1,4 +1,3 @@
-import { makeStyles } from "@mui/styles";
 import IconTag from "../detailPanel/iconTag";
 import tailwindConfig from "../../../../tailwind.config";
 import IconMatch from "./IconMatch";
@@ -9,12 +8,6 @@ interface Props {
   themeOnly?: boolean;
 }
 const fullConfig = resolveConfig(tailwindConfig);
-const useStyles = makeStyles((theme) => ({
-  themeIcons: {
-    color: `${fullConfig.theme.colors["almostblack"]}`,
-    fontFamily: `${fullConfig.theme.fontFamily["sans"]} !important`,
-  },
-}));
 const ThemeIcons = (props: Props): JSX.Element => {
   const iconData = [
     "Demographics",

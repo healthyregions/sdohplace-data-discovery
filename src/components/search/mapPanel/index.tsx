@@ -1,4 +1,3 @@
-import { Grid } from "@mui/material";
 import { useState, useEffect } from "react";
 import MapPanelContent from "./mapPanelContent";
 import { SolrObject } from "meta/interface/SolrObject";
@@ -20,9 +19,9 @@ export default function MapPanel(props: Props) {
 
   if (!isMounted) {
     return (
-      <Grid item className="sm:px-[2em]" xs={12} display={props.showMap}>
+      <div className="sm:px-[2em]" style={{ display: props.showMap }}>
         <div className="h-full w-full bg-gray-100 animate-pulse" />
-      </Grid>
+      </div>
     );
   }
 

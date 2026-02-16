@@ -3,8 +3,7 @@ import {
   clearSearch, 
   setAISearch, 
   setThoughts, 
-  setUsedSpellCheck,
-  setInputValue
+  setUsedSpellCheck
 } from "@/store/slices/searchSlice";
 
 export const MAX_SEARCH_LENGTH = 100;
@@ -21,7 +20,10 @@ export const handleClearSearch = (
   if (isBrowser) {
     const searchParams = new URLSearchParams(window.location.search);
     searchParams.delete("query");
-    const newUrl = `${window.location.pathname}?${searchParams.toString()}`;
+    const serialized = searchParams.toString();
+    const newUrl = serialized
+      ? `${window.location.pathname}?${serialized}`
+      : window.location.pathname;
     window.history.pushState({}, "", newUrl);
   }
 };
@@ -38,9 +40,21 @@ export const handleModeSwitch = (
   }
   const newValue = !aiSearch;
   dispatch(setAISearch(newValue));
+  dispatch(clearSearch());
   dispatch(setThoughts(""));
-  dispatch(setInputValue(""));
   dispatch(setUsedSpellCheck(false));
+
+  if (typeof window !== "undefined") {
+    const searchParams = new URLSearchParams(window.location.search);
+    searchParams.delete("query");
+    searchParams.set("ai_search", newValue.toString());
+    const serialized = searchParams.toString();
+    const newUrl = serialized
+      ? `${window.location.pathname}?${serialized}`
+      : window.location.pathname;
+    window.history.pushState({}, "", newUrl);
+  }
+
   plausible(eventType, {
     props: {
       aiSearch: !!newValue,

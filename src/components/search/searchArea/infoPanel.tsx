@@ -1,5 +1,4 @@
 import * as React from "react";
-import { makeStyles } from "@mui/styles";
 import CloseIcon from "@mui/icons-material/Close";
 import tailwindConfig from "tailwind.config";
 import resolveConfig from "tailwindcss/resolveConfig";
@@ -26,12 +25,10 @@ interface Props {
   value: number;
 }
 const fullConfig = resolveConfig(tailwindConfig);
-const useStyles = makeStyles((theme) => ({
-  infoPanel: {
-    color: `${fullConfig.theme.colors["almostblack"]}`,
-    fontFamily: `${fullConfig.theme.fontFamily["sans"]}`,
-  },
-}));
+const infoPanelStyle: React.CSSProperties = {
+  color: `${fullConfig.theme.colors["almostblack"]}`,
+  fontFamily: `${fullConfig.theme.fontFamily["sans"]}`,
+};
 const tabTitles = [
   "Getting started",
   "Keyword search",
@@ -108,14 +105,13 @@ function a11yProps(index: number) {
 
 export default function InfoPanel() {
   const dispatch = useDispatch();
-  const classes = useStyles();
   const { infoPanelTab } = useSelector((state: RootState) => state.ui);
   const tabPanelRef = React.useRef(null);
   const handleChange = (event: React.SyntheticEvent, newValue: number) => {
     dispatch(setInfoPanelTab(newValue));
   };
   return (
-    <div className={`${classes.infoPanel}`}>
+    <div style={infoPanelStyle}>
       <Box
         sx={{
           borderBottom: 1,

@@ -501,6 +501,11 @@ const searchSlice = createSlice({
       })
       .addCase(clearSearch.pending, (state) => {
         state.inputValue = "";
+        state.query = "*";
+        state.originalQuery = "*";
+        state.usedQuery = "*";
+        state.usedSpellCheck = false;
+        state.spellCheck = null;
         state.suggestions = [];
       })
       .addCase(clearSearch.fulfilled, (state) => {

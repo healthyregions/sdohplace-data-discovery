@@ -1,7 +1,6 @@
 "use client";
-import { makeStyles } from "@mui/styles";
 import * as React from "react";
-import { Checkbox, FormControlLabel, Grid, Typography } from "@mui/material";
+import { Grid, Typography } from "@mui/material";
 import tailwindConfig from "../../../../tailwind.config";
 import resolveConfig from "tailwindcss/resolveConfig";
 import IconText from "../iconText";
@@ -21,68 +20,62 @@ interface Props {
   resultItem: SolrObject;
 }
 const fullConfig = resolveConfig(tailwindConfig);
-const useStyles = makeStyles((theme) => ({
-  resultCard: {
-    color: `${fullConfig.theme.colors["almostblack"]}`,
-    fontFamily: `${fullConfig.theme.fontFamily["sans"]}`,
-    fontWeight: 400,
-    fontSize: "0.875rem",
-    paddingBottom: "0.5rem",
+
+const resultCardStyle: React.CSSProperties = {
+  color: `${fullConfig.theme.colors["almostblack"]}`,
+  fontFamily: `${fullConfig.theme.fontFamily["sans"]}`,
+  fontWeight: 400,
+  fontSize: "0.875rem",
+  paddingBottom: "0.5rem",
+};
+
+const tooltipSx = {
+  backgroundColor: "white !important",
+  color: `${fullConfig.theme.colors["almostblack"]}`,
+  maxWidth: 500,
+  fontSize: "0.875rem",
+  border: `1px solid ${fullConfig.theme.colors["strongorange"]}`,
+  borderRadius: "4px",
+  padding: "8px",
+  boxShadow: "0px 4px 4px 0px lightgray",
+  "& .MuiTooltip-arrow": {
+    color: fullConfig.theme.colors["strongorange"],
   },
-  tooltipHeader: {
-    marginBottom: "8px",
-    fontWeight: 500,
-    color: `${fullConfig.theme.colors["almostblack"]}`,
-    borderBottom: `1px solid ${fullConfig.theme.colors["strongorange"]}`,
-    paddingBottom: "4px",
+};
+
+const scoreExplainStyle: React.CSSProperties = {
+  marginBottom: "8px",
+  fontSize: "0.8rem",
+  color: fullConfig.theme.colors["frenchviolet"],
+};
+
+const highlightsListStyle: React.CSSProperties = {
+  listStyleType: "decimal",
+  paddingLeft: "20px",
+  margin: 0,
+};
+
+const highlightItemSx = {
+  marginBottom: "8px",
+  color: `${fullConfig.theme.colors["almostblack"]}`,
+  lineHeight: "1.4",
+  "& strong": {
+    color: fullConfig.theme.colors["strongorange"],
+    fontWeight: 600,
   },
-  tooltip: {
-    backgroundColor: "white !important",
-    color: `${fullConfig.theme.colors["almostblack"]}`,
-    maxWidth: 500,
-    fontSize: "0.875rem",
-    border: `1px solid ${fullConfig.theme.colors["strongorange"]}`,
-    borderRadius: "4px",
-    padding: "8px",
-    boxShadow: "0px 4px 4px 0px lightgray",
-    "& .MuiTooltip-arrow": {
-      color: fullConfig.theme.colors["strongorange"],
-    },
+  "&:last-child": {
+    marginBottom: 0,
   },
-  scoreExplain: {
-    marginBottom: "8px",
-    fontSize: "0.8rem",
-    color: fullConfig.theme.colors["frenchviolet"],
-  },
-  highlightsList: {
-    listStyleType: "decimal",
-    paddingLeft: "20px",
-    margin: 0,
-  },
-  highlightItem: {
-    marginBottom: "8px",
-    color: `${fullConfig.theme.colors["almostblack"]}`,
-    lineHeight: "1.4",
-    "& strong": {
-      color: fullConfig.theme.colors["strongorange"],
-      fontWeight: 600,
-    },
-    "&:last-child": {
-      marginBottom: 0,
-    },
-  },
-  mapPreviewControl: {
-    padding: "6px",
-    cursor: "pointer",
-    borderRadius: "4px",
-    transition: "background-color 0.2s",
-    "&:hover": {
-      backgroundColor: "rgba(0, 0, 0, 0.04)",
-    },
-    width: "fit-content",
-    marginLeft: "auto",
-  },
-}));
+};
+
+const mapPreviewControlStyle: React.CSSProperties = {
+  padding: 0,
+  cursor: "pointer",
+  borderRadius: 0,
+  transition: "none",
+  width: "fit-content",
+};
+
 const HighlightsTooltip = ({
   q,
   spellcheck,
@@ -91,7 +84,6 @@ const HighlightsTooltip = ({
   avgScore,
   maxScore,
 }) => {
-  const classes = useStyles();
   const currentQuery = useSelector((state: RootState) => state.search.query);
   const safeHighlights = Array.isArray(highlights) ? highlights : [];
   const filteredHighlights = safeHighlights.filter(
@@ -112,12 +104,12 @@ const HighlightsTooltip = ({
       return "This item matches your search.";
     }
   }, [q, spellcheck, currentQuery, score, avgScore, maxScore]);
-  
+
   return filteredHighlights.length > 0 ? (
     <div>
       <div
-        className={classes.scoreExplain}
         style={{
+          ...scoreExplainStyle,
           paddingBottom: 8,
           borderBottom: `1px solid ${fullConfig.theme.colors["strongorange"]}`,
         }}
@@ -127,9 +119,13 @@ const HighlightsTooltip = ({
         )}
         <p style={{ paddingTop: 4 }}>Information in this result includes:</p>
       </div>
-      <ol className={classes.highlightsList}>
+      <ol style={highlightsListStyle}>
         {filteredHighlights.map((highlight, index) => (
-          <li key={index} className={classes.highlightItem}>
+          <li key={index} style={{
+            marginBottom: "8px",
+            color: `${fullConfig.theme.colors["almostblack"]}`,
+            lineHeight: "1.4",
+          }}>
             ...
             <span dangerouslySetInnerHTML={{ __html: highlight }} />
             ...
@@ -139,7 +135,7 @@ const HighlightsTooltip = ({
     </div>
   ) : (
     <div>
-      <div className={classes.scoreExplain}>
+      <div style={scoreExplainStyle}>
         {scoreExplanation && (
           <span dangerouslySetInnerHTML={{ __html: scoreExplanation }} />
         )}
@@ -149,7 +145,6 @@ const HighlightsTooltip = ({
 };
 const ResultCard = (props: Props): JSX.Element => {
   const dispatch = useDispatch();
-  const classes = useStyles();
   const plausible = usePlausible();
   const { showDetailPanel } = useSelector((state: RootState) => state.ui);
   const previewLyrs = useSelector((state: RootState) => state.map.previewLyrs);
@@ -170,7 +165,6 @@ const ResultCard = (props: Props): JSX.Element => {
     return previewLyrs.some((p) => p.lyrId === itemId);
   }, [previewLyrs, itemId]);
 
-  // prevent analytics errors
   const safeTrackEvent = (eventName, props) => {
     try {
       if (process.env.NODE_ENV !== 'development') {
@@ -185,7 +179,7 @@ const ResultCard = (props: Props): JSX.Element => {
     (event) => {
       event.preventDefault();
       event.stopPropagation();
-      
+
       if (!itemId || !hasHighlightIds) return;
       if (isInMapPreview) {
           dispatch(
@@ -203,7 +197,6 @@ const ResultCard = (props: Props): JSX.Element => {
             },
           ])
         );
-        // prevent analytics errors
         safeTrackEvent(EventType.ClickedMapPreview, {
           props: {
             resourceId: itemId,
@@ -218,7 +211,6 @@ const ResultCard = (props: Props): JSX.Element => {
     (event) => {
       if (!itemId) return;
       dispatch(setShowDetailPanel(itemId));
-      // prevent analytics errors
       safeTrackEvent(EventType.ClickedItemDetails, {
         props: {
           resourceId: itemId,
@@ -252,13 +244,9 @@ const ResultCard = (props: Props): JSX.Element => {
             : undefined,
       }}
     >
-      <div className="flex flex-col sm:flex-row items-center px-2">
-        <Grid
-          container
-          spacing={0}
-          className="flex flex-col sm:flex-row items-center"
-        >
-          <Grid item sm={10} className="items-start">
+      <div className="px-2">
+        <Grid container spacing={0}>
+          <Grid size={{ xs: 12, sm: 10 }} className="items-start">
             <IconText
               roundBackground={true}
               svgIcon={IconMatch(itemSubject)}
@@ -266,53 +254,54 @@ const ResultCard = (props: Props): JSX.Element => {
               labelClass={`text-l font-medium ${fullConfig.theme.fontFamily["sans"]}`}
               labelColor={fullConfig.theme.colors["almostblack"]}
             />
+          </Grid>
+          <Grid
+            size={{ xs: 12, sm: 2 }}
+            className="mt-1 sm:mt-0 flex justify-start sm:justify-end font-bold"
+          >
+            <button
+              onClick={handleShowDetails}
+              style={{ color: fullConfig.theme.colors["frenchviolet"] }}
+            >
+              Details <span className="ml-1">&#8594;</span>
+            </button>
+          </Grid>
+          <Grid size={{ xs: 12, sm: 10 }} className="items-start">
             <div
-              className={`${classes.resultCard} truncate ml-12`}
-              style={{ marginTop: "-0.5rem" }}
+              className="truncate ml-12"
+              style={{ ...resultCardStyle, marginTop: "-0.5rem" }}
             >
               by{" "}
               {itemPublisher}
             </div>
           </Grid>
           <Grid
-            item
-            sm={2}
-            className="order-1 sm:order-none sm:ml-auto items-center justify-center sm:justify-end font-bold"
+            size={{ xs: 12, sm: 2 }}
+            className="mt-1 sm:mt-[-0.5rem] flex justify-start sm:justify-end"
           >
-            <div className={"flex justify-end"}>
-              <button
-                onClick={handleShowDetails}
-                style={{ color: fullConfig.theme.colors["frenchviolet"] }}
-              >
-                Details <span className="ml-1">&#8594;</span>
-              </button>
-            </div>
-
-            <div className={"flex justify-end"}>
+            <div
+              onClick={handleMapPreviewToggle}
+              style={{
+                ...mapPreviewControlStyle,
+                cursor: hasHighlightIds ? "pointer" : "default",
+                opacity: hasHighlightIds ? 1 : 0.5,
+              }}
+              title={
+                !hasHighlightIds
+                  ? "No geographic areas have been defined for this dataset"
+                  : "Preview the geographic areas that this dataset covers"
+              }
+            >
               <div
-                className={classes.mapPreviewControl}
-                onClick={handleMapPreviewToggle}
                 style={{
-                  cursor: hasHighlightIds ? "pointer" : "default",
-                  opacity: hasHighlightIds ? 1 : 0.5,
+                  color: `${
+                    hasHighlightIds ? fullConfig.theme.colors["frenchviolet"] : fullConfig.theme.colors["darkgray"]
+                  }`,
+                  fontFamily: `${fullConfig.theme.fontFamily["sans"]}`,
+                  fontSize: "0.875rem",
                 }}
-                title={
-                  !hasHighlightIds
-                    ? "No geographic areas have been defined for this dataset"
-                    : "Preview the geographic areas that this dataset covers"
-                }
               >
-                <div
-                  style={{
-                    color: `${
-                      hasHighlightIds ? fullConfig.theme.colors["frenchviolet"] : fullConfig.theme.colors["darkgray"]
-                    }`,
-                    fontFamily: `${fullConfig.theme.fontFamily["sans"]}`,
-                    fontSize: "0.875rem",
-                  }}
-                >
-                  {isInMapPreview ? "Remove coverage" : "Show coverage"}
-                </div>
+                {isInMapPreview ? "Remove coverage" : "Show coverage"}
               </div>
             </div>
           </Grid>
@@ -323,22 +312,22 @@ const ResultCard = (props: Props): JSX.Element => {
         container
         className="flex flex-col sm:flex-row px-2 mt-1"
       >
-        <Grid item xs={8} sx={{ mt: "1em", pt: "0 !important" }}>
-          <div className={`${classes.resultCard} truncate `}>
+        <Grid size={{ xs: 12, sm: 8 }} sx={{ mt: "1em", pt: "0 !important" }}>
+          <div className="truncate" style={resultCardStyle}>
             Keywords:{" "}
             {props.resultItem.meta.keyword
               ? props.resultItem.meta.keyword.join(", ")
               : ""}
           </div>
-          <div className={`${classes.resultCard} truncate `}>
+          <div className="truncate" style={resultCardStyle}>
             Creator:{" "}
             {props.resultItem.creator
               ? props.resultItem.creator.join(", ")
               : ""}
           </div>
         </Grid>
-        <Grid item xs={4} sx={{ mt: "1em", pt: "0 !important" }}>
-          <div className={`${classes.resultCard} truncate `}>
+        <Grid size={{ xs: 12, sm: 4 }} sx={{ mt: "1em", pt: "0 !important" }}>
+          <div className="truncate" style={resultCardStyle}>
             Year:{" "}
             {props.resultItem.index_year?.length > 1
               ? `${Math.min(
@@ -348,7 +337,7 @@ const ResultCard = (props: Props): JSX.Element => {
                 )}`
               : props.resultItem.index_year}
           </div>
-          <div className={`${classes.resultCard} truncate `}>
+          <div className="truncate" style={resultCardStyle}>
             Spatial Res:{" "}
             {props.resultItem.meta.spatial_resolution
               ? props.resultItem.meta.spatial_resolution.join(", ")
@@ -372,7 +361,7 @@ const ResultCard = (props: Props): JSX.Element => {
             maxScore={maxScore}
           />
         }
-        classes={{ tooltip: classes.tooltip }}
+        slotProps={{ tooltip: { sx: tooltipSx } }}
         placement="right"
         arrow
       >

@@ -1,6 +1,5 @@
 import * as React from "react";
 import { useSelector } from "react-redux";
-import { makeStyles } from "@mui/styles";
 import { Box, Grid, Collapse } from "@mui/material";
 import { SearchUIConfig } from "@/components/searchUIConfig";
 import tailwindConfig from "../../../../tailwind.config";
@@ -20,15 +19,12 @@ interface Props {
   schema: any;
 }
 const fullConfig = resolveConfig(tailwindConfig);
-const useStyles = makeStyles((theme) => ({
-  searchArea: {
-    color: fullConfig.theme.colors["almostblack"],
-    fontFamily: fullConfig.theme.fontFamily["sans"],
-  },
-}));
+const searchAreaStyle: React.CSSProperties = {
+  color: fullConfig.theme.colors["almostblack"],
+  fontFamily: fullConfig.theme.fontFamily["sans"],
+};
 
 const SearchArea = (props: Props): JSX.Element => {
-  const classes = useStyles();
   const plausible = usePlausible();
   const { showInfoPanel } = useSelector((state: RootState) => state.ui);
   const { aiSearch } = useSelector((state: RootState) => state.search);
@@ -43,15 +39,13 @@ const SearchArea = (props: Props): JSX.Element => {
   return (
     <>
       <Grid
-        item
-        xs={12}
+        size={12}
         className="min-[940px]:hidden py-4 px-4"
       >
         <MobileHeader title={props.header} onMenuClick={handleMobileMenuClick} />
         <Box className="mt-4">
           <SpatialResolutionCheck
             src={SearchUIConfig.search.searchBox.spatialResOptions}
-            schema={props.schema}
             isMobile={true}
           />
         </Box>
@@ -61,9 +55,7 @@ const SearchArea = (props: Props): JSX.Element => {
       </Grid>
 
       <Grid
-        item
-        xs={12}
-        sm={6}
+        size={{ xs: 12, sm: 6 }}
         sx={{
           display: 'flex',
           flexDirection: 'column',
@@ -103,7 +95,8 @@ const SearchArea = (props: Props): JSX.Element => {
               This platform provides access to spatially indexed and curated
               databases, specifically designed for conducting health equity
               research.{" "}
-              <a
+              <button
+                type="button"
                 onClick={() => {
                   const target = document.getElementById("sdoh-learn-more");
                   if (target) {
@@ -111,11 +104,17 @@ const SearchArea = (props: Props): JSX.Element => {
                   }
                   plausible(EventType.ClickedGetStarted);
                 }}
-                style={{ cursor: "pointer" }}
+                style={{
+                  cursor: "pointer",
+                  background: "transparent",
+                  border: "none",
+                  padding: 0,
+                  font: "inherit",
+                }}
                 className="no-underline text-frenchviolet"
               >
                 <strong>Get started &rarr;</strong>
-              </a>
+              </button>
             </div>
             {aiSearch && <AIHintText />}
           </div>
@@ -123,9 +122,7 @@ const SearchArea = (props: Props): JSX.Element => {
         </Collapse>
       </Grid>
       <Grid
-        item
-        xs={12}
-        sm={6}
+        size={{ xs: 12, sm: 6 }}
         sx={{
           display: 'flex',
           flexDirection: 'column',
@@ -133,13 +130,13 @@ const SearchArea = (props: Props): JSX.Element => {
           alignItems: 'flex-start',
           '@media (max-width: 939px)': { display: 'none' }
         }}
-        className={`py-[2em] px-8 sm:pl-[5rem] ${classes.searchArea}`}
+        className="py-[2em] px-8 sm:pl-[5rem]"
+        style={searchAreaStyle}
       >
           <Box width="100%">
             <Box width="100%">
               <SpatialResolutionCheck
                 src={SearchUIConfig.search.searchBox.spatialResOptions}
-                schema={props.schema}
               />
             </Box>
             <Box width="100%" className="mt-[2em] sm:mt-0">

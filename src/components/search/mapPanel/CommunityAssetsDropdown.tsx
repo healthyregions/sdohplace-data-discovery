@@ -1,6 +1,5 @@
 import React from "react";
 import {
-  MenuList,
   MenuItem,
   ListItemIcon,
   IconButton,
@@ -27,6 +26,26 @@ const CommunityAssetsDropdown: React.FC<Props> = ({
   toggleOverlay,
   clearAll,
 }) => {
+  const handleOverlayToggle = (overlay: string) => {
+    toggleOverlay(overlay);
+  };
+
+  const handleCheckboxClick = (
+    event: React.MouseEvent<HTMLButtonElement>,
+    overlay: string
+  ) => {
+    event.stopPropagation();
+    handleOverlayToggle(overlay);
+  };
+
+  const handleDownloadClick = (
+    event: React.MouseEvent<HTMLButtonElement>,
+    overlay: string
+  ) => {
+    event.stopPropagation();
+    handleDownload(overlay);
+  };
+
   const handleDownload = (key: string) => {
     const entry = overlayRegistry[key];
     if (!entry) return;
@@ -43,27 +62,21 @@ const CommunityAssetsDropdown: React.FC<Props> = ({
   };
 
   return (
-    <MenuList
-      sx={{
-        background: "white",
-        borderRadius: "12px",
-        p: 0,
-        fontFamily: "Nunito, sans-serif",
-        minWidth: 300,
-      }}
-    >
+    <>
       {Object.keys(overlayRegistry).map((overlay) => {
         const checked = overlayIds.includes(overlay);
         const color = overlayRegistry[overlay].mainColor || "#CCCCCC";
         return (
           <MenuItem
             key={overlay}
+            onClick={() => handleOverlayToggle(overlay)}
             sx={{ display: "flex", alignItems: "center", gap: 1, px: 2, py: 0 }}
           >
             <ListItemIcon sx={{ minWidth: 44 }}>
               <Checkbox
                 checked={checked}
-                onChange={() => toggleOverlay(overlay)}
+                onClick={(event) => handleCheckboxClick(event, overlay)}
+                onChange={() => undefined}
                 sx={{
                   color: fullConfig.theme.colors["frenchviolet"],
                   "&.Mui-checked": {
@@ -113,7 +126,10 @@ const CommunityAssetsDropdown: React.FC<Props> = ({
                 {overlay}
               </span>
             </Box>
-            <IconButton size="small" onClick={() => handleDownload(overlay)}>
+            <IconButton
+              size="small"
+              onClick={(event) => handleDownloadClick(event, overlay)}
+            >
               <VerticalAlignBottomIcon
                 sx={{ color: fullConfig.theme.colors["frenchviolet"] }}
               />
@@ -135,7 +151,7 @@ const CommunityAssetsDropdown: React.FC<Props> = ({
         {/* <ListItemIcon sx={{ minWidth: 44 }} /> */}
         <span style={{ fontFamily: "Nunito, sans-serif", paddingLeft: "0.75em" }}>Clear all</span>
       </MenuItem>
-    </MenuList>
+    </>
   );
 };
 

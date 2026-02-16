@@ -1,4 +1,3 @@
-import { makeStyles } from "@mui/styles";
 import tailwindConfig from "tailwind.config";
 import resolveConfig from "tailwindcss/resolveConfig";
 
@@ -10,14 +9,6 @@ interface Props {
   roundBackground: boolean;
 }
 const fullConfig = resolveConfig(tailwindConfig);
-const useStyles = makeStyles((theme) => ({
-  iconTag: {
-    color: `${fullConfig.theme.colors["almostblack"]}`,
-    fontFamily: `${fullConfig.theme.fontFamily["sans"]}`,
-    fontWeight: 400,
-    fontSize: "0.875rem",
-  },
-}));
 const IconText: React.FC<Props> = ({
   svgIcon,
   label,
@@ -25,7 +16,6 @@ const IconText: React.FC<Props> = ({
   labelColor,
   roundBackground,
 }): JSX.Element => {
-  const classes = useStyles();
   return (
     <div
       className="flex items-center shadow-none"

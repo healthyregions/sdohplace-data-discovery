@@ -2,8 +2,6 @@ import { Button } from "@mui/material";
 import Image from "next/image";
 import resolveConfig from "tailwindcss/resolveConfig";
 import tailwindConfig from "tailwind.config.js";
-import { makeStyles } from "@mui/styles";
-
 const fullConfig = resolveConfig(tailwindConfig);
 interface Props {
   className?: string;
@@ -23,31 +21,11 @@ interface Props {
   border?: string;
   endIcon?: any; // if there's end icon, then start icon and label will be left aligned and end icon will be right aligned (i.e. footer style)
 }
-const useStyles = makeStyles((theme) => ({
-  buttonWithEndIcon: {
-    position: "relative",
-    paddingLeft: "4rem",
-    paddingRight: "4rem",
-    "& .MuiButton-startIcon": {
-      position: "absolute",
-      left: "1.5rem",
-    },
-    "& .MuiButton-endIcon": {
-      position: "absolute",
-      right: "1.5rem",
-    },
-    "& .button-content": {
-      textWrap: "pretty",
-      position: "absolute",
-      left: "4rem",
-    },
-  }
-}));
 const ButtonWithIcon = (props: Props): JSX.Element => {
-  const classes = useStyles();
   return (
     <div>
       <Button
+        disableElevation
         className={props.className || ''}
         variant="contained"
         startIcon={
@@ -68,7 +46,7 @@ const ButtonWithIcon = (props: Props): JSX.Element => {
             height: "3.25rem",
           },
           borderRadius: props.borderRadius ? props.borderRadius : "6.25rem",
-          background: `${fullConfig.theme.colors[props.fillColor]}`,
+          backgroundColor: `${fullConfig.theme.colors[props.fillColor]} !important`,
           textTransform: "none",
           color: `${fullConfig.theme.colors[props.labelColor]}`,
           fontFamily: `${fullConfig.theme.fontFamily["sans"]}`,

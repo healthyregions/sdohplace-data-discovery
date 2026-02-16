@@ -1,8 +1,6 @@
 import type { NextPage } from "next";
 import Image from "next/image";
 import Link from "next/link";
-import { makeStyles, withStyles } from "@mui/styles";
-import TextField from "@mui/material/TextField";
 import ButtonWithIcon from "@/components/homepage/buttonwithicon";
 
 import footerLine1 from "@/public/logos/footer-line1.svg";
@@ -17,8 +15,6 @@ import mobileFooterLine3 from "@/public/logos/mobile-footer-line3.svg";
 import mobileFooterLine4 from "@/public/logos/mobile-footer-line4.svg";
 import mobileFooterLine5 from "@/public/logos/mobile-footer-line5.svg";
 import theSDOHPlaceProjectFooter from "@/public/logos/the-sdoh-place-project-footer.svg";
-import resolveConfig from "tailwindcss/resolveConfig";
-import tailwindConfig from "tailwind.config.js";
 import {ChevronRight, Feed, FeedOutlined, MailOutline} from "@mui/icons-material";
 
 import githubIcon from "@/public/logos/github-purple-icon.svg";
@@ -26,53 +22,7 @@ import linkedinIcon from "@/public/logos/linkedin-purple-icon.svg";
 import facebookIcon from "@/public/logos/facebook-purple-icon.svg";
 import blueskyIcon from "@/public/logos/bluesky-purple-icon.svg";
 
-const fullConfig = resolveConfig(tailwindConfig);
-const useStyles = makeStyles((theme) => ({
-  marginAutoDesktop: {
-    "@media (min-width: 960px)": {
-      margin: "0 auto",
-    },
-  },
-  marginAutoDesktopAhead: {
-    "@media (min-width: 960px)": {
-      margin: "-10rem auto 0 auto",
-    },
-  },
-}));
 const Footer = (): JSX.Element => {
-  const classes = useStyles();
-  const CssTextField = withStyles({
-    root: {
-      "& label.Mui-focused": {
-        color: `${fullConfig.theme.colors["frenchviolet"]}`,
-      },
-      "& label": {
-        color: `${fullConfig.theme.colors["lightgray"]}`,
-      },
-      "& .MuiInput-underline:after": {
-        borderBottomColor: `${fullConfig.theme.colors["frenchviolet"]}`,
-      },
-      "& .MuiOutlinedInput-root": {
-        "& fieldset": {
-          borderColor: `${fullConfig.theme.colors["lightgray"]}`,
-        },
-        "&.Mui-focused input": {
-          "--tw-ring-color": "none",
-          outline: "none",
-        },
-        "&:hover fieldset": {
-          borderColor: `${fullConfig.theme.colors["lightgray"]}`,
-        },
-        "&.Mui-focused fieldset": {
-          borderColor: `${fullConfig.theme.colors["frenchviolet"]}`,
-          outline: "none",
-        },
-      },
-      "& input": {
-        color: `${fullConfig.theme.colors["lightgray"]}`,
-      },
-    },
-  })(TextField);
 
   return (
     <>
@@ -245,12 +195,12 @@ const Footer = (): JSX.Element => {
           </div>
           <div className="flex flex-col justify-center gap-[1.56rem] flex-[33.33]">
             <ul
-              className={`${classes.marginAutoDesktop} flex flex-col justify-center gap-5 items-start`}
+              className="min-[960px]:mx-auto flex flex-col justify-center gap-5 items-start"
             >
               <li className="leading-4">
                 <Link
                   className="uppercase no-underline text-salmonpink text-center text-xl-rfs"
-                  href="https://sdohplace.org"
+                  href="/"
                 >
                   Home
                 </Link>
@@ -258,7 +208,7 @@ const Footer = (): JSX.Element => {
               <li className="leading-4">
                 <Link
                   className="uppercase no-underline text-salmonpink text-center text-xl-rfs"
-                  href="https://sdohplace.org/advisory"
+                  href="/advisory"
                 >
                   Advisory
                 </Link>
@@ -266,7 +216,7 @@ const Footer = (): JSX.Element => {
               <li className="leading-4">
                 <Link
                   className="uppercase no-underline text-salmonpink text-center text-xl-rfs"
-                  href="https://sdohplace.org/fellows"
+                  href="/fellows"
                 >
                   Fellows
                 </Link>
@@ -274,7 +224,7 @@ const Footer = (): JSX.Element => {
               <li className="leading-4">
                 <Link
                   className="uppercase no-underline text-salmonpink text-center text-xl-rfs"
-                  href="https://sdohplace.org/news"
+                  href="/news"
                 >
                   News
                 </Link>
@@ -282,7 +232,7 @@ const Footer = (): JSX.Element => {
               <li className="leading-4">
                 <Link
                   className="uppercase no-underline text-salmonpink text-center text-xl-rfs"
-                  href="https://sdohplace.org/project"
+                  href="/project"
                 >
                   About
                 </Link>
@@ -290,7 +240,7 @@ const Footer = (): JSX.Element => {
               <li className="leading-4">
                 <Link
                   className="uppercase no-underline text-salmonpink text-center text-xl-rfs"
-                  href="https://sdohplace.org/contact"
+                  href="/contact"
                 >
                   Contact Us
                 </Link>
@@ -298,7 +248,7 @@ const Footer = (): JSX.Element => {
             </ul>
           </div>
           <div
-            className={`${classes.marginAutoDesktopAhead} flex flex-row justify-center flex-[33.33]`}
+            className="min-[960px]:mx-auto min-[960px]:mt-[-10rem] flex flex-row justify-center flex-[33.33]"
           >
             <div
               className={`flex flex-col gap-[.5rem] justify-center max-w-[21.5625rem] `}
@@ -314,8 +264,10 @@ const Footer = (): JSX.Element => {
                 justifyContent="space-between"
                 fillColor={"smokegray"}
                 labelColor={"salmonpink"}
+                noBox={true}
+                noHover={true}
                 onClick={() => {
-                  window.location.href = "https://sdohplace.org/news";
+                  window.location.href = "/news";
                 }}
               ></ButtonWithIcon>
               <ButtonWithIcon
@@ -327,6 +279,8 @@ const Footer = (): JSX.Element => {
                 justifyContent="space-between"
                 fillColor={"smokegray"}
                 labelColor={"salmonpink"}
+                noBox={true}
+                noHover={true}
                 onClick={() => {
                   // Link to sign up to the Mailing List
                   window.open("https://groups.webservices.illinois.edu/subscribe/192463", "_blank");
@@ -334,35 +288,6 @@ const Footer = (): JSX.Element => {
               ></ButtonWithIcon>
             </div>
           </div>
-          {/*
-          <div className="flex flex-col justify-center flex-[34.86] items-start">
-            <div className=" text-white text-2xl-rfs leading-8 tracking-[0.03125rem]">
-              Sign up for our newsletter!
-            </div>
-            <div className=" text-salmonpink text-xl-rfs leading-6 tracking-[0.03125rem]">
-              For all the latest and greatest
-            </div>
-            <div className="relative mt-[1.25rem]">
-              <CssTextField
-                label="Email"
-                variant="outlined"
-                id="custom-css-outlined-input"
-                type="email"
-                InputProps={{
-                  endAdornment: (
-                    <InputAdornment position="end">
-                      <IconButton
-                        aria-label="toggle password visibility"
-                        edge="end"
-                      ></IconButton>
-                      <Image priority src={sendIcon} alt="Subscribe" />
-                    </InputAdornment>
-                  ),
-                }}
-              />
-            </div>
-          </div>
-          */}
         </div>
       </div>
     </>

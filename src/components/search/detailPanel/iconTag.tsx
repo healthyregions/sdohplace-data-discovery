@@ -1,4 +1,3 @@
-import { makeStyles } from "@mui/styles";
 import * as React from "react";
 import tailwindConfig from "../../../../tailwind.config";
 import resolveConfig from "tailwindcss/resolveConfig";
@@ -19,16 +18,13 @@ interface Props {
 }
 
 const fullConfig = resolveConfig(tailwindConfig);
-const useStyles = makeStyles((theme) => ({
-  iconTag: {
-    color: fullConfig.theme.colors["almostblack"],
-    fontFamily: fullConfig.theme.fontFamily["sans"],
-    fontSize: "0.875rem",
-  },
-}));
+const iconTagStyle: React.CSSProperties = {
+  color: fullConfig.theme.colors["almostblack"],
+  fontFamily: fullConfig.theme.fontFamily["sans"],
+  fontSize: "0.875rem",
+};
 
 const IconTag = (props: Props): JSX.Element => {
-  const classes = useStyles();
   const dispatch = useDispatch<AppDispatch>();
   const plausible = usePlausible();
   const { subject, schema } = useSelector((state: RootState) => state.search);
@@ -83,9 +79,8 @@ const IconTag = (props: Props): JSX.Element => {
   return (
     <div
       className={`flex items-center shadow-none ${getBgColorClass()}
-      border border-1 rounded-[0.5em] py-[0.375em] pl-[0.5em] pr-[1em] space-x-2 ${
-        classes.iconTag
-      } cursor-pointer ${getBorderColorClass()}`}
+      border border-1 rounded-[0.5em] py-[0.375em] pl-[0.5em] pr-[1em] space-x-2 cursor-pointer ${getBorderColorClass()}`}
+      style={iconTagStyle}
       onClick={() => handleSubjectClick(props.label)}
     >
       {props.roundBackground ? (

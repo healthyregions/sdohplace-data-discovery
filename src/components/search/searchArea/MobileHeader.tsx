@@ -55,12 +55,19 @@ const MobileHeader: React.FC<MobileHeaderProps> = ({ title, onMenuClick }) => {
       >
         Get access to spatially indexed and curated resources, that are free and
         specifically designed for conducting health equity research.{" "}
-        <a
+        <button
+          type="button"
           onClick={handleGetStartedClick}
+          style={{
+            background: "transparent",
+            border: "none",
+            padding: 0,
+            font: "inherit",
+          }}
           className="no-underline text-frenchviolet cursor-pointer"
         >
           <strong>Get started&rarr;</strong>
-        </a>
+        </button>
       </p>
     </div>
   );
