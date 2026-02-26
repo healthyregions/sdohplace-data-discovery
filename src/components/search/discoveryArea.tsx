@@ -38,16 +38,20 @@ const DynamicResultsPanel = dynamic(() => import("./resultsPanel"), {
 export default function DiscoveryArea({ schema }): JSX.Element {
   const dispatch = useDispatch<AppDispatch>();
   const { showDetailPanel } = useSelector((state: RootState) => state.ui);
-  const { results, relatedResults } = useSelector(
+  const { results, relatedResults, yearBounds } = useSelector(
     (state: RootState) => state.search
   );
   const [isMounted, setIsMounted] = useState(false);
   const [isMobileView, setIsMobileView] = useState(false);
   const [mobileViewMode, setMobileViewMode] = useState<"list" | "map">("map");
   useEffect(() => {
-    if (isMounted && typeof window !== "undefined")
+    if (
+      isMounted &&
+      typeof window !== "undefined" &&
+      !yearBounds?.isInitialized
+    )
       dispatch(initializeSearch({ schema }));
-  }, [schema, dispatch, isMounted]);
+  }, [schema, dispatch, isMounted, yearBounds?.isInitialized]);
 
   useEffect(() => {
     setIsMounted(true);
@@ -61,6 +65,12 @@ export default function DiscoveryArea({ schema }): JSX.Element {
       return () => window.removeEventListener("resize", check);
     }
   }, [isMounted]);
+
+  useEffect(() => {
+    if (isMobileView && showDetailPanel && showDetailPanel.length > 0) {
+      setMobileViewMode("map");
+    }
+  }, [isMobileView, showDetailPanel]);
 
   if (!isMounted) {
     return (

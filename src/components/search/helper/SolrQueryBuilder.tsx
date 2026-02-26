@@ -48,7 +48,12 @@ export default class SolrQueryBuilder {
   public fetchResult(
     signal?: AbortSignal,
     skipCache: boolean = false
-  ): Promise<{ results: SolrObject[]; spellCheckSuggestion?: string }> {
+  ): Promise<{
+    results: SolrObject[];
+    spellCheckSuggestion?: string;
+    yearBounds?: { min: number | null; max: number | null } | null;
+    facetFields?: Record<string, any[]> | null;
+  }> {
     return new Promise((resolve, reject) => {
       const currentUrl = this.query.query;
       if (!currentUrl || !this.query.solrUrl) {
@@ -104,6 +109,17 @@ export default class SolrQueryBuilder {
           try {
             const jsonResponse = JSON.parse(text);
             let responseData;
+            const statsField = jsonResponse?.stats?.stats_fields?.gbl_indexYear_im;
+            const minYear = Number(statsField?.min);
+            const maxYear = Number(statsField?.max);
+            const facetFields = jsonResponse?.facet_counts?.facet_fields || null;
+            const yearBounds =
+              Number.isNaN(minYear) || Number.isNaN(maxYear)
+                ? null
+                : {
+                    min: Math.min(minYear, maxYear),
+                    max: Math.max(minYear, maxYear),
+                  };
             
             if (jsonResponse && jsonResponse["suggest"]) {
               responseData = jsonResponse;
@@ -117,12 +133,14 @@ export default class SolrQueryBuilder {
                   responseData = {
                     results: result,
                     spellCheckSuggestion: spellcheck[0],
+                    yearBounds,
+                    facetFields,
                   };
                 } else {
-                  responseData = { results: result };
+                  responseData = { results: result, yearBounds, facetFields };
                 }
               } else {
-                responseData = { results: result };
+                responseData = { results: result, yearBounds, facetFields };
               }
             }
             if (!CACHE_DISABLED) {
@@ -139,7 +157,7 @@ export default class SolrQueryBuilder {
             console.error("Response parsing error:", error);
             const subscribers = pendingRequests.get(currentUrl) || [];
             if (text.startsWith("<!DOCTYPE") || text.startsWith("<html")) {
-              subscribers.forEach(sub => sub.resolve({ results: [] }));
+              subscribers.forEach(sub => sub.resolve({ results: [], yearBounds: null, facetFields: null }));
             } else {
               subscribers.forEach(sub => sub.reject(new Error("Invalid response format")));
             }
@@ -238,7 +256,7 @@ export default class SolrQueryBuilder {
     } else {
       generalQuery += "*:*";
     }
-    generalQuery += "&fq=(gbl_suppressed_b:false)&rows=1000";
+    generalQuery += "&fq=(gbl_suppressed_b:false)&rows=1000&stats=true&stats.field=gbl_indexYear_im";
     return this.setQuery(generalQuery);
   }
   public filterQuery(
@@ -265,6 +283,18 @@ export default class SolrQueryBuilder {
     return this.setQuery(filterQuery);
   }
 
+  public facetQuery(
+    category: string,
+    limit: number = 5,
+    minCount: number = 1
+  ): SolrQueryBuilder {
+    const categoryField = findSolrAttribute(category, this.query.schema_json);
+    const facetQuery = `select?q=*:*&rows=0&fq=(gbl_suppressed_b:false)&facet=true&facet.sort=count&facet.mincount=${minCount}&facet.limit=${limit}&facet.field=${encodeURIComponent(
+      categoryField
+    )}`;
+    return this.setQuery(facetQuery);
+  }
+
   public combineQueries = (
     term: string,
     filterQueries: Array<any>,
@@ -274,7 +304,7 @@ export default class SolrQueryBuilder {
     if (!this.query.solrUrl) {
       console.error("Missing SOLR_URL configuration");
       return this.setQuery(
-        "select?q=*:*&fq=(gbl_suppressed_b:false)&rows=1000"
+        "select?q=*:*&fq=(gbl_suppressed_b:false)&rows=1000&stats=true&stats.field=gbl_indexYear_im"
       );
     }
     try {
@@ -348,7 +378,7 @@ export default class SolrQueryBuilder {
     } catch (error) {
       console.error("Error in combineQueries:", error);
       return this.setQuery(
-        "select?q=*:*&fq=(gbl_suppressed_b:false)&rows=1000"
+        "select?q=*:*&fq=(gbl_suppressed_b:false)&rows=1000&stats=true&stats.field=gbl_indexYear_im"
       );
     }
   };

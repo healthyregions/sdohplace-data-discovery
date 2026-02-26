@@ -8,6 +8,10 @@ export interface SearchResult {
   originalQuery: string;
   usedQuery: string;
   usedSpellCheck: boolean;
+  yearBounds?: {
+    min: number | null;
+    max: number | null;
+  } | null;
   analysis?: any;
 }
 

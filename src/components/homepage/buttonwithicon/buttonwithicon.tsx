@@ -22,6 +22,9 @@ interface Props {
   endIcon?: any; // if there's end icon, then start icon and label will be left aligned and end icon will be right aligned (i.e. footer style)
 }
 const ButtonWithIcon = (props: Props): JSX.Element => {
+  const fillColor = fullConfig.theme.colors[props.fillColor] || props.fillColor;
+  const labelColor = fullConfig.theme.colors[props.labelColor] || props.labelColor;
+
   return (
     <div>
       <Button
@@ -46,9 +49,9 @@ const ButtonWithIcon = (props: Props): JSX.Element => {
             height: "3.25rem",
           },
           borderRadius: props.borderRadius ? props.borderRadius : "6.25rem",
-          backgroundColor: `${fullConfig.theme.colors[props.fillColor]} !important`,
+          backgroundColor: `${fillColor} !important`,
           textTransform: "none",
-          color: `${fullConfig.theme.colors[props.labelColor]}`,
+          color: `${labelColor} !important`,
           fontFamily: `${fullConfig.theme.fontFamily["sans"]}`,
           fontSize: "clamp(1.125rem, 1vw + 0.1rem, 1.25rem)",
           fontStyle: "normal",
@@ -60,12 +63,31 @@ const ButtonWithIcon = (props: Props): JSX.Element => {
             : "initial",
           boxShadow: props.noBox ? "none" : "3px 3px 5px rgba(0, 0, 0, 0.3)",
           border: props.border ? props.border : "none",
+          "& .buttonContent": {
+            color: `${labelColor} !important`,
+          },
+          "& .MuiButton-startIcon, & .MuiButton-endIcon": {
+            color: `${labelColor} !important`,
+            opacity: props.iconOpacity ?? 1,
+          },
+          "&.Mui-disabled": {
+            backgroundColor: `${fillColor} !important`,
+            color: `${labelColor} !important`,
+            opacity: 0.6,
+          },
+          "&.Mui-disabled .buttonContent": {
+            color: `${labelColor} !important`,
+          },
+          "&.Mui-disabled .MuiButton-startIcon, &.Mui-disabled .MuiButton-endIcon": {
+            color: `${labelColor} !important`,
+            opacity: props.iconOpacity ?? 1,
+          },
           "&:hover": {
             boxShadow: props.noHover
               ? "none"
               : "3px 3px 5px rgba(0, 0, 0, 0.3)",
-            backgroundColor: `${fullConfig.theme.colors[props.fillColor]}`,
-            color: `${fullConfig.theme.colors[props.labelColor]}`,
+            backgroundColor: `${fillColor} !important`,
+            color: `${labelColor} !important`,
           },
         }}
       >

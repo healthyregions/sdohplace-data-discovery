@@ -1,17 +1,18 @@
 import {
-  People,
-  Paid,
-  Work,
-  School,
-  LocalHospital,
-  Home,
-  Park,
-  LocationCity,
-  DirectionsBike,
-  Security,
-  Forum,
-  DirectionsBus,
-  AutoAwesomeMosaic, ShoppingCart,
+  PeopleOutline,
+  PaidOutlined,
+  WorkOutline,
+  SchoolOutlined,
+  LocalHospitalOutlined,
+  HomeOutlined,
+  ParkOutlined,
+  LocationCityOutlined,
+  DirectionsBikeOutlined,
+  SecurityOutlined,
+  ForumOutlined,
+  DirectionsBusOutlined,
+  AutoAwesomeMosaicOutlined,
+  ShoppingCartOutlined,
 } from "@mui/icons-material";
 
 /**
@@ -19,38 +20,30 @@ import {
  * @returns the Material UI icon component corresponding to the icon name
  */
 const IconMatch = (icon: string): JSX.Element => {
-  switch (icon) {
-    case "Demographics":
-      return <People />;
-    case "Economic Stability":
-      return <Paid />;
-    case "Employment":
-      return <Work />;
-    case "Education":
-      return <School />;
-    case "Food Environment":
-      return <ShoppingCart />;
-    case "Health and Healthcare":
-      return <LocalHospital />;
-    case "Housing":
-      return <Home />;
-    case "Natural Environment":
-      return <Park />;
-    case "Neighborhood and Built Environment":
-      return <LocationCity />;
-    case "Physical Activity and Lifestyle":
-      return <DirectionsBike />;
-    case "Safety":
-      return <Security />;
-    case "Social and Community Context":
-      return <Forum />;
-    case "Transportation and Infrastructure":
-      return <DirectionsBus />;
-    case "Composite Index":
-      return <AutoAwesomeMosaic />; // Composite
-    default:
-      return <AutoAwesomeMosaic />;
-  }
+  const normalizedIcon = icon
+    .trim()
+    .toLowerCase()
+    .replace(/&/g, "and")
+    .replace(/\s+/g, " ");
+  const iconMap: Record<string, JSX.Element> = {
+    demographics: <PeopleOutline />,
+    "economic stability": <PaidOutlined />,
+    employment: <WorkOutline />,
+    education: <SchoolOutlined />,
+    "food environment": <ShoppingCartOutlined />,
+    "health and healthcare": <LocalHospitalOutlined />,
+    "health and health care": <LocalHospitalOutlined />,
+    housing: <HomeOutlined />,
+    "natural environment": <ParkOutlined />,
+    "neighborhood and built environment": <LocationCityOutlined />,
+    "physical activity and lifestyle": <DirectionsBikeOutlined />,
+    safety: <SecurityOutlined />,
+    "social and community context": <ForumOutlined />,
+    "transportation and infrastructure": <DirectionsBusOutlined />,
+    "composite index": <AutoAwesomeMosaicOutlined />,
+  };
+
+  return iconMap[normalizedIcon] ?? <AutoAwesomeMosaicOutlined />;
 };
 
 export default IconMatch;

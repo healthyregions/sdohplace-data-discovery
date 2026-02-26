@@ -2,7 +2,6 @@ import * as React from "react";
 import tailwindConfig from "../../../../tailwind.config";
 import resolveConfig from "tailwindcss/resolveConfig";
 import { SolrObject } from "../../../../meta/interface/SolrObject";
-import Image from "next/image";
 import DOMPurify from "dompurify";
 import CloseIcon from "@mui/icons-material/Close";
 import CopyAllIcon from "@mui/icons-material/CopyAll";
@@ -24,9 +23,6 @@ const fullConfig = resolveConfig(tailwindConfig);
 const introCardStyle: React.CSSProperties = {
   color: `${fullConfig.theme.colors["almostblack"]}`,
   fontFamily: `${fullConfig.theme.fontFamily["sans"]}`,
-};
-const wideStyle: React.CSSProperties = {
-  width: "95%",
 };
 
 const HeaderRow = (props: Props): JSX.Element => {
@@ -53,16 +49,10 @@ const HeaderRow = (props: Props): JSX.Element => {
     navigator.clipboard.writeText(window.location.href);
     alert("The shared link has been copied to the clipboard successfully!");
   };
-
-  const sanitizedDescriptions = props.resultItem.description.map((d) => {
-    return DOMPurify.sanitize(d,
-    {
-      ALLOWED_TAGS: ["a", "b", "i", "em", "strong", "p", "div", "span"],
-      ALLOWED_ATTR: ["href", "title", "target", "class"],
-    })
-  });
-
-  const links = ParseReferenceLink(props.resultItem.meta.references)
+  // get the second items's value as the link to be parsed from the meta.references,
+  // e.g. {"http://schema.org/url ": "https://ephtracking.cdc.gov/DataExplorer/#/", "http://lccn.loc.gov/sh85035852": "https://data.cdc.gov/Environmental-Health-Toxicology/Daily-Census-Tract-Level-PM2-5-Concentrations-2011/qjxm-7fny/data_preview"}"
+  const links = ParseReferenceLink(JSON.parse(props.resultItem.meta.references) || {}  ); 
+  const resourceUrl = links.homepageUrl || links.downloadUrl || links.dataDictionaryUrl;
   return (
     <div className={`container mx-auto shadow-none aspect-ratio`}>
       <div className="flex flex-col sm:mb-5 sm:flex-row">
@@ -117,9 +107,11 @@ const HeaderRow = (props: Props): JSX.Element => {
             endIcon={<LaunchIcon />}
             noBox={true}
             noHover={true}
-            disabled={!links.homepageUrl}
+            disabled={!resourceUrl}
             onClick={() => {
-              window.open(links.homepageUrl, "_blank").focus();
+              if (!resourceUrl) return;
+              const resourceWindow = window.open(resourceUrl, "_blank", "noopener,noreferrer");
+              resourceWindow?.focus();
               plausible(EventType.ClickedGoToResource, {
                 props: {
                   resourceId: props.resultItem.id

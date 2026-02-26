@@ -55,10 +55,12 @@ export class QueryTracker {
   isFilterQuery(queryKey: string): boolean {
     return queryKey.includes("spatial_resolution") || 
            queryKey.includes("subject") || 
+           queryKey.includes("resource_class") ||
            queryKey.includes("bbox") || 
            queryKey.includes("index_year") ||
            queryKey.includes("setSpatialResolution") ||
            queryKey.includes("setSubject") ||
+           queryKey.includes("setResource") ||
            queryKey.includes("setSearchBbox") ||
            queryKey.includes("setIndexYear");
   }
@@ -69,4 +71,4 @@ export class QueryTracker {
 }
 
 const queryTracker = new QueryTracker();
-export default queryTracker; 
+export default queryTracker;

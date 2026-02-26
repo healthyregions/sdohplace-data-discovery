@@ -10,6 +10,35 @@ import { SearchService } from "@/services/SearchService";
 import suggestionManager from "@/components/search/helper/SuggestionManager";
 import filterService from "@/middleware/FilterService";
 
+const deriveYearBoundsFromResults = (results: any[]) => {
+  const years = (results || []).flatMap((result) =>
+    (result?.index_year || [])
+      .map((value) => Number(value))
+      .filter((year) => !Number.isNaN(year))
+  );
+  if (!years.length) {
+    return { min: null, max: null };
+  }
+  return {
+    min: Math.min(...years),
+    max: Math.max(...years),
+  };
+};
+
+const resolveYearBounds = (
+  payloadYearBounds: { min: number | null; max: number | null } | null | undefined,
+  results: any[]
+) => {
+  if (
+    payloadYearBounds &&
+    payloadYearBounds.min !== null &&
+    payloadYearBounds.max !== null
+  ) {
+    return payloadYearBounds;
+  }
+  return deriveYearBoundsFromResults(results);
+};
+
 export const initializeSearch = createAsyncThunk(
   "search/initialize",
   async ({ schema }: { schema: any }, { dispatch, getState }) => {
@@ -54,6 +83,12 @@ export const initializeSearch = createAsyncThunk(
     } finally {
       dispatch(setInitializing(false));
     }
+  },
+  {
+    condition: (_arg, { getState }) => {
+      const state = getState() as RootState;
+      return !state.search.initializing;
+    },
   }
 );
 
@@ -148,6 +183,7 @@ export const fetchSearchAndRelatedResults = createAsyncThunk(
         originalQuery: cleanQuery,
         usedQuery: searchResult.usedQuery,
         usedSpellCheck: searchResult.usedSpellCheck,
+        yearBounds: searchResult.yearBounds || null,
       };
       
       dispatch({ 
@@ -169,6 +205,7 @@ export const fetchSearchAndRelatedResults = createAsyncThunk(
         originalQuery: cleanQuery,
         usedQuery: searchResult.usedQuery,
         usedSpellCheck: searchResult.usedSpellCheck,
+        yearBounds: searchResult.yearBounds || null,
       };
     } catch (error) {
       console.error("Error in fetchSearchAndRelatedResults:", error);
@@ -216,6 +253,7 @@ export const fetchSearchResults = createAsyncThunk(
       originalQuery: result.originalQuery,
       usedQuery: result.usedQuery,
       usedSpellCheck: result.usedSpellCheck,
+      yearBounds: result.yearBounds || null,
     };
   }
 );
@@ -358,11 +396,17 @@ const searchSlice = createSlice({
     setSubject: (state, action) => {
       state.subject = action.payload;
     },
+    setResource: (state, action) => {
+      state.resource = action.payload;
+    },
     setSpatialResolution: (state, action) => {
       state.spatialResolution = action.payload;
     },
     setIndexYear: (state, action) => {
       state.indexYear = action.payload;
+    },
+    setYearBounds: (state, action) => {
+      state.yearBounds = action.payload;
     },
     setThoughts: (state, action) => {
       state.thoughts = action.payload;
@@ -394,6 +438,7 @@ const searchSlice = createSlice({
       return {
         ...initialState,
         schema: state.schema,
+        yearBounds: state.yearBounds,
       };
     },
     clearSearchState: (state) => {
@@ -443,6 +488,18 @@ const searchSlice = createSlice({
             state.originalQuery = action.payload.originalQuery;
             state.usedQuery = action.payload.usedQuery;
             state.usedSpellCheck = action.payload.usedSpellCheck || false;
+            // Only set year bounds on initial search load, not on subsequent related results fetches so that there will only be one Solr query when page starts
+            if (!state.yearBounds?.isInitialized) {
+              const bounds = resolveYearBounds(
+                action.payload.yearBounds,
+                action.payload.searchResults || []
+              );
+              state.yearBounds = {
+                min: bounds.min,
+                max: bounds.max,
+                isInitialized: true,
+              };
+            }
           }
           state.isSearching = false;
         }
@@ -474,6 +531,17 @@ const searchSlice = createSlice({
           state.originalQuery = action.payload.originalQuery;
           state.usedQuery = action.payload.usedQuery;
           state.usedSpellCheck = action.payload.usedSpellCheck || false;
+          if (!state.yearBounds?.isInitialized) {
+            const bounds = resolveYearBounds(
+              action.payload.yearBounds,
+              action.payload.results || []
+            );
+            state.yearBounds = {
+              min: bounds.min,
+              max: bounds.max,
+              isInitialized: true,
+            };
+          }
         }
         state.isSearching = false;
       })
@@ -493,6 +561,7 @@ const searchSlice = createSlice({
       })
       .addCase(atomicResetAndFetch.fulfilled, (state, action) => {
         state.spatialResolution = null;
+        state.resource = [];
         state.subject = null;
         state.sort.sortBy = "score";
         state.sort.sortOrder = "desc";
@@ -520,6 +589,7 @@ const searchSlice = createSlice({
       .addCase(batchResetFilters, (state, action) => {
         state.searchBbox = null;
         state.spatialResolution = [];
+        state.resource = [];
         state.indexYear = [];
         state.filterQueries = [];
         state.schema = action.payload.schema;
@@ -563,9 +633,11 @@ export const {
   setSort,
   setSearchBbox,
   setEnableMapBboxFilter,
+  setResource,
   setSubject,
   setSpatialResolution,
   setIndexYear,
+  setYearBounds,
   setSpellCheck,
   setOriginalQuery,
   setUsedQuery,

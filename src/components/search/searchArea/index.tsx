@@ -43,13 +43,13 @@ const SearchArea = (props: Props): JSX.Element => {
         className="min-[940px]:hidden py-4 px-4"
       >
         <MobileHeader title={props.header} onMenuClick={handleMobileMenuClick} />
-        <Box className="mt-4">
+        <Box className="mt-4" sx={{ position: "relative", zIndex: 3 }}>
           <SpatialResolutionCheck
             src={SearchUIConfig.search.searchBox.spatialResOptions}
             isMobile={true}
           />
         </Box>
-        <Box className="mt-4">
+        <Box className="mt-4" sx={{ position: "relative", zIndex: 1 }}>
           <EnhancedSearchBox schema={props.schema} isMobile={true} />
         </Box>
       </Grid>
@@ -134,12 +134,12 @@ const SearchArea = (props: Props): JSX.Element => {
         style={searchAreaStyle}
       >
           <Box width="100%">
-            <Box width="100%">
+            <Box width="100%" sx={{ position: "relative", zIndex: 3 }}>
               <SpatialResolutionCheck
                 src={SearchUIConfig.search.searchBox.spatialResOptions}
               />
             </Box>
-            <Box width="100%" className="mt-[2em] sm:mt-0">
+            <Box width="100%" className="mt-[2em] sm:mt-0" sx={{ position: "relative", zIndex: 1 }}>
               <EnhancedSearchBox schema={props.schema} />
             </Box>
           </Box>
