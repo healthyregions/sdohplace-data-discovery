@@ -82,7 +82,7 @@ export default function DynamicMap(props: Props): JSX.Element {
 
   const { geocodeFeature, overlayIds, previewLyrs, showBboxFilter } =
     useSelector((state: RootState) => state.map);
-  const { enableMapBboxFilter } = useSelector(
+  const { enableMapBboxFilter, searchBbox } = useSelector(
     (state: RootState) => state.search
   );
 
@@ -186,11 +186,11 @@ export default function DynamicMap(props: Props): JSX.Element {
 
   const handleBboxFilterToggle = () => {
     if (!mapLoaded) return;
-    if (!enableMapBboxFilter) {
+    if (!enableMapBboxFilter && searchBbox !== null) {
       dispatch(setSearchBbox(null));
     }
   };
-  useEffect(handleBboxFilterToggle, [dispatch, mapLoaded, enableMapBboxFilter]);
+  useEffect(handleBboxFilterToggle, [dispatch, mapLoaded, enableMapBboxFilter, searchBbox]);
 
   const handlePreviewIds = () => {
     if (!mapLoaded) return;
@@ -474,7 +474,7 @@ export default function DynamicMap(props: Props): JSX.Element {
         mapRef.current.once("moveend", () => {
           dispatch(setShowBboxFilter(true));
         });
-      }, 5000);
+      }, 1000); // how long to wait before re-showing the button after clearing the geocode feature. I use 1 second here in case user want to immediately try the map
     }
   };
   // don't include props.initialBounds here because it causes unwanted re-zooming
