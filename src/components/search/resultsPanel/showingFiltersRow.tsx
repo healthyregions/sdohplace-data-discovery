@@ -44,7 +44,7 @@ const ShowingFiltersRow = ({ chips, onClearAll }: Props): JSX.Element | null => 
               alignItems: "center",
               gap: ".5em",
               padding: ".35em .6em",
-              borderRadius: ".75rem",
+              borderRadius: "8px",
               border: `1px solid ${fullConfig.theme.colors["strongorange"]}`,
               background: "white",
               fontFamily: fullConfig.theme.fontFamily["sans"],

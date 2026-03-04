@@ -43,7 +43,7 @@ export default function DiscoveryArea({ schema }): JSX.Element {
   );
   const [isMounted, setIsMounted] = useState(false);
   const [isMobileView, setIsMobileView] = useState(false);
-  const [mobileViewMode, setMobileViewMode] = useState<"list" | "map">("map");
+  const [mobileViewMode, setMobileViewMode] = useState<"list" | "map">("list");
   useEffect(() => {
     if (
       isMounted &&
@@ -140,7 +140,12 @@ export default function DiscoveryArea({ schema }): JSX.Element {
                   onMobileViewChange={(m) => setMobileViewMode(m)}
                 />
                 {showDetailPanel && showDetailPanel.length > 0 && (
-                  <DetailPanel resultList={results} relatedList={relatedResults} />
+                  <DetailPanel
+                    resultList={results}
+                    relatedList={relatedResults}
+                    isMobileView={isMobileView}
+                    onMobileBackToList={() => setMobileViewMode("list")}
+                  />
                 )}
               </>
             )}

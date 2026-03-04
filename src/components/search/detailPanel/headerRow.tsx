@@ -18,6 +18,8 @@ import {usePlausible} from "next-plausible";
 interface Props {
   resultItem: SolrObject;
   headerIcon: any;
+  isMobileView?: boolean;
+  onMobileBackToList?: () => void;
 }
 const fullConfig = resolveConfig(tailwindConfig);
 const introCardStyle: React.CSSProperties = {
@@ -34,6 +36,9 @@ const HeaderRow = (props: Props): JSX.Element => {
   const backToMapView = (e) => {
     e.preventDefault();
     dispatch(setShowDetailPanel(null));
+    if (props.isMobileView) {
+      props.onMobileBackToList?.();
+    }
   };
 
   // not reflect shared link in url, only in redux
@@ -62,7 +67,7 @@ const HeaderRow = (props: Props): JSX.Element => {
           onClick={backToMapView}
           style={{ textDecoration: "none" }}
         >
-          Back to map
+          {props.isMobileView ? "Back to list" : "Back to map"}
         </a>
       </div>
       <div className="flex flex-col sm:mb-7 sm:flex-row items-start">

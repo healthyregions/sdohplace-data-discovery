@@ -9,6 +9,7 @@ import { Box, SvgIcon, Fade, Collapse, Alert, Button } from "@mui/material";
 import FilterAltIcon from "@mui/icons-material/FilterAlt";
 import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline";
 import React from "react";
+import Image from "next/image";
 import ResultCard from "./resultCard";
 import ResultListSkeleton from "./resultListSkeleton";
 import FilterPanel from "../filterPanel";
@@ -21,7 +22,7 @@ import {
 import { EventType } from "@/lib/event";
 import { usePlausible } from "next-plausible";
 import CalendarMonthOutlinedIcon from "@mui/icons-material/CalendarMonthOutlined";
-import GridViewOutlinedIcon from "@mui/icons-material/GridViewOutlined";
+import GrainIcon from "@mui/icons-material/Grain";
 import NorthRoundedIcon from "@mui/icons-material/NorthRounded";
 import SouthRoundedIcon from "@mui/icons-material/SouthRounded";
 import StorageOutlinedIcon from "@mui/icons-material/StorageOutlined";
@@ -265,15 +266,9 @@ const ResultsPanel = (props: Props): JSX.Element => {
     [dispatch, resourceFilters]
   );
 
-  const handleRemoveSpatialResolution = React.useCallback(
-    (resolution: string) => {
-      const nextResolutions = (spatialResolutionFilters || []).filter(
-        (value) => value !== resolution
-      );
-      dispatch(setSpatialResolution(nextResolutions));
-    },
-    [dispatch, spatialResolutionFilters]
-  );
+  const handleClearSpatialResolution = React.useCallback(() => {
+    dispatch(setSpatialResolution([]));
+  }, [dispatch]);
 
   const handleClearSortSelection = React.useCallback(() => {
     dispatch(setSort({ field: null, direction: null }));
@@ -335,14 +330,17 @@ const ResultsPanel = (props: Props): JSX.Element => {
         onRemove: handleClearYearFilter,
       });
     }
-    (spatialResolutionFilters || []).forEach((resolution) => {
+    if (spatialResolutionFilters && spatialResolutionFilters.length > 0) {
+      const spatialResolutionLabel = spatialResolutionFilters
+        .map((resolution) => resolutionDisplayMap.get(resolution) || resolution)
+        .join(", ");
       chips.push({
-        id: `spatial-resolution-${resolution}`,
-        label: resolutionDisplayMap.get(resolution) || resolution,
-        icon: <GridViewOutlinedIcon />,
-        onRemove: () => handleRemoveSpatialResolution(resolution),
+        id: "spatial-resolution",
+        label: spatialResolutionLabel,
+        icon: <GrainIcon />,
+        onRemove: handleClearSpatialResolution,
       });
-    });
+    }
     if (sortLabel) {
       chips.push({
         id: "sort",
@@ -368,7 +366,7 @@ const ResultsPanel = (props: Props): JSX.Element => {
     handleRemoveTheme,
     handleRemoveResource,
     handleClearYearFilter,
-    handleRemoveSpatialResolution,
+    handleClearSpatialResolution,
     handleClearSortSelection,
   ]);
 
@@ -833,7 +831,13 @@ const ResultsPanel = (props: Props): JSX.Element => {
                   ) : (
                     <div className="flex flex-col sm:ml-[1.1em] sm:mb-[2.5em]">
                       <Box className="flex flex-col justify-center items-center mb-[1.5em]">
-                        <SearchIcon className="text-strongorange my-[0.15em]" />
+                        <Image
+                          src="/icons/no_results.svg"
+                          alt="No results icon"
+                          width={64}
+                          height={64}
+                          style={{ marginBottom: "0.35rem" }}
+                        />
                         <div className="text-s">No results</div>
                         {(() => {
                           try {

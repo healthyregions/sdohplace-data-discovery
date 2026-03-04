@@ -21,6 +21,7 @@ import { CustomListbox } from "./searchUiComponents";
 import SearchInput from "./SearchInput";
 import AIThoughtsPanel from "./AIThoughtsPanel";
 import MobileSearchToggle from "./MobileSearchToggle";
+import { MIN_SUGGESTION_LENGTH } from "../constants";
 
 interface Props {
   schema: any;
@@ -84,7 +85,7 @@ const EnhancedSearchBox = ({ schema, isMobile = false }: Props): JSX.Element => 
         suggestions &&
         Array.isArray(suggestions) &&
         suggestions.length > 0 &&
-        inputValue.length >= 2
+        inputValue.length >= MIN_SUGGESTION_LENGTH
       ) {
         setShouldShowDropdown(true);
       } else {
@@ -243,12 +244,12 @@ const EnhancedSearchBox = ({ schema, isMobile = false }: Props): JSX.Element => 
     
     if (newInputValue !== "" && !isLocalLoading && !isSearching) {
       if (!aiSearch) {
-        if (newInputValue.length >= 2) {
+        if (newInputValue.length >= MIN_SUGGESTION_LENGTH) {
           if (becameShorter) {
             clearSuggestions();
           }
           debouncedFetchSuggestions(newInputValue, schema, inputValue);
-        } else if (newInputValue.length === 1) {
+        } else if (newInputValue.length < MIN_SUGGESTION_LENGTH) {
           setShouldShowDropdown(false);
           clearSuggestions();
         }
@@ -326,7 +327,13 @@ const EnhancedSearchBox = ({ schema, isMobile = false }: Props): JSX.Element => 
     if (hasSelectedItem) {
       return;
     }
-    if (inputValue && inputValue.length >= 2 && !aiSearch && !isLocalLoading && !isSearching) {
+    if (
+      inputValue &&
+      inputValue.length >= MIN_SUGGESTION_LENGTH &&
+      !aiSearch &&
+      !isLocalLoading &&
+      !isSearching
+    ) {
       debouncedFetchSuggestions(inputValue, schema, previousInput);
     }
   };

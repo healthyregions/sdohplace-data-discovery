@@ -107,7 +107,7 @@ export const CustomListbox = React.forwardRef<
       {...props}
       className={`${props.className || ""} custom-autocomplete-listbox`}
       style={{
-        padding: "8px 1.5rem",
+        padding: "6px 0.75rem",
         margin: 0,
         listStyle: "none",
         ...props.style,

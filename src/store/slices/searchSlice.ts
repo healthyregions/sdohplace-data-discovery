@@ -9,6 +9,7 @@ import { RootState } from "..";
 import { SearchService } from "@/services/SearchService";
 import suggestionManager from "@/components/search/helper/SuggestionManager";
 import filterService from "@/middleware/FilterService";
+import { MIN_SUGGESTION_LENGTH } from "@/components/search/constants";
 
 const deriveYearBoundsFromResults = (results: any[]) => {
   const years = (results || []).flatMap((result) =>
@@ -263,6 +264,9 @@ export const fetchSuggestions = createAsyncThunk(
   async ({ inputValue, schema }: { inputValue: string; schema: any }, { getState }) => {
     const state = getState() as RootState;
     if (state.search.isSearching) {
+      return [];
+    }
+    if (!inputValue || inputValue.trim().length < MIN_SUGGESTION_LENGTH) {
       return [];
     }
     const searchService = new SearchService(schema);

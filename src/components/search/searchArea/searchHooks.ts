@@ -14,6 +14,7 @@ import { usePlausible } from "next-plausible";
 import { EventType } from "@/lib/event";
 import filterService from "@/middleware/FilterService";
 import { useStore } from 'react-redux';
+import { MIN_SUGGESTION_LENGTH } from "../constants";
 
 interface UseSearchProps {
   schema: any;
@@ -42,7 +43,7 @@ export const useSearch = ({ schema }: UseSearchProps) => {
 
   const debouncedFetchSuggestions = React.useCallback(
     debounce((value: string, schema: any, prevValue: string) => {
-      if (value && value.length >= 2 && !aiSearch) {
+      if (value && value.length >= MIN_SUGGESTION_LENGTH && !aiSearch) {
         dispatch(fetchSuggestions({ inputValue: value, schema }));
       } else {
         clearSuggestions();

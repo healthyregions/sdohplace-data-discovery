@@ -117,10 +117,10 @@ const SearchInput: React.FC<SearchInputProps> = ({
         renderOption={(props, option, state) => {
           const { "aria-selected": _, onClick, ...otherProps } = props;
           const isLast = state.index === suggestions.length - 1;
-          const plainText = option;
+          const plainText = option.replace(/\s+/g, " ").trim();
           const highlightMatch = (text: string, query: string) => {
             if (!query) {
-              return <Typography component="span" sx={{ whiteSpace: "pre-wrap" }}>{text}</Typography>;
+              return <Typography component="span" sx={{ whiteSpace: "normal" }}>{text}</Typography>;
             }
             const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
             const regex = new RegExp(escapedQuery, "gi");
@@ -141,7 +141,7 @@ const SearchInput: React.FC<SearchInputProps> = ({
                   component="span"
                   key={`match-${keyIndex++}`}
                   sx={{
-                    color: fullConfig.theme.colors["frenchviolet"],
+                    color: fullConfig.theme.colors["smokegray"],
                     fontWeight: 900,
                   }}
                 >
@@ -163,7 +163,7 @@ const SearchInput: React.FC<SearchInputProps> = ({
                 sx={{
                   fontWeight: 400,
                   fontFamily: "Nunito, sans-serif",
-                  whiteSpace: "pre-wrap",
+                  whiteSpace: "normal",
                 }}
               >
                 {result.length > 0 ? result : text}
@@ -179,7 +179,7 @@ const SearchInput: React.FC<SearchInputProps> = ({
               className={`${props.className} cursor-pointer`}
               key={option}
               style={{
-                padding: "12px 4px",
+                padding: "10px 2px",
                 fontSize: "0.95rem",
                 color: fullConfig.theme.colors["smokegray"],
                 transition: "background-color 0.2s ease",
@@ -227,15 +227,15 @@ const SearchInput: React.FC<SearchInputProps> = ({
                 "& .MuiOutlinedInput-root": {
                   borderRadius: "1.75em",
                   color: fullConfig.theme.colors["smokegray"],
-                  paddingLeft: isMobile ? "0.5em" : "1em",
-                  paddingRight: isMobile ? "0 !important" : undefined,
+                  paddingLeft: isMobile ? "0.375em" : "0.625em",
+                  paddingRight: isMobile ? "0 !important" : "0.25em",
                   "&:hover .MuiOutlinedInput-notchedOutline": {
                     borderColor: "transparent",
                   },
                   transition: "all 0.2s ease-in-out",
                 },
                 "& .MuiOutlinedInput-root .MuiAutocomplete-input": {
-                  paddingLeft: isMobile ? "0.5em" : "1em",
+                  paddingLeft: isMobile ? "0.375em" : "0.625em",
                 },
                 "& .MuiOutlinedInput-notchedOutline": {
                   borderColor: "transparent",

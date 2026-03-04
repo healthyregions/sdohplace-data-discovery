@@ -34,18 +34,16 @@ const tooltipSx = {
   fontFamily: `${fullConfig.theme.fontFamily["sans"]} !important`,
   maxWidth: 540,
   fontSize: "0.875rem",
-  border: `2px solid ${fullConfig.theme.colors["strongorange"]}`,
+  border: `1px solid ${fullConfig.theme.colors["strongorange"]}`,
   borderRadius: "10px",
   padding: "1rem",
   boxShadow: "none",
   "& b, & strong": {
-    color: `${fullConfig.theme.colors["strongorange"]} !important`,
-    fontWeight: 700,
+    fontWeight: 800,
   },
   "& em": {
-    color: `${fullConfig.theme.colors["strongorange"]} !important`,
     fontStyle: "normal",
-    fontWeight: 700,
+    fontWeight: 800,
   },
 };
 
@@ -415,7 +413,7 @@ const ResultCard = (props: Props): JSX.Element => {
       style={{
         cursor: "pointer",
         border: isSelected
-          ? `2px solid ${fullConfig.theme.colors["strongorange"]}`
+          ? `1px solid ${fullConfig.theme.colors["strongorange"]}`
           : "1px solid transparent",
         background: isSelected
           ? `${fullConfig.theme.colors["lightbisque"]}`
@@ -443,7 +441,7 @@ const ResultCard = (props: Props): JSX.Element => {
             zIndex: 1,
           }}
         >
-          {IconMatch(itemSubject)}
+          {IconMatch(itemSubject, "filled")}
         </div>
         <div
           className="truncate"
@@ -521,7 +519,7 @@ const ResultCard = (props: Props): JSX.Element => {
           <Grid size={{ xs: 12, sm: 10 }} className="items-start">
             <IconText
               roundBackground={true}
-              svgIcon={IconMatch(itemSubject)}
+              svgIcon={IconMatch(itemSubject, "filled")}
               label={itemTitle}
               labelClass={`text-l font-medium ${fullConfig.theme.fontFamily["sans"]}`}
               labelColor={fullConfig.theme.colors["almostblack"]}

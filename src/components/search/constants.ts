@@ -1,0 +1,2 @@
+export const MIN_SUGGESTION_LENGTH = 3;
+export const MAX_SUGGESTION_RESULTS = 10;
