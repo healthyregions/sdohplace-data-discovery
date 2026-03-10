@@ -6,6 +6,7 @@ import { Collapse, Grid } from "@mui/material";
 import SearchArea from "./searchArea";
 import DetailPanel from "./detailPanel";
 import { initializeSearch, setSchema } from "@/store/slices/searchSlice";
+import { setShowDetailPanel } from "@/store/slices/uiSlice";
 import MapPanel from "./mapPanel";
 import dynamic from "next/dynamic";
 import MapListToggle from "./mapPanel/MapListToggle";
@@ -112,7 +113,10 @@ export default function DiscoveryArea({ schema }): JSX.Element {
         className="w-full px-[1em] sm:px-[2em] transition-all duration-300"
       >
         <div className="block sm:px-4 sm:mb-4 sm:hidden container mx-auto ">
-          <MapListToggle value={mobileViewMode} onChange={(m) => setMobileViewMode(m)} />
+          <MapListToggle value={mobileViewMode} onChange={(m) => {
+            if (m === "list" && isMobileView) dispatch(setShowDetailPanel(""));
+            setMobileViewMode(m);
+          }} />
         </div>
         <Grid
           container
