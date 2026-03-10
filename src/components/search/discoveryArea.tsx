@@ -68,7 +68,7 @@ export default function DiscoveryArea({ schema }): JSX.Element {
 
   useEffect(() => {
     if (isMobileView && showDetailPanel && showDetailPanel.length > 0) {
-      setMobileViewMode("map");
+      setMobileViewMode("list");
     }
   }, [isMobileView, showDetailPanel]);
 
@@ -122,7 +122,16 @@ export default function DiscoveryArea({ schema }): JSX.Element {
         >
           <Grid size={{ xs: 12, sm: 6 }}>
             {(!isMobileView || mobileViewMode === "list") && (
-              <DynamicResultsPanel schema={schema} />
+              showDetailPanel && showDetailPanel.length > 0 && isMobileView ? (
+                <DetailPanel
+                  resultList={results}
+                  relatedList={relatedResults}
+                  isMobileView={isMobileView}
+                  onMobileBackToList={() => setMobileViewMode("list")}
+                />
+              ) : (
+                <DynamicResultsPanel schema={schema} />
+              )
             )}
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
@@ -131,7 +140,7 @@ export default function DiscoveryArea({ schema }): JSX.Element {
                 <MapPanel
                   resultsList={results}
                   showMap={
-                    showDetailPanel && (results && results.find((r) => r.id === showDetailPanel))
+                    !isMobileView && showDetailPanel && (results && results.find((r) => r.id === showDetailPanel))
                       ? "none"
                       : "block"
                   }
@@ -139,11 +148,11 @@ export default function DiscoveryArea({ schema }): JSX.Element {
                   mobileViewMode={mobileViewMode}
                   onMobileViewChange={(m) => setMobileViewMode(m)}
                 />
-                {showDetailPanel && showDetailPanel.length > 0 && (
+                {!isMobileView && showDetailPanel && showDetailPanel.length > 0 && (
                   <DetailPanel
                     resultList={results}
                     relatedList={relatedResults}
-                    isMobileView={isMobileView}
+                    isMobileView={false}
                     onMobileBackToList={() => setMobileViewMode("list")}
                   />
                 )}

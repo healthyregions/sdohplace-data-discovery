@@ -830,13 +830,13 @@ const ResultsPanel = (props: Props): JSX.Element => {
                     </div>
                   ) : (
                     <div className="flex flex-col sm:ml-[1.1em] sm:mb-[2.5em]">
-                      <Box className="flex flex-col justify-center items-center mb-[1.5em]">
+                      <Box className="flex flex-col justify-center items-center mb-[3rem] sm:mb-[6.5rem] sm:mt-[7rem]">
                         <Image
                           src="/icons/no_results.svg"
                           alt="No results icon"
-                          width={64}
-                          height={64}
-                          style={{ marginBottom: "0.35rem" }}
+                          width={40}
+                          height={40}
+                          style={{marginBottom: "0.5rem"}}
                         />
                         <div className="text-s">No results</div>
                         {(() => {
@@ -879,7 +879,7 @@ const ResultsPanel = (props: Props): JSX.Element => {
                               background: "transparent",
                               color: fullConfig.theme.colors["frenchviolet"],
                               fontFamily: fullConfig.theme.fontFamily["sans"],
-                              fontWeight: 800,
+                              fontWeight: 700,
                               cursor: "pointer",
                               padding: "0",
                               fontSize: "0.875rem",
@@ -899,7 +899,7 @@ const ResultsPanel = (props: Props): JSX.Element => {
                               Finding suggestions...
                             </div>
                           ) : (
-                            <Box className="flex flex-row flex-wrap gap-4">
+                            <Box className="flex flex-row flex-wrap gap-4 mb-[2rem]">
                               {fallbackThemes.map((theme) => (
                                 <IconTag
                                   key={`fallback-theme-${theme}`}

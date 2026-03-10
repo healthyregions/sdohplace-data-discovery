@@ -142,7 +142,7 @@ const SearchInput: React.FC<SearchInputProps> = ({
                   key={`match-${keyIndex++}`}
                   sx={{
                     color: fullConfig.theme.colors["smokegray"],
-                    fontWeight: 900,
+                    fontWeight: 700,
                   }}
                 >
                   {match[0]}

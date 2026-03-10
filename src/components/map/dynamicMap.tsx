@@ -787,7 +787,7 @@ export default function DynamicMap(props: Props): JSX.Element {
             <button
               style={{
                 color: fullConfig.theme.colors["frenchviolet"],
-                fontWeight: "800",
+                fontWeight: "700",
                 background: "transparent",
                 border: "none",
                 cursor: "pointer",
@@ -855,7 +855,7 @@ export default function DynamicMap(props: Props): JSX.Element {
                 <span
                   style={{
                     marginLeft: "2em",
-                    fontWeight: "800",
+                    fontWeight: "700",
                     color: fullConfig.theme.colors["frenchviolet"],
                   }}
                 >

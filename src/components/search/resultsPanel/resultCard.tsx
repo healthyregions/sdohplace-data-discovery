@@ -39,11 +39,11 @@ const tooltipSx = {
   padding: "1rem",
   boxShadow: "none",
   "& b, & strong": {
-    fontWeight: 800,
+    fontWeight: 700,
   },
   "& em": {
     fontStyle: "normal",
-    fontWeight: 800,
+    fontWeight: 700,
   },
 };
 
@@ -392,14 +392,19 @@ const ResultCard = (props: Props): JSX.Element => {
   const handleShowDetails = React.useCallback(
     (event) => {
       if (!itemId) return;
-      dispatch(setShowDetailPanel(itemId));
+      if (isSelected) {
+        dispatch(setShowDetailPanel(""));
+        setTimeout(() => dispatch(setShowDetailPanel(itemId)), 0);
+      } else {
+        dispatch(setShowDetailPanel(itemId));
+      }
       safeTrackEvent(EventType.ClickedItemDetails, {
         props: {
           resourceId: itemId,
         },
       });
     },
-    [dispatch, plausible, itemId]
+    [dispatch, plausible, itemId, isSelected]
   );
 
   if (!props.resultItem || !itemId || !itemTitle) {

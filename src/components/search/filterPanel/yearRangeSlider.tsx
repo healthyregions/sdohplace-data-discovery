@@ -239,7 +239,7 @@ export const YearRangeSlider = ({
             minWidth: "36px",
             textAlign: "left",
             color: fullConfig.theme.colors["almostblack"],
-            fontWeight: 900,
+            fontWeight: 700,
           }}
         >
           {sliderMin}
@@ -270,10 +270,10 @@ export const YearRangeSlider = ({
                 ...labelStyle,
                 color: `${fullConfig.theme.colors["frenchviolet"]}`,
                 backgroundColor: "transparent",
-                fontWeight: 900,
+                fontWeight: 700,
               },
               "& .MuiSlider-valueLabelLabel": {
-                fontWeight: 900,
+                fontWeight: 700,
               },
               "& .MuiSlider-valueLabel:before": {
                 display: "none",
@@ -296,7 +296,7 @@ export const YearRangeSlider = ({
             minWidth: "36px",
             textAlign: "right",
             color: fullConfig.theme.colors["almostblack"],
-            fontWeight: 900,
+            fontWeight: 700,
           }}
         >
           {boundedMaxYear}

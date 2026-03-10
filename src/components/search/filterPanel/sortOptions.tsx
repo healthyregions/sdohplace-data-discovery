@@ -50,7 +50,7 @@ const SortControl = ({
         fontSize: "0.875rem",
         lineHeight: 1.2,
         color: fullConfig.theme.colors["frenchviolet"],
-        fontWeight: active ? 900 : 500,
+        fontWeight: active ? 700 : 500,
         backgroundColor: "transparent",
         cursor: disabled ? "default" : "pointer",
         userSelect: "none",
