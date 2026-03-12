@@ -717,7 +717,7 @@ const ResultsPanel = (props: Props): JSX.Element => {
           onClearAll={handleClearFilters}
         />
 
-        <div className="flex flex-col mt-4 sm:mt-0" style={{ height: "100%" }}>
+        <div className="flex flex-col mt-4 sm:mt-0">
           <Fade in={true} timeout={300}>
             <div>
               {shouldShowLoading ? (
@@ -829,8 +829,9 @@ const ResultsPanel = (props: Props): JSX.Element => {
                       </Alert>
                     </div>
                   ) : (
-                    <div className="flex flex-col sm:ml-[1.1em] sm:mb-[2.5em]">
-                      <Box className="flex flex-col justify-center items-center mb-[3rem] sm:mb-[6.5rem] sm:mt-[7rem]">
+                    <div className="flex flex-col sm:ml-[1.1em]">
+                      {/* 1.5rem margin bottom form sort&filter */}
+                      <Box className="flex flex-col items-center mb-[2.5rem] sm:mt-[4.5rem] sm:mb-[6rem]"> 
                         <Image
                           src="/icons/no_results.svg"
                           alt="No results icon"
@@ -865,7 +866,7 @@ const ResultsPanel = (props: Props): JSX.Element => {
                           }
                         })()}
                       </Box>
-                      <Box className="mb-[0.75em] text-center sm:text-left">
+                      <Box className="mb-[0.75em]">
                         <div className="text-s">{noResultMessage}</div>
                       </Box>
                       {(noResultScenario === "query_and_filters" ||
