@@ -1,9 +1,19 @@
-import React from 'react';
-import { useSelector, useDispatch } from 'react-redux';
-import { fetchSearchAndRelatedResults } from '@/store/slices/searchSlice';
+import React from "react";
+import { useSelector, useDispatch } from "react-redux";
+import { fetchSearchAndRelatedResults } from "@/store/slices/searchSlice";
 import { RootState, store } from "@/store";
+import tailwindConfig from "../../../../tailwind.config";
+import resolveConfig from "tailwindcss/resolveConfig";
 
-const SpellCheckMessage = () => {
+const fullConfig = resolveConfig(tailwindConfig);
+
+interface SpellCheckMessageProps {
+  isMobile?: boolean;
+}
+
+const SpellCheckMessage = ({
+  isMobile = false,
+}: SpellCheckMessageProps) => {
   const dispatch = useDispatch<typeof store.dispatch>();
   const {
     originalQuery,
@@ -23,22 +33,45 @@ const SpellCheckMessage = () => {
         schema,
         sortBy: sort.sortBy,
         sortOrder: sort.sortOrder,
-        bypassSpellCheck: true
+        bypassSpellCheck: true,
       })
     );
   };
 
   return (
-    <div className="bg-blue-50 rounded-md p-4 mb-4">
-      <p className="text-sm text-blue-800">
-        Showing results for <i>{usedQuery}</i>.{' '}
-        <button
-          onClick={handleOriginalSearch}
-          className="ml-2 text-blue-600 hover:text-blue-800 underline"
-        >
-          Search instead for <i>{originalQuery}</i>
-        </button>
-      </p>
+    <div
+      style={{
+        marginTop: isMobile ? "0.875rem" : "1rem",
+        paddingLeft: isMobile ? "0.75rem" : "1.5rem",
+        paddingRight: isMobile ? "0.75rem" : "1.5rem",
+        display: "flex",
+        flexWrap: "wrap",
+        alignItems: "baseline",
+        gap: "0.25rem",
+        color: fullConfig.theme.colors["almostblack"],
+        fontFamily: fullConfig.theme.fontFamily["sans"],
+        fontSize: isMobile ? "0.95rem" : "1rem",
+        lineHeight: 1.5,
+      }}
+    >
+      <span>
+        Showing results for <i>&quot;{usedQuery}&quot;</i>.
+      </span>
+      <button
+        type="button"
+        onClick={handleOriginalSearch}
+        style={{
+          border: "none",
+          background: "transparent",
+          padding: 0,
+          color: fullConfig.theme.colors["frenchviolet"],
+          fontFamily: fullConfig.theme.fontFamily["sans"],
+          fontSize: "inherit",
+          cursor: "pointer",
+        }}
+      >
+        Search <i>&quot;{originalQuery}&quot;</i> instead?
+      </button>
     </div>
   );
 };

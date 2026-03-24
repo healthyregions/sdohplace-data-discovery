@@ -340,7 +340,6 @@ const EnhancedSearchBox = ({ schema, isMobile = false }: Props): JSX.Element => 
 
   return (
     <div className={`flex flex-col w-full ${isMobile ? "" : "sm:mt-6"}`}>
-      <SpellCheckMessage />
       {isMobile && (
         <div className="mb-3">
           <MobileSearchToggle
@@ -373,6 +372,7 @@ const EnhancedSearchBox = ({ schema, isMobile = false }: Props): JSX.Element => 
         isSearching={isSearching}
         isMobile={isMobile}
       />
+      <SpellCheckMessage isMobile={isMobile} />
       <AIThoughtsPanel
         isLoading={isLoading}
         thoughts={thoughts}

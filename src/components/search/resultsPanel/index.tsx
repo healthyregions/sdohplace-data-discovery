@@ -831,7 +831,7 @@ const ResultsPanel = (props: Props): JSX.Element => {
                   ) : (
                     <div className="flex flex-col sm:ml-[1.1em]">
                       {/* 1.5rem margin bottom form sort&filter */}
-                      <Box className="flex flex-col items-center mb-[2.5rem] sm:mt-[4.5rem] sm:mb-[6rem]"> 
+                      <Box className="flex flex-col items-center mb-[2.5rem] sm:mt-[3.5rem] sm:mb-[7rem]">
                         <Image
                           src="/icons/no_results.svg"
                           alt="No results icon"
