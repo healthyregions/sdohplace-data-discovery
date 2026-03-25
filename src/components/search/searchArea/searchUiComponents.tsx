@@ -14,9 +14,15 @@ const spin = keyframes`
 export const searchStyles = {
   searchBox: {
     fontFamily: `${fullConfig.theme.fontFamily["sans"]} !important`,
+    "&:hover, &:focus, &:focus-visible, &:active": {
+      outline: "none",
+      boxShadow: "none",
+    },
     "& input": {
       fontFamily: `${fullConfig.theme.fontFamily["sans"]} !important`,
-      "&:focus": {
+      appearance: "none",
+      WebkitAppearance: "none",
+      "&:hover, &:focus, &:focus-visible, &:active": {
         outline: "none",
         borderColor: "transparent",
         boxShadow: "none",
@@ -26,12 +32,29 @@ export const searchStyles = {
       },
     },
     "& .MuiOutlinedInput-root": {
+      "&:hover, &.Mui-focused, &:focus-within, &:active": {
+        outline: "none",
+        boxShadow: "none",
+      },
       "&:hover .MuiOutlinedInput-notchedOutline": {
-        borderColor: "transparent",
+        borderColor: "transparent !important",
       },
       "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
-        borderColor: "transparent",
+        borderColor: "transparent !important",
       },
+      "&:active .MuiOutlinedInput-notchedOutline": {
+        borderColor: "transparent !important",
+      },
+    },
+    "& .MuiInputBase-input": {
+      "&:hover, &:focus, &:focus-visible, &:active": {
+        outline: "none",
+        boxShadow: "none",
+      },
+    },
+    "& .MuiOutlinedInput-notchedOutline": {
+      display: "none",
+      borderColor: "transparent !important",
     },
     "& .MuiAutocomplete-option": {
       "&[aria-selected='true']": {

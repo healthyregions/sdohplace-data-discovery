@@ -86,6 +86,30 @@ const SearchInput: React.FC<SearchInputProps> = ({
     <form id="search-form" onSubmit={onSubmit}>
       <Autocomplete
         ref={autocompleteRef}
+        sx={{
+          outline: "none",
+          boxShadow: "none",
+          "&.Mui-focused": {
+            outline: "none",
+            boxShadow: "none",
+          },
+          "& .MuiFormControl-root": {
+            outline: "none",
+            boxShadow: "none",
+          },
+          "& .MuiFormControl-root.Mui-focused": {
+            outline: "none",
+            boxShadow: "none",
+          },
+          "& .MuiOutlinedInput-root": {
+            outline: "none",
+            boxShadow: "none",
+            "&.Mui-focused, &:focus-within": {
+              outline: "none",
+              boxShadow: "none",
+            },
+          },
+        }}
         slots={{
           popper: CustomPopper,
           paper: CustomPaper,
@@ -238,6 +262,7 @@ const SearchInput: React.FC<SearchInputProps> = ({
                   paddingLeft: isMobile ? "0.375em" : "0.625em",
                 },
                 "& .MuiOutlinedInput-notchedOutline": {
+                  display: "none",
                   borderColor: "transparent",
                 },
               }}
