@@ -30,9 +30,15 @@ export interface SearchState {
   
   // filter
   filterQueries: any[];
+  resource: string[];
   subject: string[];
   spatialResolution: string[];
   indexYear: string[];
+  yearBounds: {
+    min: number | null;
+    max: number | null;
+    isInitialized: boolean;
+  };
 
   // map
   searchBbox: [number, number, number, number] | null;
@@ -71,9 +77,15 @@ export const initialState: SearchState = {
   //map
   searchBbox: null,
   enableMapBboxFilter: false,
+  resource: [],
   subject: [],
   spatialResolution: [],
   indexYear: [],
+  yearBounds: {
+    min: null,
+    max: null,
+    isInitialized: false,
+  },
   spellCheck: "",
   originalQuery: "",
   usedQuery: "",

@@ -6,6 +6,7 @@ import { Collapse, Grid } from "@mui/material";
 import SearchArea from "./searchArea";
 import DetailPanel from "./detailPanel";
 import { initializeSearch, setSchema } from "@/store/slices/searchSlice";
+import { setShowDetailPanel } from "@/store/slices/uiSlice";
 import MapPanel from "./mapPanel";
 import dynamic from "next/dynamic";
 import MapListToggle from "./mapPanel/MapListToggle";
@@ -38,16 +39,20 @@ const DynamicResultsPanel = dynamic(() => import("./resultsPanel"), {
 export default function DiscoveryArea({ schema }): JSX.Element {
   const dispatch = useDispatch<AppDispatch>();
   const { showDetailPanel } = useSelector((state: RootState) => state.ui);
-  const { results, relatedResults } = useSelector(
+  const { results, relatedResults, yearBounds } = useSelector(
     (state: RootState) => state.search
   );
   const [isMounted, setIsMounted] = useState(false);
   const [isMobileView, setIsMobileView] = useState(false);
-  const [mobileViewMode, setMobileViewMode] = useState<"list" | "map">("map");
+  const [mobileViewMode, setMobileViewMode] = useState<"list" | "map">("list");
   useEffect(() => {
-    if (isMounted && typeof window !== "undefined")
+    if (
+      isMounted &&
+      typeof window !== "undefined" &&
+      !yearBounds?.isInitialized
+    )
       dispatch(initializeSearch({ schema }));
-  }, [schema, dispatch, isMounted]);
+  }, [schema, dispatch, isMounted, yearBounds?.isInitialized]);
 
   useEffect(() => {
     setIsMounted(true);
@@ -61,6 +66,12 @@ export default function DiscoveryArea({ schema }): JSX.Element {
       return () => window.removeEventListener("resize", check);
     }
   }, [isMounted]);
+
+  useEffect(() => {
+    if (isMobileView && showDetailPanel && showDetailPanel.length > 0) {
+      setMobileViewMode("list");
+    }
+  }, [isMobileView, showDetailPanel]);
 
   if (!isMounted) {
     return (
@@ -102,7 +113,10 @@ export default function DiscoveryArea({ schema }): JSX.Element {
         className="w-full px-[1em] sm:px-[2em] transition-all duration-300"
       >
         <div className="block sm:px-4 sm:mb-4 sm:hidden container mx-auto ">
-          <MapListToggle value={mobileViewMode} onChange={(m) => setMobileViewMode(m)} />
+          <MapListToggle value={mobileViewMode} onChange={(m) => {
+            if (m === "list" && isMobileView) dispatch(setShowDetailPanel(""));
+            setMobileViewMode(m);
+          }} />
         </div>
         <Grid
           container
@@ -112,7 +126,16 @@ export default function DiscoveryArea({ schema }): JSX.Element {
         >
           <Grid size={{ xs: 12, sm: 6 }}>
             {(!isMobileView || mobileViewMode === "list") && (
-              <DynamicResultsPanel schema={schema} />
+              showDetailPanel && showDetailPanel.length > 0 && isMobileView ? (
+                <DetailPanel
+                  resultList={results}
+                  relatedList={relatedResults}
+                  isMobileView={isMobileView}
+                  onMobileBackToList={() => setMobileViewMode("list")}
+                />
+              ) : (
+                <DynamicResultsPanel schema={schema} />
+              )
             )}
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
@@ -121,7 +144,7 @@ export default function DiscoveryArea({ schema }): JSX.Element {
                 <MapPanel
                   resultsList={results}
                   showMap={
-                    showDetailPanel && (results && results.find((r) => r.id === showDetailPanel))
+                    !isMobileView && showDetailPanel && (results && results.find((r) => r.id === showDetailPanel))
                       ? "none"
                       : "block"
                   }
@@ -129,8 +152,13 @@ export default function DiscoveryArea({ schema }): JSX.Element {
                   mobileViewMode={mobileViewMode}
                   onMobileViewChange={(m) => setMobileViewMode(m)}
                 />
-                {showDetailPanel && showDetailPanel.length > 0 && (
-                  <DetailPanel resultList={results} relatedList={relatedResults} />
+                {!isMobileView && showDetailPanel && showDetailPanel.length > 0 && (
+                  <DetailPanel
+                    resultList={results}
+                    relatedList={relatedResults}
+                    isMobileView={false}
+                    onMobileBackToList={() => setMobileViewMode("list")}
+                  />
                 )}
               </>
             )}

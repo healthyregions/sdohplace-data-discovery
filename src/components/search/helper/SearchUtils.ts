@@ -1,5 +1,6 @@
 import { SolrSuggestion, SolrSuggestResponse } from "@/store/types/search";
 import SolrQueryBuilder from "./SolrQueryBuilder";
+import { MAX_SUGGESTION_RESULTS } from "../constants";
 
 export interface SearchResult {
   searchResults: any[];
@@ -8,12 +9,17 @@ export interface SearchResult {
   originalQuery: string;
   usedQuery: string;
   usedSpellCheck: boolean;
+  yearBounds?: {
+    min: number | null;
+    max: number | null;
+  } | null;
   analysis?: any;
 }
 
 export const processAndSortSuggestions = (
   suggestions: SolrSuggestion[],
-  minWeight: number = 50
+  minWeight: number = 50,
+  maxSuggestions: number = MAX_SUGGESTION_RESULTS
 ): string[] => {
   return suggestions
     .filter((s) => s.payload === "false")
@@ -23,7 +29,8 @@ export const processAndSortSuggestions = (
       const weightA = suggestions.find((s) => s.term === a)?.weight || 0;
       const weightB = suggestions.find((s) => s.term === b)?.weight || 0;
       return weightB - weightA;
-    });
+    })
+    .slice(0, maxSuggestions);
 };
 
 export const fetchSuggestionsFromSolr = async (

@@ -12,6 +12,28 @@ export const createMiddleware: Middleware = (store) => {
   let pendingFetchTimer: NodeJS.Timeout | null = null;
   let lastFilterAction: string | null = null;
 
+  const scheduleFetch = (delay: number, waitForIdle: boolean) => {
+    if (pendingFetchTimer) {
+      clearTimeout(pendingFetchTimer);
+      pendingFetchTimer = null;
+    }
+    pendingFetchTimer = setTimeout(() => {
+      const currentState = store.getState();
+      if (waitForIdle && currentState.search.isSearching) {
+        scheduleFetch(80, true);
+        return;
+      }
+      if (currentState.search.isSearching) {
+        pendingFetchTimer = null;
+        return;
+      }
+      const currentQuery = currentState.search.query || "*";
+      triggerResultsFetch(store, currentQuery);
+      pendingFetchTimer = null;
+      lastFilterAction = null;
+    }, delay);
+  };
+
   return (next) => (action: AnyAction) => {
     if (!isClient) {
       return next(action);
@@ -46,25 +68,12 @@ export const createMiddleware: Middleware = (store) => {
         urlSyncManager.syncToUrl(action, config);
       }
       if (config.requiresFetch && !isInitializing) {
-        const state = store.getState();
-        if (!state.search.isSearching) {
-          if (pendingFetchTimer) {
-            clearTimeout(pendingFetchTimer);
-            pendingFetchTimer = null;
-          }
-          const isFilterAction = config.isFilter;
-          const debounceTime = isFilterAction ? 5 : 20;
-          if (isFilterAction) {
-            lastFilterAction = action.type;
-          }
-          pendingFetchTimer = setTimeout(() => {
-            const currentState = store.getState();
-            const currentQuery = currentState.search.query || "*";
-            triggerResultsFetch(store, currentQuery);
-            pendingFetchTimer = null;
-            lastFilterAction = null;
-          }, debounceTime);
+        const isFilterAction = config.isFilter;
+        const debounceTime = isFilterAction ? 5 : 20;
+        if (isFilterAction) {
+          lastFilterAction = action.type;
         }
+        scheduleFetch(debounceTime, isFilterAction);
       }
     }
     return result;

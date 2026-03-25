@@ -12,6 +12,8 @@ import IconTag from "./iconTag";
 interface Props {
   resultList: any[];
   relatedList: any[];
+  isMobileView?: boolean;
+  onMobileBackToList?: () => void;
 }
 const fullConfig = resolveConfig(tailwindConfig);
 
@@ -34,6 +36,8 @@ const DetailPanel = (props: Props): JSX.Element => {
                 ? resultItem.meta.subject[0]
                 : ""
             )}
+            isMobileView={props.isMobileView}
+            onMobileBackToList={props.onMobileBackToList}
           />
         </div>
         <div className="flex flex-col sm:flex-row mb-12" id="introCardRow">

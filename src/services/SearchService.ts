@@ -1,4 +1,5 @@
 import SolrQueryBuilder from "../components/search/helper/SolrQueryBuilder";
+import { findSolrAttribute } from "meta/helper/util";
 import { 
   SearchResult, 
   deduplicateResults, 
@@ -18,6 +19,30 @@ export class SearchService {
     this.queryBuilder.setSchema(schema);
     this.enableLocalFallback = enableLocalFallback;
   }
+
+  async fetchNoResultThemeRecommendations(limit: number = 3): Promise<string[]> {
+    const schema = this.queryBuilder.getSchema();
+    if (!schema || !Array.isArray((schema as any).fields)) {
+      return [];
+    }
+    const subjectField = findSolrAttribute("subject", schema);
+    this.queryBuilder.facetQuery("subject", limit, 1);
+    const { facetFields } = await this.queryBuilder.fetchResult(undefined, true);
+    const facetValues = facetFields?.[subjectField];
+    if (!Array.isArray(facetValues)) {
+      return [];
+    }
+    const themes = [];
+    for (let i = 0; i < facetValues.length; i += 2) {
+      const theme = facetValues[i];
+      const count = Number(facetValues[i + 1]);
+      if (typeof theme === "string" && theme.trim() !== "" && count > 0) {
+        themes.push(theme);
+      }
+    }
+    return themes;
+  }
+
   async performChatGptSearch(
     question: string,
     filterQueries: Array<any>
@@ -161,9 +186,10 @@ export class SearchService {
     bypassSpellCheck: boolean = false
   ): Promise<SearchResult> {
     this.queryBuilder.combineQueries(query, filterQueries);
-    const { results: searchResults, spellCheckSuggestion } =
+    const { results: searchResults, spellCheckSuggestion, yearBounds: initialYearBounds } =
       await this.queryBuilder.fetchResult(undefined, skipCache || bypassSpellCheck);
     let finalResults = searchResults;
+    let yearBounds = initialYearBounds || null;
     let usedQuery = query;
     let usedSpellCheck = false;
     if (
@@ -176,10 +202,11 @@ export class SearchService {
         spellCheckSuggestion,
         filterQueries
       );
-      const { results: spellCheckResults } =
+      const { results: spellCheckResults, yearBounds: spellCheckYearBounds } =
         await this.queryBuilder.fetchResult(undefined, skipCache);
       if (spellCheckResults && spellCheckResults.length > 0) {
         finalResults = spellCheckResults;
+        yearBounds = spellCheckYearBounds || yearBounds;
         usedQuery = spellCheckSuggestion;
         usedSpellCheck = true;
       }
@@ -192,6 +219,7 @@ export class SearchService {
       originalQuery: query,
       usedQuery,
       usedSpellCheck,
+      yearBounds,
     };
   }
 

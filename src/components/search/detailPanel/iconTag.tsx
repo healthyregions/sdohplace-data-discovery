@@ -54,26 +54,15 @@ const IconTag = (props: Props): JSX.Element => {
     });
   };
 
+  const getBgColorClass = () => {
+    return "bg-lightviolet";
+  };
   const isSelected = (label: string): boolean => {
-    let currentSubjects = subject || [];
+    const currentSubjects = subject || [];
     return currentSubjects.includes(label);
   };
-  const getBgColorClass = () => {
-    const selected = isSelected(props.label);
-    if (props.variant === "alternate") {
-      return selected ? "bg-lightbisque" : "bg-white";
-    }
-    return selected ? "bg-strongorange" : "bg-lightbisque";
-  };
-  const getColorName = () => {
-    const selected = isSelected(props.label);
-    if (props.variant === "alternate") {
-      return "strongorange";
-    }
-    return selected ? "lightbisque" : "strongorange";
-  };
   const getBorderColorClass = () => {
-    return "border-strongorange";
+    return isSelected(props.label) ? "border-frenchviolet" : "border-lightviolet";
   };
 
   return (
@@ -87,11 +76,7 @@ const IconTag = (props: Props): JSX.Element => {
         <div
           className="relative flex items-center justify-center"
           style={{
-            color: `${
-              isSelected(props.label)
-                ? fullConfig.theme.colors[getColorName()]
-                : fullConfig.theme.colors["strongorange"]
-            }`,
+            color: `${fullConfig.theme.colors["frenchviolet"]}`,
           }}
         >
           {props.svgIcon}

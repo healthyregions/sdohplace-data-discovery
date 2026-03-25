@@ -5,22 +5,48 @@ import tailwindConfig from "../../../../tailwind.config";
 import resolveConfig from "tailwindcss/resolveConfig";
 import SearchIcon from "@mui/icons-material/Search";
 import { setShowFilter } from "@/store/slices/uiSlice";
-import { Box, SvgIcon, CircularProgress, Fade, Collapse, Alert, Button } from "@mui/material";
+import { Box, SvgIcon, Fade, Collapse, Alert, Button } from "@mui/material";
 import FilterAltIcon from "@mui/icons-material/FilterAlt";
 import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline";
 import React from "react";
+import Image from "next/image";
 import ResultCard from "./resultCard";
+import ResultListSkeleton from "./resultListSkeleton";
 import FilterPanel from "../filterPanel";
+import ShowingFiltersRow, { ShowingChip } from "./showingFiltersRow";
 import {
   selectSearchState,
   getFilterStatus,
   resetFilters,
 } from "@/middleware/filterHelper";
-import ThemeIcons from "../helper/themeIcons";
 import { EventType } from "@/lib/event";
 import { usePlausible } from "next-plausible";
-import { clearError, clearSearch, reloadAiSearchFromUrl, setAISearch } from "@/store/slices/searchSlice";
+import CalendarMonthOutlinedIcon from "@mui/icons-material/CalendarMonthOutlined";
+import GrainIcon from "@mui/icons-material/Grain";
+import NorthRoundedIcon from "@mui/icons-material/NorthRounded";
+import SouthRoundedIcon from "@mui/icons-material/SouthRounded";
+import StorageOutlinedIcon from "@mui/icons-material/StorageOutlined";
+import IconMatch from "../helper/IconMatch";
+import { SearchUIConfig } from "@/components/searchUIConfig";
+import IconTag from "../detailPanel/iconTag";
+import {
+  clearError,
+  clearSearch,
+  reloadAiSearchFromUrl,
+  setAISearch,
+  setIndexYear,
+  setResource,
+  setSort,
+  setSpatialResolution,
+  setSubject,
+} from "@/store/slices/searchSlice";
 import { setGeocodeFeature } from "@/store/slices/mapSlice";
+import { SearchService } from "@/services/SearchService";
+import {
+  detectNoResultScenario,
+  getNoResultMessage,
+  shouldFetchFallbackThemes,
+} from "./noResultRecommendationLogic";
 
 interface Props {
   schema: any;
@@ -45,8 +71,17 @@ const ResultsPanel = (props: Props): JSX.Element => {
   const plausible = usePlausible();
   const showFilter = useSelector((state: RootState) => state.ui.showFilter);
   const isLoading = searchState.isSearching || searchState.isSuggesting;
-  const isQuery =
-    searchState.query && searchState.query !== "*" && searchState.query !== "";
+  const hasSearchTerm = React.useMemo(() => {
+    const terms = [
+      searchState.query,
+      searchState.originalQuery,
+      searchState.usedQuery,
+    ];
+    return terms.some(
+      (value) =>
+        typeof value === "string" && value.trim() !== "" && value !== "*"
+    );
+  }, [searchState.query, searchState.originalQuery, searchState.usedQuery]);
   const [previousCount, setPreviousCount] = React.useState(
     searchState.results.length
   );
@@ -58,7 +93,21 @@ const ResultsPanel = (props: Props): JSX.Element => {
     React.useState(false);
   const [showNoResults, setShowNoResults] = React.useState(false);
   const [hasCompletedSearch, setHasCompletedSearch] = React.useState(false);
+  const [stableResultsLabel, setStableResultsLabel] = React.useState("");
   const [prevResults, setPrevResults] = React.useState([]);
+  const [fallbackThemes, setFallbackThemes] = React.useState<string[]>([]);
+  const [isLoadingFallbackThemes, setIsLoadingFallbackThemes] =
+    React.useState(false);
+  const subjectFilters = useSelector(
+    (state: RootState) => state.search.subject
+  );
+  const resourceFilters = useSelector(
+    (state: RootState) => state.search.resource
+  );
+  const yearFilters = useSelector((state: RootState) => state.search.indexYear);
+  const spatialResolutionFilters = useSelector(
+    (state: RootState) => state.search.spatialResolution
+  );
   const sortConfig = useSelector((state: RootState) => state.search.sort);
   const isAiSearch = useSelector((state: RootState) => state.search.aiSearch);
 
@@ -182,7 +231,7 @@ const ResultsPanel = (props: Props): JSX.Element => {
   };
 
   const handleClearFilters = async () => {
-    dispatch(setGeocodeFeature(null))
+    dispatch(setGeocodeFeature(null));
     setIsResetting(true);
     await resetFilters(store);
     setTimeout(() => {
@@ -192,6 +241,134 @@ const ResultsPanel = (props: Props): JSX.Element => {
       setShowNoResults(true);
     }, 500);
   };
+
+  const handleRemoveTheme = React.useCallback(
+    (theme: string) => {
+      const nextSubjects = (subjectFilters || []).filter(
+        (value) => value !== theme
+      );
+      dispatch(setSubject(nextSubjects));
+    },
+    [dispatch, subjectFilters]
+  );
+
+  const handleClearYearFilter = React.useCallback(() => {
+    dispatch(setIndexYear([]));
+  }, [dispatch]);
+
+  const handleRemoveResource = React.useCallback(
+    (resource: string) => {
+      const nextResources = (resourceFilters || []).filter(
+        (value) => value !== resource
+      );
+      dispatch(setResource(nextResources));
+    },
+    [dispatch, resourceFilters]
+  );
+
+  const handleClearSpatialResolution = React.useCallback(() => {
+    dispatch(setSpatialResolution([]));
+  }, [dispatch]);
+
+  const handleClearSortSelection = React.useCallback(() => {
+    dispatch(setSort({ field: null, direction: null }));
+  }, [dispatch]);
+
+  const yearFilterLabel = React.useMemo(() => {
+    if (!yearFilters || yearFilters.length === 0) return null;
+    const numericYears = yearFilters
+      .map((year) => Number(year))
+      .filter((year) => !Number.isNaN(year));
+    if (!numericYears.length) return null;
+    const minYear = Math.min(...numericYears);
+    const maxYear = Math.max(...numericYears);
+    if (minYear === maxYear) return `${minYear}`;
+    return `${minYear} - ${maxYear}`;
+  }, [yearFilters]);
+
+  const resolutionDisplayMap = React.useMemo(
+    () =>
+      new Map(
+        SearchUIConfig.search.searchBox.spatialResOptions.map((option) => [
+          option.value,
+          option.display_name,
+        ])
+      ),
+    []
+  );
+
+  const sortLabel = React.useMemo(() => {
+    if (sortConfig.sortBy !== "index_year") return null;
+    if (sortConfig.sortOrder === "desc") return "Recent first";
+    if (sortConfig.sortOrder === "asc") return "Oldest first";
+    return null;
+  }, [sortConfig.sortBy, sortConfig.sortOrder]);
+
+  const showingChips = React.useMemo(() => {
+    const chips: ShowingChip[] = [];
+    (subjectFilters || []).forEach((subject) => {
+      chips.push({
+        id: `subject-${subject}`,
+        label: subject,
+        icon: IconMatch(subject),
+        onRemove: () => handleRemoveTheme(subject),
+      });
+    });
+    (resourceFilters || []).forEach((resource) => {
+      chips.push({
+        id: `resource-${resource}`,
+        label: resource,
+        icon: <StorageOutlinedIcon />,
+        onRemove: () => handleRemoveResource(resource),
+      });
+    });
+    if (yearFilterLabel) {
+      chips.push({
+        id: "index-year",
+        label: yearFilterLabel,
+        icon: <CalendarMonthOutlinedIcon />,
+        onRemove: handleClearYearFilter,
+      });
+    }
+    if (spatialResolutionFilters && spatialResolutionFilters.length > 0) {
+      const spatialResolutionLabel = spatialResolutionFilters
+        .map((resolution) => resolutionDisplayMap.get(resolution) || resolution)
+        .join(", ");
+      chips.push({
+        id: "spatial-resolution",
+        label: spatialResolutionLabel,
+        icon: <GrainIcon />,
+        onRemove: handleClearSpatialResolution,
+      });
+    }
+    if (sortLabel) {
+      chips.push({
+        id: "sort",
+        label: sortLabel,
+        icon:
+          sortConfig.sortOrder === "asc" ? (
+            <NorthRoundedIcon />
+          ) : (
+            <SouthRoundedIcon />
+          ),
+        onRemove: handleClearSortSelection,
+      });
+    }
+    return chips;
+  }, [
+    subjectFilters,
+    resourceFilters,
+    yearFilterLabel,
+    spatialResolutionFilters,
+    resolutionDisplayMap,
+    sortLabel,
+    sortConfig.sortOrder,
+    handleRemoveTheme,
+    handleRemoveResource,
+    handleClearYearFilter,
+    handleClearSpatialResolution,
+    handleClearSortSelection,
+  ]);
 
   const resultsToShow = React.useMemo(() => {
     if (searchState.aiSearch && isLoading && prevResults.length > 0) {
@@ -211,11 +388,14 @@ const ResultsPanel = (props: Props): JSX.Element => {
     sortedRes.forEach((result) => {
       const term = result.q || "unknown";
       if (!termAvgScores.has(term)) {
-        const termResults = sortedRes.filter((r) => (r.q || "unknown") === term);
+        const termResults = sortedRes.filter(
+          (r) => (r.q || "unknown") === term
+        );
         const termScores = termResults.map((r) => r.score || 0);
-        const termAvg = termScores.length > 0
-          ? termScores.reduce((a, b) => a + b, 0) / termScores.length
-          : 0;
+        const termAvg =
+          termScores.length > 0
+            ? termScores.reduce((a, b) => a + b, 0) / termScores.length
+            : 0;
         termAvgScores.set(term, termAvg);
       }
     });
@@ -236,7 +416,13 @@ const ResultsPanel = (props: Props): JSX.Element => {
       }
       return 0;
     });
-  }, [resultsToShow, uniqueRelatedList, getSortedResults, isAiSearch, sortConfig.sortBy]);
+  }, [
+    resultsToShow,
+    uniqueRelatedList,
+    getSortedResults,
+    isAiSearch,
+    sortConfig.sortBy,
+  ]);
 
   const displayCount = React.useMemo(() => {
     if (isResetting || isLoading) {
@@ -386,35 +572,29 @@ const ResultsPanel = (props: Props): JSX.Element => {
   ]);
 
   const renderLoadingState = () => {
-    let loadingMessage;
-    if (displayCount > 0) {
-      loadingMessage = "Updating results...";
-    } else {
-      loadingMessage = "Searching for data you may be interested in...";
-    }
-    return (
-      <Box className="flex flex-col w-full">
-        <Box className="flex justify-center items-center h-64">
-          <div className="text-center w-full px-4 py-3 rounded-lg bg-white">
-            <span className="mr-4 text-lg transition-all duration-300 ease-in-out">
-              {loadingMessage}
-            </span>
-            <div className="mt-3">
-              <CircularProgress
-                size={24}
-                className="text-strongorange ml-2"
-                sx={{ animationDuration: "550ms" }}
-              />
-            </div>
-          </div>
-        </Box>
-      </Box>
-    );
+    const skeletonCount = displayCount > 0 ? Math.min(displayCount, 6) : 4;
+    return <ResultListSkeleton count={skeletonCount} />;
   };
 
   const shouldShowResultsCount = React.useMemo(() => {
     return !isLoading && !isResetting && hasCompletedSearch && displayCount > 0;
   }, [isLoading, isResetting, hasCompletedSearch, displayCount]);
+
+  const currentResultsLabel = React.useMemo(() => {
+    return hasSearchTerm
+      ? `Results (${displayCount})`
+      : `All Data Sources (${displayCount})`;
+  }, [hasSearchTerm, displayCount]);
+
+  React.useEffect(() => {
+    if (shouldShowResultsCount) {
+      setStableResultsLabel(currentResultsLabel);
+    }
+  }, [shouldShowResultsCount, currentResultsLabel]);
+
+  const resultsHeaderLabel = shouldShowResultsCount
+    ? currentResultsLabel
+    : stableResultsLabel;
 
   const shouldShowLoading = React.useMemo(() => {
     if (
@@ -439,6 +619,60 @@ const ResultsPanel = (props: Props): JSX.Element => {
     uniqueRelatedList.length,
   ]);
 
+  const noResultScenario = React.useMemo(
+    () =>
+      detectNoResultScenario(
+        hasSearchTerm,
+        Boolean(filterStatus?.hasActiveFilters)
+      ),
+    [hasSearchTerm, filterStatus]
+  );
+
+  const noResultMessage = React.useMemo(
+    () => getNoResultMessage(noResultScenario),
+    [noResultScenario]
+  );
+
+  const isNoResultsView = React.useMemo(
+    () =>
+      !shouldShowLoading &&
+      !hasError &&
+      sortedResults.length === 0 &&
+      displayCount === 0,
+    [shouldShowLoading, hasError, sortedResults.length, displayCount]
+  );
+
+  React.useEffect(() => {
+    if (!isNoResultsView || !shouldFetchFallbackThemes(noResultScenario)) {
+      setFallbackThemes([]);
+      setIsLoadingFallbackThemes(false);
+      return;
+    }
+    let isCancelled = false;
+    setIsLoadingFallbackThemes(true);
+    const service = new SearchService(props.schema);
+    // #51: if no results is due to query only , fetch some theme recommendations based on the most common themes via a faceted query on the subject field (theme)
+    service
+      .fetchNoResultThemeRecommendations(3)
+      .then((themes) => {
+        if (isCancelled) return;
+        setFallbackThemes(themes);
+      })
+      .catch((error) => {
+        if (isCancelled) return;
+        console.error("Failed to fetch no-result recommendations:", error);
+        setFallbackThemes([]);
+      })
+      .finally(() => {
+        if (isCancelled) return;
+        setIsLoadingFallbackThemes(false);
+      });
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [isNoResultsView, noResultScenario, props.schema]);
+
   return (
     <div
       className="results-panel"
@@ -446,36 +680,19 @@ const ResultsPanel = (props: Props): JSX.Element => {
     >
       <span style={resultsPanelStyle}>
         <Box>
-          <div className="flex flex-col sm:mb-[1.5em] sm:ml-[1.1em] sm:flex-row items-center">
-            <div className="flex flex-col sm:flex-row flex-grow text-2xl">
+          <div className="flex items-center justify-between gap-3 mb-[1.5em] sm:ml-[1.1em]">
+            <div className="flex min-w-0 flex-1 text-2xl">
               <Fade in={!isResetting} timeout={300}>
-                <div>
-                  {shouldShowResultsCount && (
-                    <Box>
-                      {isQuery
-                        ? `Results (${displayCount})`
-                        : `All Data Sources (${displayCount})`}
-                    </Box>
-                  )}
+                <div className="min-w-0">
+                  <Box sx={{ minHeight: "2rem" }}>
+                    {resultsHeaderLabel || "\u00A0"}
+                  </Box>
                 </div>
               </Fade>
             </div>
-            {filterStatus &&
-              filterStatus.hasActiveFilters &&
-              !isLoading &&
-              !isResetting && (
-                <div className="flex flex-col sm:flex-row items-enter justify-center mr-4 cursor-pointer text-uppercase">
-                  <div
-                    className="text-frenchviolet"
-                    onClick={handleClearFilters}
-                  >
-                    Reset Filters
-                  </div>
-                </div>
-              )}
 
             <div
-              className="flex sm:justify-end mt-0 order-1 sm:order-none flex-none text-l-500 sm:mr-[2.3em] text-frenchviolet cursor-pointer"
+              className="inline-flex items-center sm:justify-end flex-none text-l sm:text-base sm:mr-[2.3em] text-frenchviolet cursor-pointer whitespace-nowrap"
               onClick={handleFilterToggle}
             >
               <SvgIcon
@@ -495,8 +712,12 @@ const ResultsPanel = (props: Props): JSX.Element => {
         >
           <FilterPanel />
         </Collapse>
+        <ShowingFiltersRow
+          chips={showingChips}
+          onClearAll={handleClearFilters}
+        />
 
-        <div className="flex flex-col" style={{ height: "100%" }}>
+        <div className="flex flex-col mt-4 sm:mt-0">
           <Fade in={true} timeout={300}>
             <div>
               {shouldShowLoading ? (
@@ -516,7 +737,10 @@ const ResultsPanel = (props: Props): JSX.Element => {
                     >
                       {sortedResults.map((result) =>
                         result && result.id ? (
-                          <div key={result.id} className="mb-[0.75em]">
+                          <div
+                            key={result.id}
+                            className="mb-[2.5em] first:pt-6 sm:mb-[0.75em] sm:first:pt-0"
+                          >
                             <ResultCard resultItem={result} />
                           </div>
                         ) : null
@@ -561,7 +785,9 @@ const ResultsPanel = (props: Props): JSX.Element => {
                                   dispatch(setAISearch(false));
                                   dispatch(clearSearch());
                                   if (typeof window !== "undefined") {
-                                    const searchParams = new URLSearchParams(window.location.search);
+                                    const searchParams = new URLSearchParams(
+                                      window.location.search
+                                    );
                                     searchParams.delete("query");
                                     searchParams.set("ai_search", "false");
                                     const serialized = searchParams.toString();
@@ -603,9 +829,16 @@ const ResultsPanel = (props: Props): JSX.Element => {
                       </Alert>
                     </div>
                   ) : (
-                    <div className="flex flex-col sm:ml-[1.1em] sm:mb-[2.5em]">
-                      <Box className="flex flex-col justify-center items-center mb-[1.5em]">
-                        <SearchIcon className="text-strongorange my-[0.15em]" />
+                    <div className="flex flex-col sm:ml-[1.1em]">
+                      {/* 1.5rem margin bottom form sort&filter */}
+                      <Box className="flex flex-col items-center mb-[2.5rem] sm:mt-[3.5rem] sm:mb-[7rem]">
+                        <Image
+                          src="/icons/no_results.svg"
+                          alt="No results icon"
+                          width={40}
+                          height={40}
+                          style={{marginBottom: "0.5rem"}}
+                        />
                         <div className="text-s">No results</div>
                         {(() => {
                           try {
@@ -634,11 +867,57 @@ const ResultsPanel = (props: Props): JSX.Element => {
                         })()}
                       </Box>
                       <Box className="mb-[0.75em]">
-                        <div className="text-s">Search for themes instead?</div>
+                        <div className="text-s">{noResultMessage}</div>
                       </Box>
-                      <Box className="flex flex-col sm:flex-row flex-wrap gap-4">
-                        <ThemeIcons variant="alternate" themeOnly={true} />
-                      </Box>
+                      {(noResultScenario === "query_and_filters" ||
+                        noResultScenario === "filters_only") && (
+                        <Box className="mb-[0.75em]">
+                          <button
+                            type="button"
+                            onClick={handleClearFilters}
+                            style={{
+                              border: "none",
+                              background: "transparent",
+                              color: fullConfig.theme.colors["frenchviolet"],
+                              fontFamily: fullConfig.theme.fontFamily["sans"],
+                              fontWeight: 700,
+                              cursor: "pointer",
+                              padding: "0",
+                              fontSize: "0.875rem",
+                            }}
+                          >
+                            Clear all filters
+                          </button>
+                        </Box>
+                      )}
+                      {noResultScenario === "query_only" && (
+                        <>
+                          <Box className="mb-[0.75em]">
+                            <div className="text-s">Or try these popular themes instead?</div>
+                          </Box>
+                          {isLoadingFallbackThemes ? (
+                            <div className="text-s text-gray-600">
+                              Finding suggestions...
+                            </div>
+                          ) : (
+                            <Box className="flex flex-row flex-wrap gap-4 mb-[2rem]">
+                              {fallbackThemes.map((theme) => (
+                                <IconTag
+                                  key={`fallback-theme-${theme}`}
+                                  themeOnly={true}
+                                  svgIcon={IconMatch(theme)}
+                                  label={theme}
+                                  labelClass={`text-s font-normal ${fullConfig.theme.fontFamily["sans"]}`}
+                                  labelColor={
+                                    fullConfig.theme.colors["almostblack"]
+                                  }
+                                  roundBackground={true}
+                                />
+                              ))}
+                            </Box>
+                          )}
+                        </>
+                      )}
                     </div>
                   )}
                 </div>

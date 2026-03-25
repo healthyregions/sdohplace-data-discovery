@@ -39,6 +39,16 @@ export const actionConfig: Record<string, ActionConfig> = {
       fromUrl: (value: string) => value.split(",").filter(Boolean),
     },
   },
+  "search/setResource": {
+    param: "resource_class",
+    syncWithUrl: true,
+    requiresFetch: true,
+    isFilter: true,
+    transform: {
+      toUrl: (value: string[]) => value.join("+"),
+      fromUrl: (value: string) => value.split("+").filter(Boolean),
+    },
+  },
   "search/setSearchBbox": {
     param: "bbox",
     syncWithUrl: true,

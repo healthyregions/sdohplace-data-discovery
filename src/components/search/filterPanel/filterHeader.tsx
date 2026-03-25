@@ -10,7 +10,7 @@ export const FilterHeader = () => {
   return (
     <Box display="flex" alignItems="center">
       <Box flexGrow={1}>
-        <div className="text-s font-bold">Sort</div>
+        <div className="text-base font-bold">Sort</div>
       </Box>
       <Box>
         <IconButton

@@ -7,6 +7,7 @@ import urlSyncManager from "./UrlSyncManager";
 export interface FilterState {
   spatialResolution: string[] | null;
   subject: string[] | null;
+  resource: string[] | null;
   bbox: number[] | null;
   indexYear: string[] | null;
   [key: string]: any;
@@ -25,14 +26,16 @@ const getStateKeyFromAction = (actionType: string): string => {
 const selectSpatialResolution = (state: RootState) =>
   state.search.spatialResolution;
 const selectSubject = (state: RootState) => state.search.subject;
+const selectResource = (state: RootState) => state.search.resource;
 const selectBbox = (state: RootState) => state.search.searchBbox;
 const selectIndexYear = (state: RootState) => state.search.indexYear;
 
 export const getFilterState = createSelector(
-  [selectSpatialResolution, selectSubject, selectBbox, selectIndexYear],
-  (spatialResolution, subject, bbox, indexYear) => ({
+  [selectSpatialResolution, selectSubject, selectResource, selectBbox, selectIndexYear],
+  (spatialResolution, subject, resource, bbox, indexYear) => ({
     spatialResolution,
     subject,
+    resource,
     bbox,
     indexYear,
   })
@@ -91,6 +94,14 @@ export class FilterService {
       searchState.subject.forEach((value: string) => {
         queries.push({
           attribute: "subject",
+          value,
+        });
+      });
+    }
+    if (searchState.resource?.length) {
+      searchState.resource.forEach((value: string) => {
+        queries.push({
+          attribute: "resource_class",
           value,
         });
       });
