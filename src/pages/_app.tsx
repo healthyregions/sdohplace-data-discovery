@@ -6,6 +6,7 @@ import createEmotionCache from "../createEmotionCache";
 import { Provider } from "react-redux";
 import { store } from "@/store";
 import PlausibleProvider from 'next-plausible';
+import { AuthProvider } from "@/components/auth/AuthProvider";
 
 // Client-side cache, shared for the whole session of the user in the browser.
 const clientSideEmotionCache = createEmotionCache();
@@ -22,9 +23,11 @@ export default function MyApp(props: MyAppProps) {
     <>
       <PlausibleProvider domain="search.sdohplace.org">
         <CacheProvider value={emotionCache}>
-          <Provider store={store}>
-            <AnyComponent {...pageProps} />
-          </Provider>
+          <AuthProvider>
+            <Provider store={store}>
+              <AnyComponent {...pageProps} />
+            </Provider>
+          </AuthProvider>
         </CacheProvider>
       </PlausibleProvider>
     </>
