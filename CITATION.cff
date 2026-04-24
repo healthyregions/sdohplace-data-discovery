@@ -1,0 +1,36 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it using the metadata from this file."
+type: software
+title: "SDOH & Place Project - Data Discovery"
+version: 0.1.0
+date-released: 2026-04-20
+abstract: "A data discovery application for the SDOH & Place Project that provides a curated, searchable index of geospatial datasets for social determinants of health research and practice."
+url: "https://search.sdohplace.org"
+repository-code: "https://github.com/healthyregions/sdohplace-data-discovery"
+license: "GPL-3.0"
+authors:
+  - given-names: Adam
+    family-names: Cox
+    alias: mradamcox
+  - given-names: Pengyin
+    family-names: Shan
+    alias: pengyin-shan
+  - given-names: Sara
+    family-names: Lambert
+    alias: bodom0015
+  - given-names: Mukesh
+    family-names: Chugani
+    alias: mukeshchugani10
+  - given-names: Ashwin
+    family-names: Patil
+    alias: theashwin
+  - given-names: Marynia
+    family-names: Kolak
+    alias: Makosak
+keywords:
+  - social determinants of health
+  - geospatial data
+  - health equity
+  - public health
+  - next.js
+  - solr
