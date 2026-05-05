@@ -1,5 +1,12 @@
-import { message } from "../../config/prompt/prompt_message.js";
-import { message as gptBasedMessage } from "../../config/prompt/prompt_message_chatgpt.js";
+import { composeSearchPrompt } from "../../config/prompt/generated/prompt_bundle.js";
+import {
+  ontologyContext,
+} from "../../config/prompt/ontology_context.js";
+import {
+  applyPromptOntologySearchTerms,
+  buildOntologyAnalysis,
+  buildPromptOntologyTrace,
+} from "../../config/prompt/ontology_utils.js";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -54,7 +61,121 @@ function getLLMInfo() {
   ];
 }
 
-export default async (request, context) => {
+function getOntologySearchMode() {
+  const allowedModes = new Set(["deterministic", "prompt", "off"]);
+  const envMode =
+    typeof Deno !== "undefined"
+      ? Deno.env.get("NEXT_PUBLIC_ONTOLOGY_SEARCH_MODE") ||
+        Deno.env.get("ONTOLOGY_SEARCH_MODE")
+      : process.env.NEXT_PUBLIC_ONTOLOGY_SEARCH_MODE ||
+        process.env.ONTOLOGY_SEARCH_MODE;
+  const normalizedMode = String(envMode || "deterministic").toLowerCase();
+  return allowedModes.has(normalizedMode) ? normalizedMode : "deterministic";
+}
+
+function getRequestOntologyMode(questionData) {
+  const allowedModes = new Set(["deterministic", "prompt", "off"]);
+  const normalizedMode = String(
+    questionData.ontology_strategy ||
+      questionData.ontology_search_mode ||
+      questionData.ontology_context ||
+      ""
+  ).toLowerCase();
+  return allowedModes.has(normalizedMode) ? normalizedMode : getOntologySearchMode();
+}
+
+function getEffectivePromptMode(ontologyMode, ontologySearchMode) {
+  return ontologyMode === "global" ? ontologySearchMode : "off";
+}
+
+function buildSearchSystemPrompt(
+  ontologyMode,
+  ontologySearchMode,
+  usesNonLatinScript
+) {
+  const promptMode = getEffectivePromptMode(ontologyMode, ontologySearchMode);
+  return composeSearchPrompt(promptMode, {
+    ontologyContext: promptMode === "prompt" ? ontologyContext : "",
+    usesNonLatinScript,
+  });
+}
+
+function ontologyStrategyThought(ontologySearchMode) {
+  if (ontologySearchMode === "deterministic") {
+    return "<b>Ontology strategy:</b> Deterministic matcher found no exact HeroP ontology match, so this uses the general LLM search behavior.<br/>";
+  }
+  if (ontologySearchMode === "prompt") {
+    return "<b>Ontology strategy:</b> Prompt-side context injection. The LLM received HeroP Lab's Suggested SDOH Ontology inside bounded prompt context and was instructed to use exact ontology labels only; if no exact ontology match exists, it falls back to the original LLM search behavior.<br/>";
+  }
+  if (ontologySearchMode === "off") {
+    return "<b>Ontology strategy:</b> Off. No HeroP ontology context or deterministic matcher was applied; this uses the original LLM search behavior.<br/>";
+  }
+  return "";
+}
+
+function prependOntologyStrategyThought(analysis, ontologySearchMode, question) {
+  const strategyThought = ontologyStrategyThought(ontologySearchMode);
+  if (!strategyThought) {
+    return analysis;
+  }
+  const ontologyTrace =
+    ontologySearchMode === "prompt"
+      ? buildPromptOntologyTrace(question, analysis.keyTerms)
+      : "";
+  return {
+    ...analysis,
+    thoughts: strategyThought + ontologyTrace + (analysis.thoughts || "Analysis completed"),
+  };
+}
+
+function applyOntologyResultPolicy(analysis, ontologyMode, ontologySearchMode, question) {
+  if (ontologyMode === "global" && ontologySearchMode === "prompt") {
+    return applyPromptOntologySearchTerms(question, analysis);
+  }
+  return analysis;
+}
+
+function jsonResponse(body, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}
+
+async function getQuestionData(request) {
+  let questionData;
+  try {
+    questionData = await request.json();
+  } catch (error) {
+    return [
+      null,
+      jsonResponse(
+        {
+          error: "Invalid JSON in request body",
+          details: 'Please provide a JSON object with a "question" field',
+        },
+        400
+      ),
+    ];
+  }
+
+  if (!questionData.question) {
+    return [
+      null,
+      jsonResponse(
+        {
+          error: "Missing question",
+          details: 'Please provide a "question" field in your request',
+        },
+        400
+      ),
+    ];
+  }
+
+  return [questionData, null];
+}
+
+export default async (request) => {
   if (request.method === "OPTIONS") {
     return handleOptions(request);
   }
@@ -68,55 +189,64 @@ export default async (request, context) => {
     });
   }
 
+  const [questionData, questionErrorResponse] = await getQuestionData(request);
+  if (questionErrorResponse) {
+    return questionErrorResponse;
+  }
+
   const [openAPIKey, uiucChatAPIKey, llmEndpoint, courseName, modelName] =
     getLLMInfo();
+  const requestedOntologyContext = String(questionData.ontology_context || "").toLowerCase();
+  const ontologyMode =
+    requestedOntologyContext && requestedOntologyContext !== "off"
+      ? "global"
+      : "off";
+  const requestedOntologySearchMode = getRequestOntologyMode(questionData);
+  const ontologySearchMode = getEffectivePromptMode(
+    ontologyMode,
+    requestedOntologySearchMode
+  );
+  const overrideModel = questionData.model || null;
+  const expId = questionData.exp_id || null;
+  const effectiveModel = overrideModel || modelName;
+  const ontologyAnalysis =
+    ontologyMode === "global" && ontologySearchMode === "deterministic"
+      ? buildOntologyAnalysis(questionData.question)
+      : null;
+  if (ontologyAnalysis) {
+    if (expId) {
+      ontologyAnalysis._experiment = {
+        exp_id: expId,
+        ontology_mode: ontologyMode,
+        ontology_search_mode: ontologySearchMode,
+        timestamp: new Date().toISOString(),
+      };
+    }
+    return jsonResponse(ontologyAnalysis);
+  }
   if (
     !llmEndpoint ||
-    !modelName ||
-    (modelName.indexOf("gpt") > -1 && !openAPIKey) ||
-    (llmEndpoint.indexOf("uiuc") > -1 && !uiucChatAPIKey & !courseName)
+    !effectiveModel ||
+    (effectiveModel.indexOf("gpt") > -1 && !openAPIKey) ||
+    (llmEndpoint.indexOf("uiuc") > -1 && (!uiucChatAPIKey || !courseName))
   ) {
     throw new Error(
       "OpenAI API key is not configured. Please check environment setup."
     );
   }
-  let questionData;
-  if (modelName.indexOf("gpt") > -1) {
+
+  if (effectiveModel.indexOf("gpt") > -1) {
     try {
-      try {
-        questionData = await request.json();
-      } catch (error) {
-        return new Response(
-          JSON.stringify({
-            error: "Invalid JSON in request body",
-            details: 'Please provide a JSON object with a "question" field',
-          }),
-          {
-            status: 400,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          }
-        );
-      }
-      if (!questionData.question) {
-        return new Response(
-          JSON.stringify({
-            error: "Missing question",
-            details: 'Please provide a "question" field in your request',
-          }),
-          {
-            status: 400,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          }
-        );
-      }
       const usesNonLatinScript = containsNonLatinCharacters(
         questionData.question
       );
-      let systemPrompt = gptBasedMessage;
-      if (usesNonLatinScript) {
-        systemPrompt += `\nIMPORTANT: The user's question is in a non-English language. Your response, especially the "thoughts" field, MUST be in the SAME LANGUAGE as the user's question. The keyTerms can be in English, but the "thoughts" explanation MUST be in the original language.`;
-      } // handle non-latin characters like Hebrew, Arabic, etc.
+      const systemPrompt = buildSearchSystemPrompt(
+        ontologyMode,
+        ontologySearchMode,
+        usesNonLatinScript
+      );
       let response, analysis;
+      let completionUsage = null;
       if (llmEndpoint.indexOf("uiuc") > -1) {
         response = await fetch(llmEndpoint, {
           method: "POST",
@@ -124,7 +254,7 @@ export default async (request, context) => {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            model: modelName,
+            model: effectiveModel,
             messages: [
               {
                 role: "system",
@@ -152,7 +282,7 @@ export default async (request, context) => {
             Authorization: `Bearer ${openAPIKey}`,
           },
           body: JSON.stringify({
-            model: modelName,
+            model: effectiveModel,
             messages: [
               {
                 role: "system",
@@ -172,6 +302,7 @@ export default async (request, context) => {
           }),
         });
         const completion = await response.json();
+        completionUsage = completion.usage;
         console.info("api call completion response", completion);
         let content = completion.choices[0].message.content;
         try {
@@ -259,6 +390,30 @@ export default async (request, context) => {
         analysis.bbox = "";
       }
 
+      analysis = applyOntologyResultPolicy(
+        analysis,
+        ontologyMode,
+        ontologySearchMode,
+        questionData.question
+      );
+      analysis = prependOntologyStrategyThought(
+        analysis,
+        ontologySearchMode,
+        questionData.question
+      );
+
+      if (expId) {
+        analysis._experiment = {
+          exp_id: expId,
+          ontology_mode: ontologyMode,
+          ontology_search_mode: ontologySearchMode,
+          model: effectiveModel,
+          timestamp: new Date().toISOString(),
+          prompt_tokens: completionUsage?.prompt_tokens,
+          completion_tokens: completionUsage?.completion_tokens,
+          total_tokens: completionUsage?.total_tokens,
+        };
+      }
       return new Response(JSON.stringify(analysis), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -270,7 +425,6 @@ export default async (request, context) => {
           details: error.message,
           env: typeof Deno !== "undefined" ? "edge" : "local",
           time: new Date().toISOString(),
-
           thoughts: "Search processing encountered an error. Please try again.",
           suggestedQueries: [],
           keyTerms: [],
@@ -285,22 +439,29 @@ export default async (request, context) => {
   } else {
     let currentReader = null;
     try {
-      questionData = await request.json();
       if (currentReader) {
         await currentReader.cancel();
         currentReader = null;
       }
+      const usesNonLatinScript = containsNonLatinCharacters(
+        questionData.question
+      );
+      const systemPrompt = buildSearchSystemPrompt(
+        ontologyMode,
+        ontologySearchMode,
+        usesNonLatinScript
+      );
       const response = await fetch(llmEndpoint, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: modelName,
+          model: effectiveModel,
           messages: [
             {
               role: "system",
-              content: message,
+              content: systemPrompt,
             },
             {
               role: "user",
@@ -338,7 +499,7 @@ export default async (request, context) => {
             keyTermsExtracted = true;
           }
         }
-        const finalResponse = {
+        let finalResponse = {
           thoughts: fullText,
           keyTerms: keyTerms.map((term) => ({
             term: term,
@@ -353,6 +514,17 @@ export default async (request, context) => {
           ),
           bbox: "",
         };
+        finalResponse = applyOntologyResultPolicy(
+          finalResponse,
+          ontologyMode,
+          ontologySearchMode,
+          questionData.question
+        );
+        finalResponse = prependOntologyStrategyThought(
+          finalResponse,
+          ontologySearchMode,
+          questionData.question
+        );
         const urlMatch = fullText.match(/\[(.*?)\]\((.*?)\)/);
         if (urlMatch) {
           finalResponse.sources = [
@@ -381,7 +553,6 @@ export default async (request, context) => {
           details: error.message,
           env: typeof Deno !== "undefined" ? "edge" : "local",
           time: new Date().toISOString(),
-
           thoughts: "Search processing encountered an error. Please try again.",
           suggestedQueries: [],
           keyTerms: [],

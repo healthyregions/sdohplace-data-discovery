@@ -75,11 +75,14 @@ const AIConversationPanel: React.FC<AIConversationPanelProps> = ({
         );
       case "response":
         const helperText = " If you didn't see the expected results, please try our term search instead.";
+        const visibleMessage = message.toLowerCase().includes(helperText.trim().toLowerCase())
+          ? message
+          : message + helperText;
         return (
           <p
             className="break-words sm:mr-[2rem]"
             style={{ color: fullConfig.theme.colors["smokegray"], fontSize: "1rem" }}
-            dangerouslySetInnerHTML={{ __html: message + helperText }}
+            dangerouslySetInnerHTML={{ __html: visibleMessage }}
           />
         );
       default:

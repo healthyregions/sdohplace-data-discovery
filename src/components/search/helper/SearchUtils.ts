@@ -65,10 +65,16 @@ export const getBaseUrl = (): string => {
 
 export const fetchChatGptAnalysis = async (question: string): Promise<any> => {
   const baseUrl = getBaseUrl();
+  const ontologySearchMode =
+    process.env.NEXT_PUBLIC_ONTOLOGY_SEARCH_MODE || "deterministic";
   const response = await fetch(`${baseUrl}/chat-search`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ question }),
+    body: JSON.stringify({
+      question,
+      ontology_context: "global",
+      ontology_strategy: ontologySearchMode,
+    }),
   });
   const responseData = await response.json();
   
