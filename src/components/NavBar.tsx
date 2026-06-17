@@ -243,7 +243,7 @@ const NavBar = (): JSX.Element => {
             <button
               type="button"
               className="border-none bg-transparent p-0 text-base font-bold text-almostblack"
-              onClick={() => auth.signOut("/")}
+              onClick={() => auth.signOut()}
             >
               Sign Out
             </button>
@@ -354,7 +354,7 @@ const NavBar = (): JSX.Element => {
                 <button
                   type="button"
                   className="border-none bg-transparent p-0 text-base font-bold text-white"
-                  onClick={() => auth.signOut("/")}
+                  onClick={() => auth.signOut()}
                 >
                   Sign Out
                 </button>
