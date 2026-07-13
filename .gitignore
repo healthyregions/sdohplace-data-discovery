@@ -29,6 +29,7 @@ yarn-error.log*
 # local env files
 .env
 .env.local
+.env.local.example
 .env.development.local
 .env.test.local
 .env.production.local
@@ -49,3 +50,6 @@ yarn-error.log*
 
 # package management
 .nvmrc
+
+#ontology
+.owl

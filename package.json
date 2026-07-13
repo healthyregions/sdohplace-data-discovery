@@ -35,6 +35,12 @@
     "yarn": ">=1.22.5"
   },
   "scripts": {
+    "prompts:build": "node scripts/build-prompts.mjs",
+    "predev": "npm run prompts:build",
+    "predev:edge": "npm run prompts:build",
+    "predev:full": "npm run prompts:build",
+    "predev:netlify": "npm run prompts:build",
+    "prebuild": "npm run prompts:build",
     "dev": "next dev -p 3000",
     "build": "next build",
     "start": "next start -p 8888",

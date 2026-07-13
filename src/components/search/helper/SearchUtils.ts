@@ -16,7 +16,7 @@ export interface SearchResult {
   analysis?: any;
 }
 
-export const processAndSortSuggestions = (
+const processAndSortSuggestions = (
   suggestions: SolrSuggestion[],
   minWeight: number = 50,
   maxSuggestions: number = MAX_SUGGESTION_RESULTS
@@ -59,16 +59,22 @@ export const deduplicateResults = (results: any[]): any[] => {
   return Array.from(new Map(results.map((item) => [item.id, item])).values());
 };
 
-export const getBaseUrl = (): string => {
+const getBaseUrl = (): string => {
   return process.env.NODE_ENV === "development" ? "http://localhost:8888" : "";
 };
 
 export const fetchChatGptAnalysis = async (question: string): Promise<any> => {
   const baseUrl = getBaseUrl();
+  const ontologySearchMode =
+    process.env.NEXT_PUBLIC_ONTOLOGY_SEARCH_MODE || "deterministic";
   const response = await fetch(`${baseUrl}/chat-search`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ question }),
+    body: JSON.stringify({
+      question,
+      ontology_context: "global",
+      ontology_strategy: ontologySearchMode,
+    }),
   });
   const responseData = await response.json();
   

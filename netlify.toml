@@ -10,11 +10,19 @@ function = "chat-search"
 pattern = "/.netlify/edge-functions/health"
 function = "health"
 
+[[edge_functions]]
+pattern = "/api/contributor-submissions"
+function = "contributor-submissions"
+
+[[edge_functions]]
+pattern = "/api/contributor-submissions/*"
+function = "contributor-submissions"
+
 [[headers]]
   for = "/*"
   [headers.values]
     Access-Control-Allow-Origin = "*"
-    Access-Control-Allow-Methods = "GET, POST, OPTIONS"
+    Access-Control-Allow-Methods = "GET, POST, PATCH, DELETE, OPTIONS"
     Access-Control-Allow-Headers = "Content-Type, Authorization"
 
 [functions]

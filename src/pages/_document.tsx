@@ -12,7 +12,6 @@ export default class MyDocument extends Document {
       <Html lang="en">
         <Head>
             <meta name="emotion-insertion-point" content="" />
-            <meta name="viewport" content="initial-scale=1, width=device-width" />
             <meta property="og:site_name" content={config.site_title} />
             <script
                 {...jsonLdScriptProps<WebSite>({

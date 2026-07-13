@@ -66,11 +66,6 @@ export class SearchService {
       );
       let uniqueResults = deduplicateResults(combinedResults);
       let relatedResults = [];
-      /* Disabling related results fetching for AI search
-      if ((uniqueResults.length === 0 || analysis.keyTerms) && analysis.keyTerms && analysis.keyTerms.length > 0) {
-        relatedResults = await this.getRelatedResultsFromKeyTerms(analysis.keyTerms, filterQueries, uniqueResults);
-      }
-      */
       return {
         searchResults: uniqueResults,
         relatedResults,
@@ -139,42 +134,6 @@ export class SearchService {
       throw new Error(`Local fallback search failed: ${error.message}. Please try switching to keyword search using the toggle above the search box.`);
     }
   }
-
-  /* Disabling related results fetching from key terms
-  private async getRelatedResultsFromKeyTerms(
-    keyTerms: any[],
-    filterQueries: Array<any>,
-    mainResults: any[]
-  ): Promise<any[]> {
-    const processedKeyTerms = keyTerms
-      .map(term => typeof term === 'object' ? term.term : term)
-      .filter(Boolean);
-    const relatedSuggestions = await Promise.all(
-      processedKeyTerms.map(term => fetchSuggestionsFromSolr(term, this.queryBuilder))
-    );
-    const allSuggestions = relatedSuggestions.flat();
-    const relatedSearchResults = [];
-    for (const term of allSuggestions) {
-      if (suggestionManager.hasSuggestion(term)) continue;
-      try {
-        suggestionManager.addSuggestion(term);
-        this.queryBuilder.combineQueries(term, filterQueries);
-        const { results } = await this.queryBuilder.fetchResult();
-        suggestionManager.removeSuggestion(term);
-        if (results && results.length > 0) {
-          relatedSearchResults.push(...results);
-        }
-      } catch (error) {
-        suggestionManager.removeSuggestion(term);
-        console.error(`Error fetching related results for term "${term}":`, error);
-      }
-    }
-    const combinedRelatedResults = relatedSearchResults;
-    let relatedResults = deduplicateResults(combinedRelatedResults);
-    const mainResultIds = new Set(mainResults.map(item => item.id));
-    return relatedResults.filter(item => !mainResultIds.has(item.id));
-  }
-  */
 
   async fetchSearchWithRelated(
     query: string,

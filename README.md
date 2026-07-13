@@ -28,15 +28,45 @@ We use the latest [Netlify Edge feature](https://www.netlify.com/platform/core/e
 
     Update environment variables as needed. See the explanation in `.env.local.example` for what variables need to be setup.
 
+### Keycloak frontend setup
+
+Contributor login uses the frontend Keycloak client configuration in `.env`:
+
+```env
+NEXT_PUBLIC_KEYCLOAK_ISSUER=...
+NEXT_PUBLIC_KEYCLOAK_CLIENT_ID=...
+NEXT_PUBLIC_KEYCLOAK_SCOPE=openid profile email roles
+NEXT_PUBLIC_KEYCLOAK_REQUIRED_ROLE=contributor
+NEXT_PUBLIC_KEYCLOAK_REDIRECT_PATH=/sign-in
+NEXT_PUBLIC_KEYCLOAK_POST_LOGOUT_REDIRECT_PATH=/
+```
+
+Local contributor submissions use the intake API configuration for the Netlify contributor-submissions function:
+
+```env
+INTAKE_API_BASE_URL=http://localhost:9090
+INTAKE_API_TOKEN=change-me
+```
+
+Do not prefix the intake token with `NEXT_PUBLIC_`; it must stay server-side in the Netlify function environment.
+
+For local development, make sure the Keycloak client includes exact matches for the frontend URLs you use:
+
+- Valid redirect URIs: `http://localhost:3000/sign-in`, `http://localhost:8888/sign-in`
+- Valid post logout redirect URIs: `http://localhost:3000/`, `http://localhost:8888/`
+- Web origins: `http://localhost:3000`, `http://localhost:8888`
+
+If you are testing the Netlify local setup, `netlify dev --port=8888` (i.e. `npm run dev:full`) uses `8888` as the browser-facing origin and proxies the Next app running on `3000`, so Keycloak settings for `8888` must be present.
+
 3. To run the app locally, use:
 
     ```
     npm run dev:full
     ```
 
-    This will start both the API and the display layer. Navigate to `localhost:3000` to view the front end. 
+    This will start both the Netlify local proxy and the Next app. `localhost:8888` is the Netlify-facing local URL, and `localhost:3000` is the underlying Next dev server.
 
-    Note: Your browser may automatically open `localhost:8888`, but that’s for the API—you can close it. You can also monitor API results in the console.
+    For auth or Edge Function testing, use `localhost:8888`. For plain frontend-only testing, `localhost:3000` is also available.
 
 4. To build and view the entire site locally, use
 
@@ -44,6 +74,17 @@ We use the latest [Netlify Edge feature](https://www.netlify.com/platform/core/e
     yarn build
     yarn start
     ```
+
+## Maintaining search prompts
+
+Search prompts are maintained as markdown files in `config/prompt/markdown/` and compiled into `config/prompt/generated/prompt_bundle.js` for the Netlify Edge runtime.
+
+- Edit `search-system.md` for shared system behavior, JSON output rules, Solr query construction, examples, and language-independent search logic.
+- Edit `mode-off.md`, `mode-deterministic.md`, or `mode-prompt.md` for behavior specific to each ontology search mode.
+- Edit `non-latin-instruction.md` for multilingual response rules.
+- Run `npm run prompts:build` after changing any prompt markdown file.
+- `npm run dev`, `npm run dev:full`, `npm run dev:edge`, `npm run dev:netlify`, and `npm run build` run the prompt build step automatically before starting.
+- Do not edit `config/prompt/generated/prompt_bundle.js` directly; it is regenerated from the markdown files.
 
 ## Running with Docker
 We also provide a Docker Compose recipe for building and running a local instance of the app.

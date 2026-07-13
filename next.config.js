@@ -1,7 +1,10 @@
 /** @type {import('next').NextConfig} */
 
+const isDev = process.env.NODE_ENV === "development";
+
 module.exports = {
-  output: "export",
+  output: isDev ? undefined : "export",
+  trailingSlash: true,
   reactStrictMode: true,
   swcMinify: true,
   pageExtensions: ["tsx", "ts"],

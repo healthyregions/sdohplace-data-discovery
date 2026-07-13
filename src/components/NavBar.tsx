@@ -6,6 +6,7 @@ import { useRouter } from "next/router";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import SubdirectoryArrowRightIcon from '@mui/icons-material/SubdirectoryArrowRight';
 import OpenInNew from '@mui/icons-material/OpenInNew';
+import { useAuth } from "@/components/auth/AuthProvider";
 
 type NavLinkType = {
   title: string;
@@ -92,9 +93,17 @@ function NavDropdownMobile({ title, dropdownElId, items }: Props) {
   );
 }
 
+// Temporarily hidden while we may adjust the contributor sign-in flow UI.
+// Flip to true to restore the Sign In buttons (desktop + mobile).
+const SHOW_SIGN_IN: boolean = false;
+
 const NavBar = (): JSX.Element => {
   const [nav, setNav] = useState(false);
   const [navBackgroundColor, setNavBackgroundColor] = useState("transparent");
+  const auth = useAuth();
+  const startSignIn = () => {
+    void auth.login("/contribute");
+  };
 
   const handleNav = () => {
     setNav(!nav);
@@ -112,6 +121,7 @@ const NavBar = (): JSX.Element => {
   }, []);
 
   const router = useRouter();
+  const showContributorLink = auth.isAuthenticated && auth.hasRole(auth.requiredRole);
 
   const aboutItems = [
     { title: "Project", url: "https://sdohplace.org/project" },
@@ -222,6 +232,38 @@ const NavBar = (): JSX.Element => {
           </li>
         </ul>
 
+        <div className="hidden min-[940px]:flex items-center pr-[2.5%] pt-4">
+          {showContributorLink && (
+            <Link
+              href="/contribute"
+              className={`mr-6 text-base font-bold no-underline ${
+                router.pathname === "/contribute" ? "text-frenchviolet" : "text-almostblack"
+              }`}
+            >
+              Contribute
+            </Link>
+          )}
+          {auth.isAuthenticated ? (
+            <button
+              type="button"
+              className="border-none bg-transparent p-0 text-base font-bold text-almostblack"
+              onClick={() => auth.signOut()}
+            >
+              Sign Out
+            </button>
+          ) : SHOW_SIGN_IN ? (
+            <button
+              type="button"
+              className={`text-base font-bold no-underline ${
+                router.pathname === "/sign-in" ? "text-frenchviolet" : "text-almostblack"
+              }`}
+              onClick={startSignIn}
+            >
+              Sign In
+            </button>
+          ) : null}
+        </div>
+
         {/* Mobile Button - hidden, triggered from MobileHeader */}
         <div
           onClick={handleNav}
@@ -291,18 +333,35 @@ const NavBar = (): JSX.Element => {
               <Link href="https://sdohplace.org/news">News</Link>
             </li>
 
-            {/* About Menu */}
-            <li>
-              <NavDropdownMobile
-                title="About"
-                dropdownElId="about-dd-mobile"
-                items={aboutItems}
-              />
-            </li>
-
             {/* Contact Us Link */}
             <li className={'text-uppercase'}>
               <Link href="https://sdohplace.org/contact">Contact Us</Link>
+            </li>
+            {showContributorLink && (
+              <li>
+                <Link className={"text-white no-underline text-base"} href="/contribute">
+                  Contribute
+                </Link>
+              </li>
+            )}
+            <li>
+              {auth.isAuthenticated ? (
+                <button
+                  type="button"
+                  className="border-none bg-transparent p-0 text-base font-bold text-white"
+                  onClick={() => auth.signOut()}
+                >
+                  Sign Out
+                </button>
+              ) : SHOW_SIGN_IN ? (
+                <button
+                  type="button"
+                  className="border-none bg-transparent p-0 text-base font-bold text-white"
+                  onClick={startSignIn}
+                >
+                  Sign In
+                </button>
+              ) : null}
             </li>
           </ul>
         </div>

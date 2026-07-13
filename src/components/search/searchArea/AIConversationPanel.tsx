@@ -1,5 +1,6 @@
 import * as React from "react";
 import Image from "next/image";
+import DOMPurify from "dompurify";
 import tailwindConfig from "../../../../tailwind.config";
 import resolveConfig from "tailwindcss/resolveConfig";
 
@@ -75,11 +76,14 @@ const AIConversationPanel: React.FC<AIConversationPanelProps> = ({
         );
       case "response":
         const helperText = " If you didn't see the expected results, please try our term search instead.";
+        const visibleMessage = message.toLowerCase().includes(helperText.trim().toLowerCase())
+          ? message
+          : message + helperText;
         return (
           <p
             className="break-words sm:mr-[2rem]"
             style={{ color: fullConfig.theme.colors["smokegray"], fontSize: "1rem" }}
-            dangerouslySetInnerHTML={{ __html: message + helperText }}
+            dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(visibleMessage) }}
           />
         );
       default:
