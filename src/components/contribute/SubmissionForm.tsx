@@ -73,13 +73,19 @@ function FieldHint({ hint, example }: { hint?: string; example?: string }) {
   );
 }
 
+function FieldLabel({ label, required }: { label: string; required: boolean }) {
+  return (
+    <span className="mb-2 block text-base font-bold text-almostblack">
+      {label}
+      {required && <span className="text-frenchviolet"> *</span>}
+    </span>
+  );
+}
+
 function Field({ label, name, value, required = false, hint, example, onChange }: FieldProps): JSX.Element {
   return (
     <label className="block">
-      <span className="mb-2 block text-base font-bold text-almostblack">
-        {label}
-        {required && <span className="text-frenchviolet"> *</span>}
-      </span>
+      <FieldLabel label={label} required={required} />
       <input
         className="h-12 w-full rounded-md border border-lightgray bg-white px-4 text-base text-almostblack"
         name={name}
@@ -95,10 +101,7 @@ function Field({ label, name, value, required = false, hint, example, onChange }
 function TextAreaField({ label, name, value, required = false, hint, example, onChange }: FieldProps): JSX.Element {
   return (
     <label className="block">
-      <span className="mb-2 block text-base font-bold text-almostblack">
-        {label}
-        {required && <span className="text-frenchviolet"> *</span>}
-      </span>
+      <FieldLabel label={label} required={required} />
       <textarea
         className="min-h-[7rem] w-full rounded-md border border-lightgray bg-white px-4 py-3 text-base leading-6 text-almostblack"
         name={name}
@@ -118,10 +121,7 @@ type SelectFieldProps = FieldProps & {
 function SelectField({ label, name, value, required = false, hint, example, options, onChange }: SelectFieldProps): JSX.Element {
   return (
     <label className="block">
-      <span className="mb-2 block text-base font-bold text-almostblack">
-        {label}
-        {required && <span className="text-frenchviolet"> *</span>}
-      </span>
+      <FieldLabel label={label} required={required} />
       <select
         className="h-12 w-full rounded-md border border-lightgray bg-white px-4 text-base text-almostblack"
         name={name}

@@ -1,5 +1,6 @@
 import * as React from "react";
 import Image from "next/image";
+import DOMPurify from "dompurify";
 import tailwindConfig from "../../../../tailwind.config";
 import resolveConfig from "tailwindcss/resolveConfig";
 
@@ -82,7 +83,7 @@ const AIConversationPanel: React.FC<AIConversationPanelProps> = ({
           <p
             className="break-words sm:mr-[2rem]"
             style={{ color: fullConfig.theme.colors["smokegray"], fontSize: "1rem" }}
-            dangerouslySetInnerHTML={{ __html: visibleMessage }}
+            dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(visibleMessage) }}
           />
         );
       default:

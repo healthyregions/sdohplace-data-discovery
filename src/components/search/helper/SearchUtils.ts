@@ -16,7 +16,7 @@ export interface SearchResult {
   analysis?: any;
 }
 
-export const processAndSortSuggestions = (
+const processAndSortSuggestions = (
   suggestions: SolrSuggestion[],
   minWeight: number = 50,
   maxSuggestions: number = MAX_SUGGESTION_RESULTS
@@ -59,7 +59,7 @@ export const deduplicateResults = (results: any[]): any[] => {
   return Array.from(new Map(results.map((item) => [item.id, item])).values());
 };
 
-export const getBaseUrl = (): string => {
+const getBaseUrl = (): string => {
   return process.env.NODE_ENV === "development" ? "http://localhost:8888" : "";
 };
 

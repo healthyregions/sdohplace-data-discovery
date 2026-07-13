@@ -47,10 +47,8 @@ function scoreConcept(text, concept) {
     if (!phraseMatches(text, term)) {
       return;
     }
-    const normalizedLabel = normalizeText(concept.label);
     const normalizedTerm = normalizeText(term);
-    const isOntologyTerm = normalizedTerm === normalizedLabel || (concept.ontologyAliases || []).map(normalizeText).includes(normalizedTerm);
-    const termScore = (isOntologyTerm ? 100 : 100) + phraseSpecificity(normalizedTerm);
+    const termScore = 100 + phraseSpecificity(normalizedTerm);
     if (termScore > score || (termScore === score && normalizedTerm.length > matchedLength)) {
       score = termScore;
       matchedText = term;
@@ -253,6 +251,5 @@ export function buildOntologyAnalysis(question, limit = 5) {
     bbox: "",
     ontologyMatches,
     ontologySource: HERO_LAB_ONTOLOGY_NAME,
-    ontologySourceFile: "config/prompt/food_ontology.owl",
   };
 }

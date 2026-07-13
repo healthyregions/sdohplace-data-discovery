@@ -273,13 +273,6 @@ export async function deleteContributorSubmission(
   });
 }
 
-export async function submitDatasetRequest(
-  values: DatasetSubmissionValues,
-  session: AuthSession | null,
-): Promise<SubmissionResponse> {
-  return saveContributorSubmission(values, session, { status: "submitted" });
-}
-
 export function valuesFromSubmission(submission: SubmissionResponse): DatasetSubmissionValues {
   return payloadToSubmissionValues(payloadFromSubmission(submission));
 }

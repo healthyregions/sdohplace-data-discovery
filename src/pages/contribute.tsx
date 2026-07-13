@@ -5,6 +5,7 @@ import BasicPageMeta from "@/components/meta/BasicPageMeta";
 import NavBar from "@/components/NavBar";
 import Footer from "@/components/homepage/footer";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { ContentCard, NoticeCard } from "@/components/contribute/SectionCard";
 
 const ContributePage: NextPage = () => {
   const auth = useAuth();
@@ -21,34 +22,34 @@ const ContributePage: NextPage = () => {
 
   if (!isConfigured) {
     content = (
-      <section className="rounded-md border border-lightgray bg-white p-8 shadow-sm">
+      <NoticeCard>
         <h1 className="mb-4 text-3xl font-bold text-almostblack">Contributor Access Needs Configuration</h1>
         <p className="m-0 text-lg leading-8 text-almostblack">
           Add the Keycloak discovery client environment variables before testing contributor login.
         </p>
-      </section>
+      </NoticeCard>
     );
   } else if (!isReady || !isAuthenticated) {
     content = (
-      <section className="rounded-md border border-lightgray bg-white p-8 shadow-sm">
+      <NoticeCard>
         <h1 className="mb-4 text-3xl font-bold text-almostblack">Redirecting To Sign In</h1>
         <p className="m-0 text-lg leading-8 text-almostblack">
           You need a contributor account to access the submission area.
         </p>
-      </section>
+      </NoticeCard>
     );
   } else if (!hasRole(requiredRole)) {
     content = (
-      <section className="rounded-md border border-[#f1c5c5] bg-[#fff6f6] p-8 shadow-sm">
+      <NoticeCard tone="alert">
         <h1 className="mb-4 text-3xl font-bold text-almostblack">Access Restricted</h1>
         <p className="m-0 text-lg leading-8 text-almostblack">
           Your account is signed in, but it does not currently have the <strong>{requiredRole}</strong> role.
         </p>
-      </section>
+      </NoticeCard>
     );
   } else {
     content = (
-      <section className="rounded-md bg-white p-6 shadow-[0_12px_40px_rgba(0,0,0,0.08)] md:p-8">
+      <ContentCard>
         <div className="mb-6 inline-flex rounded-full bg-lightviolet px-4 py-2 text-sm font-bold uppercase text-frenchviolet">
           Contributor
         </div>
@@ -70,7 +71,7 @@ const ContributePage: NextPage = () => {
             View My Submissions
           </Link>
         </div>
-      </section>
+      </ContentCard>
     );
   }
 

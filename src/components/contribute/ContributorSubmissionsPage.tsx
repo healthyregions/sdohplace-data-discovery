@@ -16,6 +16,7 @@ import {
 } from "@/services/SubmissionService";
 import { SubmissionForm, initialSubmissionValues } from "@/components/contribute/SubmissionForm";
 import { SubmissionStatusBadge } from "@/components/contribute/SubmissionStatusBadge";
+import { ContentCard, NoticeCard } from "@/components/contribute/SectionCard";
 import {
   canEditSubmission,
   canRemoveSubmission,
@@ -56,6 +57,32 @@ function navigate(submissionId: string | null): void {
   window.dispatchEvent(new PopStateEvent("popstate"));
 }
 
+type MessageBoxVariant = "error" | "success" | "warning" | "locked" | "loading";
+
+const messageBoxClasses: Record<MessageBoxVariant, string> = {
+  error: "border-[#f1c5c5] bg-[#fff6f6] text-almostblack",
+  success: "border-[#bfe3cd] bg-[#f2fff6] text-[#23623a]",
+  warning: "border-[#e5b849] bg-[#fff8df] text-almostblack",
+  locked: "border-lightgray bg-[#fbfbfd] text-almostblack",
+  loading: "border-lightgray bg-white text-darkgray",
+};
+
+function MessageBox({
+  variant,
+  className,
+  children,
+}: {
+  variant: MessageBoxVariant;
+  className?: string;
+  children: React.ReactNode;
+}): JSX.Element {
+  return (
+    <div className={`${className ? `${className} ` : ""}rounded-md border p-4 text-base ${messageBoxClasses[variant]}`}>
+      {children}
+    </div>
+  );
+}
+
 function AuthNotice({
   kind,
   requiredRole,
@@ -65,29 +92,29 @@ function AuthNotice({
 }): JSX.Element {
   if (kind === "config") {
     return (
-      <section className="rounded-md border border-lightgray bg-white p-8 shadow-sm">
+      <NoticeCard>
         <h1 className="mb-4 text-3xl font-bold text-almostblack">Contributor Access Needs Configuration</h1>
         <p className="m-0 text-lg leading-8 text-almostblack">
           Add the Keycloak discovery client environment variables before testing contributor login.
         </p>
-      </section>
+      </NoticeCard>
     );
   }
   if (kind === "role") {
     return (
-      <section className="rounded-md border border-[#f1c5c5] bg-[#fff6f6] p-8 shadow-sm">
+      <NoticeCard tone="alert">
         <h1 className="mb-4 text-3xl font-bold text-almostblack">Access Restricted</h1>
         <p className="m-0 text-lg leading-8 text-almostblack">
           Your account is signed in, but it does not currently have the <strong>{requiredRole}</strong> role.
         </p>
-      </section>
+      </NoticeCard>
     );
   }
   return (
-    <section className="rounded-md border border-lightgray bg-white p-8 shadow-sm">
+    <NoticeCard>
       <h1 className="mb-4 text-3xl font-bold text-almostblack">Loading Submissions</h1>
       <p className="m-0 text-lg leading-8 text-almostblack">Preparing your contributor workspace.</p>
-    </section>
+    </NoticeCard>
   );
 }
 
@@ -103,7 +130,7 @@ function SubmissionList({
   onRefresh: () => void;
 }): JSX.Element {
   return (
-    <section className="rounded-md bg-white p-6 shadow-[0_12px_40px_rgba(0,0,0,0.08)] md:p-8">
+    <ContentCard>
       <div className="mb-6 flex flex-col gap-4 border-b border-lightgray pb-6 md:flex-row md:items-center md:justify-between">
         <div>
           <div className="mb-3 inline-flex rounded-full bg-lightviolet px-4 py-2 text-sm font-bold uppercase text-frenchviolet">
@@ -130,8 +157,8 @@ function SubmissionList({
         </div>
       </div>
 
-      {error && <div className="mb-6 rounded-md border border-[#f1c5c5] bg-[#fff6f6] p-4 text-base text-almostblack">{error}</div>}
-      {isLoading && <div className="rounded-md border border-lightgray bg-white p-4 text-base text-darkgray">Loading submissions...</div>}
+      {error && <MessageBox variant="error" className="mb-6">{error}</MessageBox>}
+      {isLoading && <MessageBox variant="loading">Loading submissions...</MessageBox>}
       {!isLoading && submissions.length === 0 && (
         <div className="rounded-md border border-lightgray bg-[#fbfbfd] p-6 text-base text-almostblack">
           No submissions yet.
@@ -171,7 +198,7 @@ function SubmissionList({
           </table>
         </div>
       )}
-    </section>
+    </ContentCard>
   );
 }
 
@@ -287,16 +314,16 @@ function SubmissionDetail({
 
   if (isLoading) {
     return (
-      <section className="rounded-md bg-white p-8 shadow-[0_12px_40px_rgba(0,0,0,0.08)]">
+      <ContentCard padding="large">
         <h1 className="mb-4 text-3xl font-bold text-almostblack">Loading Submission</h1>
         <p className="m-0 text-lg leading-8 text-almostblack">Retrieving your saved record.</p>
-      </section>
+      </ContentCard>
     );
   }
 
   if (loadError) {
     return (
-      <section className="rounded-md bg-white p-8 shadow-[0_12px_40px_rgba(0,0,0,0.08)]">
+      <ContentCard padding="large">
         <button
           type="button"
           className="mb-6 inline-block font-bold text-frenchviolet"
@@ -304,15 +331,13 @@ function SubmissionDetail({
         >
           Back to my submissions
         </button>
-        <div className="rounded-md border border-[#f1c5c5] bg-[#fff6f6] p-4 text-base text-almostblack">
-          {loadError}
-        </div>
-      </section>
+        <MessageBox variant="error">{loadError}</MessageBox>
+      </ContentCard>
     );
   }
 
   return (
-    <section className="rounded-md bg-white p-6 shadow-[0_12px_40px_rgba(0,0,0,0.08)] md:p-8">
+    <ContentCard>
       <div className="mb-6 flex flex-col gap-3 border-b border-lightgray pb-6 md:flex-row md:items-start md:justify-between">
         <div>
           <button
@@ -330,24 +355,24 @@ function SubmissionDetail({
       </div>
 
       {(submission?.status === "needs_changes" || submission?.status === "rejected") && submission.review_notes && (
-        <div className="mb-6 rounded-md border border-[#e5b849] bg-[#fff8df] p-4 text-base text-almostblack">
+        <MessageBox variant="warning" className="mb-6">
           <strong>Manager comments:</strong>
           <p className="mb-0 mt-2 whitespace-pre-line">{submission.review_notes}</p>
-        </div>
+        </MessageBox>
       )}
       {!editable && (
-        <div className="mb-6 rounded-md border border-lightgray bg-[#fbfbfd] p-4 text-base text-almostblack">
+        <MessageBox variant="locked" className="mb-6">
           {lockedSubmissionMessage(submission?.status)}
-        </div>
+        </MessageBox>
       )}
       {errors.length > 0 && (
-        <div className="mb-6 rounded-md border border-[#f1c5c5] bg-[#fff6f6] p-4 text-base text-almostblack">
+        <MessageBox variant="error" className="mb-6">
           <ul className="m-0 pl-5">
             {errors.map((error) => (
               <li key={error}>{error}</li>
             ))}
           </ul>
-        </div>
+        </MessageBox>
       )}
       {!editable ? (
         <div className="grid gap-6 text-base text-almostblack">
@@ -381,11 +406,14 @@ function SubmissionDetail({
         </>
       )}
       {message && (
-        <div className={`mt-6 rounded-md border p-4 text-base ${message.toLowerCase().includes("could not") || message.toLowerCase().includes("failed") ? "border-[#f1c5c5] bg-[#fff6f6] text-almostblack" : "border-[#bfe3cd] bg-[#f2fff6] text-[#23623a]"}`}>
+        <MessageBox
+          variant={message.toLowerCase().includes("could not") || message.toLowerCase().includes("failed") ? "error" : "success"}
+          className="mt-6"
+        >
           {message}
-        </div>
+        </MessageBox>
       )}
-    </section>
+    </ContentCard>
   );
 }
 

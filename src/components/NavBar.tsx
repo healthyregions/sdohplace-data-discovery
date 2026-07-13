@@ -93,6 +93,10 @@ function NavDropdownMobile({ title, dropdownElId, items }: Props) {
   );
 }
 
+// Temporarily hidden while we may adjust the contributor sign-in flow UI.
+// Flip to true to restore the Sign In buttons (desktop + mobile).
+const SHOW_SIGN_IN: boolean = false;
+
 const NavBar = (): JSX.Element => {
   const [nav, setNav] = useState(false);
   const [navBackgroundColor, setNavBackgroundColor] = useState("transparent");
@@ -247,7 +251,7 @@ const NavBar = (): JSX.Element => {
             >
               Sign Out
             </button>
-          ) : (
+          ) : SHOW_SIGN_IN ? (
             <button
               type="button"
               className={`text-base font-bold no-underline ${
@@ -257,7 +261,7 @@ const NavBar = (): JSX.Element => {
             >
               Sign In
             </button>
-          )}
+          ) : null}
         </div>
 
         {/* Mobile Button - hidden, triggered from MobileHeader */}
@@ -329,15 +333,6 @@ const NavBar = (): JSX.Element => {
               <Link href="https://sdohplace.org/news">News</Link>
             </li>
 
-            {/* About Menu */}
-            <li>
-              <NavDropdownMobile
-                title="About"
-                dropdownElId="about-dd-mobile"
-                items={aboutItems}
-              />
-            </li>
-
             {/* Contact Us Link */}
             <li className={'text-uppercase'}>
               <Link href="https://sdohplace.org/contact">Contact Us</Link>
@@ -358,7 +353,7 @@ const NavBar = (): JSX.Element => {
                 >
                   Sign Out
                 </button>
-              ) : (
+              ) : SHOW_SIGN_IN ? (
                 <button
                   type="button"
                   className="border-none bg-transparent p-0 text-base font-bold text-white"
@@ -366,7 +361,7 @@ const NavBar = (): JSX.Element => {
                 >
                   Sign In
                 </button>
-              )}
+              ) : null}
             </li>
           </ul>
         </div>
