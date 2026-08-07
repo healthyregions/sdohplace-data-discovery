@@ -93,9 +93,9 @@ function NavDropdownMobile({ title, dropdownElId, items }: Props) {
   );
 }
 
-// Temporarily hidden while we may adjust the contributor sign-in flow UI.
-// Flip to true to restore the Sign In buttons (desktop + mobile).
-const SHOW_SIGN_IN: boolean = false;
+// use environment variable to control whether the Sign In button is shown
+const SHOW_SIGN_IN: boolean =
+  process.env.NEXT_PUBLIC_SHOW_SIGN_IN === "true";
 
 const NavBar = (): JSX.Element => {
   const [nav, setNav] = useState(false);
