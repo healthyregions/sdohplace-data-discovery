@@ -249,7 +249,7 @@ export default async (request) => {
     if (submissionId && request.method === "GET") {
       const submission = await intakeRequest("GET", `/submissions/${encodeURIComponent(submissionId)}`);
       if (!ownsSubmission(submission, user) || submission.status === "deleted") {
-        return jsonResponse({ error: "not_found" }, 404);
+        return jsonResponse({ error: "not_owned" }, 404);
       }
       return jsonResponse(submission);
     }
@@ -257,7 +257,7 @@ export default async (request) => {
     if (submissionId && request.method === "PATCH") {
       const submission = await intakeRequest("GET", `/submissions/${encodeURIComponent(submissionId)}`);
       if (!ownsSubmission(submission, user) || submission.status === "deleted") {
-        return jsonResponse({ error: "not_found" }, 404);
+        return jsonResponse({ error: "not_owned" }, 404);
       }
       if (!canContributorEdit(submission.status)) {
         return jsonResponse({ error: "This submission can no longer be edited." }, 409);
@@ -274,13 +274,13 @@ export default async (request) => {
     if (submissionId && request.method === "DELETE") {
       const submission = await intakeRequest("GET", `/submissions/${encodeURIComponent(submissionId)}`);
       if (!ownsSubmission(submission, user) || submission.status === "deleted") {
-        return jsonResponse({ error: "not_found" }, 404);
+        return jsonResponse({ error: "not_owned" }, 404);
       }
       if (!canContributorRemove(submission.status)) {
         return jsonResponse({ error: "This submission can no longer be removed." }, 409);
       }
       try {
-        await intakeRequest("DELETE", `/submissions/${encodeURIComponent(submissionId)}`);
+        await intakeRequest("DELETE", `/submissions/${encodeURIComponent(submissionId)}?actor=contributor`);
         return jsonResponse({ deleted: true, soft_deleted: false });
       } catch (error) {
         if (error.status !== 405) {
@@ -302,4 +302,8 @@ export default async (request) => {
     const status = message === "not_found" ? 404 : 502;
     return jsonResponse({ error: message }, status);
   }
+};
+
+export const config = {
+  path: "/api/contributor-submissions(/.*)?",
 };
