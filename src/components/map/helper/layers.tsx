@@ -297,12 +297,12 @@ export const overlayRegistry = {
         url: "pmtiles://https://raw.githubusercontent.com/healthyregions/overture-poi-extract/discovery-asset/output/us-libraries.pmtiles",
       }
     },
-    mainColor: "#FFDA95",
+    mainColor: "#CCAE77",
     layers: makeClusteredLayerSet({
       layerId: "us-libraries",
       sourceId: "us-libraries-source",
       sourceLayerId: "resources",
-      circleColor: "#FFDA95",
+      circleColor: "#CCAE77",
     })
   },
   Parks: {
