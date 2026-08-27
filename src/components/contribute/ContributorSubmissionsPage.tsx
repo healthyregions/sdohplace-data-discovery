@@ -379,16 +379,16 @@ function SubmissionDetail({
           <p className="m-0">
             To make a new version, start a new contribution from your submissions list.
           </p>
-          {removable && (
-            <button
-              type="button"
-              className="h-12 w-fit rounded-md border border-[#c83f49] bg-white px-6 text-base font-bold text-[#a6232f] disabled:opacity-60"
-              disabled={isRemoving}
-              onClick={() => void remove()}
-            >
-              {isRemoving ? "Removing..." : "Remove"}
-            </button>
-          )}
+          <SubmissionForm
+            values={values}
+            isSaving={isSaving}
+            isRemoving={isRemoving}
+            submitLabel=""
+            readOnly
+            onChange={setValues}
+            onSaveDraft={() => undefined}
+            onSubmit={() => undefined}
+          />
         </div>
       ) : (
         <>

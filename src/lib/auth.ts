@@ -77,6 +77,22 @@ async function sha256Base64Url(value: string): Promise<string> {
   return base64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
 }
 
+const LOGOUT_NOTICE_TTL_MS = 60000;
+
+function writeLogoutNotice(): void {
+  if (!isBrowser()) {
+    return;
+  }
+  window.localStorage.setItem(AUTH_LOGOUT_KEY, String(Date.now()));
+}
+
+function clearLogoutNotice(): void {
+  if (!isBrowser()) {
+    return;
+  }
+  window.localStorage.removeItem(AUTH_LOGOUT_KEY);
+}
+
 function readJson<T>(key: string): T | null {
   if (!isBrowser()) {
     return null;
@@ -132,7 +148,7 @@ export function getAuthConfig() {
   );
   const postLogoutRedirectPath = normalizePath(
     process.env.NEXT_PUBLIC_KEYCLOAK_POST_LOGOUT_REDIRECT_PATH,
-    "/sign-in",
+    "/",
   );
   const isConfigured = Boolean(issuer && clientId);
 
@@ -192,11 +208,16 @@ function clearPendingLogin(): void {
 }
 
 export function consumeLogoutNotice(): boolean {
-  const didLogout = readJson<boolean>(AUTH_LOGOUT_KEY) === true;
-  if (didLogout) {
-    removeItem(AUTH_LOGOUT_KEY);
+  if (!isBrowser()) {
+    return false;
   }
-  return didLogout;
+  const raw = window.localStorage.getItem(AUTH_LOGOUT_KEY);
+  if (!raw) {
+    return false;
+  }
+  clearLogoutNotice();
+  const stampedAt = Number(raw);
+  return Number.isFinite(stampedAt) && Date.now() - stampedAt < LOGOUT_NOTICE_TTL_MS;
 }
 
 function buildSession(tokenResponse: {
@@ -375,17 +396,13 @@ export function getDisplayName(session: AuthSession | null): string {
 }
 
 export function logout(session: AuthSession | null, returnTo?: string): void {
-  const { logoutEndpoint, clientId, isConfigured, redirectPath, postLogoutRedirectPath } = getAuthConfig();
+  const { logoutEndpoint, clientId, isConfigured } = getAuthConfig();
   const postLogoutRedirectUri = getPostLogoutRedirectUri(returnTo);
-  const targetPath = normalizePath(returnTo, postLogoutRedirectPath);
 
   clearStoredSession();
   clearPendingLogin();
-  if (targetPath === redirectPath) {
-    writeJson(AUTH_LOGOUT_KEY, true);
-  } else {
-    removeItem(AUTH_LOGOUT_KEY);
-  }
+  // Allow the sign-in page to show a "You have been signed out" message after the round trip through Keycloak
+  writeLogoutNotice();
 
   if (!isConfigured) {
     window.location.assign(postLogoutRedirectUri);

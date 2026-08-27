@@ -197,6 +197,44 @@ function payloadFromSubmission(submission: SubmissionResponse): Record<string, u
   return submission.payload_json || submission.payload || submission.record || submission.data || {};
 }
 
+export const SUPPORT_EMAIL = "heroplab23@gmail.com";
+
+const SUPPORT_HINT =
+  `If this keeps happening, please email ${SUPPORT_EMAIL} with a screenshot of this message.`;
+
+function explainRequestError(status: number, code: string): string {
+  const known: Record<string, string> = {
+    not_found:
+      "We could not find this submission. It may have been removed.",
+    not_owned:
+      "This submission is not available under your account. If you submitted it with a different sign-in, please sign out and try again.",
+    unauthorized:
+      "Your session is not valid for this action. Please sign out and sign back in.",
+    "Bearer token expired":
+      "Your session has expired. Please sign out and sign back in.",
+    "Contributor role required":
+      "Your account does not yet have contributor access.",
+  };
+
+  if (known[code]) {
+    return `${known[code]} ${SUPPORT_HINT}`;
+  }
+
+  if (status === 401 || status === 403) {
+    return `Your session is not valid for this action. Please sign out and sign back in. ${SUPPORT_HINT}`;
+  }
+  if (status === 404) {
+    return `We could not find this submission. It may have been removed. ${SUPPORT_HINT}`;
+  }
+  if (status === 409) {
+    return `${code || "This submission can no longer be changed."} ${SUPPORT_HINT}`;
+  }
+  if (status >= 500) {
+    return `The submission service is temporarily unavailable. Please try again in a few minutes. ${SUPPORT_HINT}`;
+  }
+  return `${code || `Something went wrong (error ${status}).`} ${SUPPORT_HINT}`;
+}
+
 async function contributorRequest<T>(
   path: string,
   session: AuthSession | null,
@@ -217,14 +255,14 @@ async function contributorRequest<T>(
 
   if (!response.ok) {
     const details = await response.text();
+    let code = "";
     try {
       const parsed = JSON.parse(details);
-      const msg = parsed.error || parsed.message || "";
-      if (msg) throw new Error(msg);
+      code = parsed.error || parsed.message || "";
     } catch (e) {
       if (e instanceof SyntaxError === false) throw e;
     }
-    throw new Error(`Submission request failed (${response.status}).`);
+    throw new Error(explainRequestError(response.status, code));
   }
 
   const text = await response.text();

@@ -1,6 +1,12 @@
 import * as React from "react";
 import { DatasetSubmissionValues } from "@/services/SubmissionService";
 
+const ReadOnlyContext = React.createContext(false);
+
+function useReadOnly(): boolean {
+  return React.useContext(ReadOnlyContext);
+}
+
 export const initialSubmissionValues: DatasetSubmissionValues = {
   title: "",
   description: "",
@@ -83,14 +89,16 @@ function FieldLabel({ label, required }: { label: string; required: boolean }) {
 }
 
 function Field({ label, name, value, required = false, hint, example, onChange }: FieldProps): JSX.Element {
+  const readOnly = useReadOnly();
   return (
     <label className="block">
       <FieldLabel label={label} required={required} />
       <input
-        className="h-12 w-full rounded-md border border-lightgray bg-white px-4 text-base text-almostblack"
+        className="h-12 w-full rounded-md border border-lightgray bg-white px-4 text-base text-almostblack disabled:bg-[#f5f5f7] disabled:text-[#55555f]"
         name={name}
         value={value}
         required={required}
+        disabled={readOnly}
         onChange={(event) => onChange(name, event.target.value)}
       />
       <FieldHint hint={hint} example={example} />
@@ -99,14 +107,16 @@ function Field({ label, name, value, required = false, hint, example, onChange }
 }
 
 function TextAreaField({ label, name, value, required = false, hint, example, onChange }: FieldProps): JSX.Element {
+  const readOnly = useReadOnly();
   return (
     <label className="block">
       <FieldLabel label={label} required={required} />
       <textarea
-        className="min-h-[7rem] w-full rounded-md border border-lightgray bg-white px-4 py-3 text-base leading-6 text-almostblack"
+        className="min-h-[7rem] w-full rounded-md border border-lightgray bg-white px-4 py-3 text-base leading-6 text-almostblack disabled:bg-[#f5f5f7] disabled:text-[#55555f]"
         name={name}
         value={value}
         required={required}
+        disabled={readOnly}
         onChange={(event) => onChange(name, event.target.value)}
       />
       <FieldHint hint={hint} example={example} />
@@ -119,14 +129,16 @@ type SelectFieldProps = FieldProps & {
 };
 
 function SelectField({ label, name, value, required = false, hint, example, options, onChange }: SelectFieldProps): JSX.Element {
+  const readOnly = useReadOnly();
   return (
     <label className="block">
       <FieldLabel label={label} required={required} />
       <select
-        className="h-12 w-full rounded-md border border-lightgray bg-white px-4 text-base text-almostblack"
+        className="h-12 w-full rounded-md border border-lightgray bg-white px-4 text-base text-almostblack disabled:bg-[#f5f5f7] disabled:text-[#55555f]"
         name={name}
         value={value}
         required={required}
+        disabled={readOnly}
         onChange={(event) => onChange(name, event.target.value)}
       >
         {options.map((option) => (
@@ -150,6 +162,7 @@ type SubmissionFormProps = {
   onSaveDraft: () => void;
   onSubmit: () => void;
   onClear?: () => void;
+  readOnly?: boolean;
 };
 
 export function SubmissionForm({
@@ -162,6 +175,7 @@ export function SubmissionForm({
   onSaveDraft,
   onSubmit,
   onClear,
+  readOnly = false,
 }: SubmissionFormProps): JSX.Element {
   const updateValue = React.useCallback(
     (name: keyof DatasetSubmissionValues, value: string) => {
@@ -174,10 +188,12 @@ export function SubmissionForm({
   );
 
   return (
+    <ReadOnlyContext.Provider value={readOnly}>
     <form
       className="grid gap-6"
       onSubmit={(event) => {
         event.preventDefault();
+        if (readOnly) return;
         onSubmit();
       }}
     >
@@ -333,6 +349,7 @@ export function SubmissionForm({
         example="Crime data should be interpreted carefully to avoid reinforcing biases or misrepresenting communities. Differences in local crime reporting practices and law enforcement policies may affect data consistency across counties."
         onChange={updateValue}
       />
+      {!readOnly && (
       <div className="flex flex-wrap gap-4 border-t border-lightgray pt-6">
         {onRemove && (
           <button
@@ -370,6 +387,8 @@ export function SubmissionForm({
           </button>
         )}
       </div>
+      )}
     </form>
+    </ReadOnlyContext.Provider>
   );
 }

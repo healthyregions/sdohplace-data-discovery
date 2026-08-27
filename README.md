@@ -117,6 +117,149 @@ docker compose down
 ```
 NOTE: this is a shorthand for running `docker rm -f sdohplace-data-discovery`
 
+## Data contribution feature
+
+Contributors sign in with Keycloak, submit dataset metadata, and track it until
+it is published. Reviewers work in the Metadata Manager. Three services are
+involved and none of them talk to the browser directly except this one.
+
+### Architecture
+
+```mermaid
+flowchart TB
+    U["Contributor browser<br/>search.sdohplace.org"]
+    K["Keycloak<br/>NCSA-hosted"]
+    E["Edge function<br/>/api/contributor-submissions"]
+    I["Intake API<br/>Netlify"]
+    B[("Netlify Blobs<br/>submissions")]
+    M["Metadata Manager<br/>Flask on EC2"]
+    R[("Record JSON<br/>on EC2 disk")]
+    S[("Solr<br/>search index")]
+    G["Gmail API"]
+
+    U -->|"sign in"| K
+    K -->|"JWT with contributor role"| U
+    U -->|"JWT"| E
+    E -->|"verify JWT, add identity"| I
+    I --> B
+    M -->|"read and decide"| I
+    M --> R
+    R -->|"index"| S
+    I -->|"notifications"| G
+```
+
+The browser never holds the intake API token. It sends a Keycloak JWT to the
+edge function, which verifies the signature, checks the `contributor` role, and
+only then calls the intake API with the shared bearer token.
+
+### Submission lifecycle
+
+| Status | Set by | Contributor can edit | Contributor can delete | Visible to reviewers |
+|---|---|---|---|---|
+| `draft` | Contributor saves | yes | yes | no action needed |
+| `submitted` | Contributor submits | no | no | yes, awaiting review |
+| `needs_changes` | Reviewer | yes | no | waiting on contributor |
+| `approved` | Reviewer | no | no | ready to publish |
+| `rejected` | Reviewer | yes | yes | closed |
+
+Approval and publication are separate. `approved` means a reviewer accepted it;
+the record only becomes searchable after an admin runs **Add Records** and
+indexes to Solr.
+
+### Where each part lives
+
+| Feature | File |
+|---|---|
+| Sign in / out, token refresh, PKCE | `src/lib/auth.ts` |
+| Auth state for React | `src/components/auth/AuthProvider.tsx` |
+| Sign In / Sign Out buttons, `NEXT_PUBLIC_SHOW_SIGN_IN` | `src/components/NavBar.tsx` |
+| OIDC callback page | `src/pages/sign-in.tsx` |
+| Submission form fields and read-only mode | `src/components/contribute/SubmissionForm.tsx` |
+| Submission list, detail, locked view | `src/components/contribute/ContributorSubmissionsPage.tsx` |
+| Status rules and locked wording | `src/components/contribute/submissionDisplay.ts` |
+| API calls and user-facing error text | `src/services/SubmissionService.ts` |
+| Token verification, ownership checks (production) | `netlify/edge-functions/contributor-submissions.js` |
+| Same proxy for `npm run dev` only | `src/pages/api/contributor-submissions/[[...path]].ts` |
+| Storage, status transitions, all email | `sdohplace-intake-api` |
+| Review UI, record creation, Solr indexing | `SDOHPlace-MetadataManager` |
+
+### Points to remember
+
+- **Two request paths.** `npm run dev` uses the Next API route; production uses
+  the edge function. A change to one usually needs the same change to the other,
+  and a bug in the edge function will not reproduce locally.
+- **The edge function declares its own route** through `export const config` at
+  the bottom of the file. Declaring it in `netlify.toml` instead does not work
+  alongside `@netlify/plugin-nextjs`, and single-submission URLs silently 404.
+- **`NEXT_PUBLIC_*` is inlined at build time.** Changing one in Netlify has no
+  effect until the site is rebuilt.
+- **This is a static export.** There is no server at runtime, so anything needing
+  a secret has to be an edge function.
+- **Ownership is enforced server-side** in the edge function, by Keycloak `sub`
+  or email. Never rely on the UI hiding something.
+- **`site_origin` travels with the submission** so notification links point back
+  to the site it came from. Add new origins to `ALLOWED_SITE_ORIGINS` on the
+  intake API or they fall back to production.
+- **Email lives entirely in the intake API.** Do not add sending here or in the
+  Metadata Manager.
+
+## Testing the contribution feature
+
+Run against production. Prefix every test title with `TEST -` so test data is
+easy to find and remove afterwards. Both roles are needed: a contributor
+account and a reviewer with the `metadata-manager` role in Keycloak.
+
+Before starting, confirm `NEXT_PUBLIC_SHOW_SIGN_IN=true` is set on the
+discovery site, otherwise the Sign In button is hidden.
+
+### Contributor
+
+| # | Do this | Expect |
+|---|---|---|
+| 1 | Sign In, authenticate with Keycloak | Returned to the site, signed in, **Contribute** appears |
+| 2 | Contribute → New submission, fill the form, **Save Draft** | Saved as `draft`. **No email** |
+| 3 | Reopen the draft and edit a field | All fields editable |
+| 4 | **Submit for Review** | Status `submitted`. Email: "submission received" |
+| 5 | Reopen the submitted item | Content visible, all fields greyed out, no Save or Submit buttons |
+| 6 | Sign Out | Returned to the home page, still signed out, **not** bounced back to Keycloak |
+
+### Reviewer
+
+| # | Do this | Expect |
+|---|---|---|
+| 7 | Sign in to the Metadata Manager, open the submission | Full metadata visible |
+| 8 | Leave Admin Notes empty, click **Needs Changes** | Blocked with a message asking for notes |
+| 9 | Add notes, click **Needs Changes** | Contributor emailed, notes included verbatim |
+| 10 | Click **Approve** | Contributor emailed "approved" |
+| 11 | Approved tab → **Add Records**, then index to Solr | Contributor emailed "now live" |
+| 12 | Delete the record | Contributor emailed "record removed" |
+
+### Round trip
+
+| # | Do this | Expect |
+|---|---|---|
+| 13 | As contributor, open the `needs_changes` item | Editable again, reviewer notes shown |
+| 14 | Edit and resubmit | Reviewers emailed "resubmitted after changes" |
+| 15 | As reviewer, **Reject** with notes | Contributor emailed, item becomes editable and removable |
+| 16 | As contributor, delete the rejected item | Reviewers emailed "withdrawn by contributor" |
+
+### Checking links and cleanup
+
+Every link in a contributor email must point to the site the submission was made
+from. A production submission must never produce a `localhost` link, and a
+preview submission must never produce a production link.
+
+Delete the test submissions and records when finished, then confirm in the
+sending account's **Sent** folder that each expected email went out. The full
+list of emails and their triggers is in the intake API README.
+
+### If something fails
+
+Collect the submission id (`sub-####`), a screenshot of the error, and roughly
+when it happened. Error messages in the UI include the address to send this to.
+Netlify function logs for the intake API show `[email:sent]` and
+`[email:failed]` lines for every attempt.
+
 ## Contributors
 
 Adam Cox, Pengyin Shan, Sara Lambert, Shubham Kumar

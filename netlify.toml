@@ -10,13 +10,8 @@ function = "chat-search"
 pattern = "/.netlify/edge-functions/health"
 function = "health"
 
-[[edge_functions]]
-pattern = "/api/contributor-submissions"
-function = "contributor-submissions"
-
-[[edge_functions]]
-pattern = "/api/contributor-submissions/*"
-function = "contributor-submissions"
+# contributor-submissions declares its own route via `export const config`
+# in netlify/edge-functions/contributor-submissions.js.
 
 [[headers]]
   for = "/*"

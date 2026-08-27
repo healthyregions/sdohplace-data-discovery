@@ -65,6 +65,12 @@ const SignInPage: NextPage = () => {
       return;
     }
 
+    if (router.query.login !== "1") {
+      setStatus("idle");
+      setMessage("");
+      return;
+    }
+
     setStatus("processing");
     setMessage("Redirecting to Keycloak...");
     void login("/contribute").catch((signInError: Error) => {
@@ -72,6 +78,15 @@ const SignInPage: NextPage = () => {
       setMessage(signInError.message);
     });
   }, [finishLogin, isAuthenticated, isReady, login, router, router.isReady, router.query]);
+
+  const handleSignIn = React.useCallback(() => {
+    setStatus("processing");
+    setMessage("Redirecting to Keycloak...");
+    void login("/contribute").catch((signInError: Error) => {
+      setStatus("error");
+      setMessage(signInError.message);
+    });
+  }, [login]);
 
   return (
     <>
@@ -85,6 +100,15 @@ const SignInPage: NextPage = () => {
           <p className="mt-6 mb-0 text-l leading-7 text-almostblack">
             {status === "error" || status === "idle" ? message : "Redirecting to the Keycloak sign-in page..."}
           </p>
+          {status !== "processing" && !isAuthenticated && (
+            <button
+              type="button"
+              className="mt-6 cursor-pointer rounded-md border-none bg-frenchviolet px-6 py-3 text-base font-bold text-white"
+              onClick={handleSignIn}
+            >
+              Sign In
+            </button>
+          )}
         </div>
       </main>
     </>

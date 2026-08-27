@@ -18,10 +18,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   const hasBody = req.method === "POST" || req.method === "PATCH";
+  const host = req.headers.host || "localhost:3000";
+  const scheme = host.startsWith("localhost") || host.startsWith("127.0.0.1") ? "http" : "https";
+  const body = hasBody ? { site_origin: `${scheme}://${host}`, ...req.body } : undefined;
   const upstream = await fetch(url, {
     method: req.method,
     headers: upstreamHeaders,
-    ...(hasBody ? { body: JSON.stringify(req.body) } : {}),
+    ...(hasBody ? { body: JSON.stringify(body) } : {}),
   });
 
   const text = await upstream.text();

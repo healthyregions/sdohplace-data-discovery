@@ -176,7 +176,7 @@ function submissionIdFromRequest(request) {
   return id && id !== "index" ? id : "";
 }
 
-function contributorBody(user, input, fallbackStatus) {
+function contributorBody(user, input, fallbackStatus, siteOrigin) {
   const inputPayload = input.payload_json || input.payload || {};
   const payloadJson =
     inputPayload && typeof inputPayload === "object" && !Array.isArray(inputPayload)
@@ -191,6 +191,7 @@ function contributorBody(user, input, fallbackStatus) {
     submitter_id: user.sub,
     payload_json: payloadJson,
     source: "sdohplace-data-discovery",
+    ...(siteOrigin ? { site_origin: siteOrigin } : {}),
   };
 }
 
@@ -223,6 +224,7 @@ export default async (request) => {
   }
 
   const submissionId = submissionIdFromRequest(request);
+  const siteOrigin = new URL(request.url).origin;
 
   try {
     if (!submissionId && request.method === "GET") {
@@ -236,14 +238,18 @@ export default async (request) => {
 
     if (!submissionId && request.method === "POST") {
       const input = await readJson(request);
-      const created = await intakeRequest("POST", "/submissions", contributorBody(user, input, "draft"));
+      const created = await intakeRequest(
+        "POST",
+        "/submissions",
+        contributorBody(user, input, "draft", siteOrigin)
+      );
       return jsonResponse(created, 201);
     }
 
     if (submissionId && request.method === "GET") {
       const submission = await intakeRequest("GET", `/submissions/${encodeURIComponent(submissionId)}`);
       if (!ownsSubmission(submission, user) || submission.status === "deleted") {
-        return jsonResponse({ error: "not_found" }, 404);
+        return jsonResponse({ error: "not_owned" }, 404);
       }
       return jsonResponse(submission);
     }
@@ -251,7 +257,7 @@ export default async (request) => {
     if (submissionId && request.method === "PATCH") {
       const submission = await intakeRequest("GET", `/submissions/${encodeURIComponent(submissionId)}`);
       if (!ownsSubmission(submission, user) || submission.status === "deleted") {
-        return jsonResponse({ error: "not_found" }, 404);
+        return jsonResponse({ error: "not_owned" }, 404);
       }
       if (!canContributorEdit(submission.status)) {
         return jsonResponse({ error: "This submission can no longer be edited." }, 409);
@@ -260,7 +266,7 @@ export default async (request) => {
       const updated = await intakeRequest(
         "PATCH",
         `/submissions/${encodeURIComponent(submissionId)}`,
-        contributorBody(user, input, submission.status || "draft")
+        contributorBody(user, input, submission.status || "draft", siteOrigin)
       );
       return jsonResponse(updated);
     }
@@ -268,13 +274,13 @@ export default async (request) => {
     if (submissionId && request.method === "DELETE") {
       const submission = await intakeRequest("GET", `/submissions/${encodeURIComponent(submissionId)}`);
       if (!ownsSubmission(submission, user) || submission.status === "deleted") {
-        return jsonResponse({ error: "not_found" }, 404);
+        return jsonResponse({ error: "not_owned" }, 404);
       }
       if (!canContributorRemove(submission.status)) {
         return jsonResponse({ error: "This submission can no longer be removed." }, 409);
       }
       try {
-        await intakeRequest("DELETE", `/submissions/${encodeURIComponent(submissionId)}`);
+        await intakeRequest("DELETE", `/submissions/${encodeURIComponent(submissionId)}?actor=contributor`);
         return jsonResponse({ deleted: true, soft_deleted: false });
       } catch (error) {
         if (error.status !== 405) {
@@ -296,4 +302,8 @@ export default async (request) => {
     const status = message === "not_found" ? 404 : 502;
     return jsonResponse({ error: message }, status);
   }
+};
+
+export const config = {
+  path: "/api/contributor-submissions(/.*)?",
 };
