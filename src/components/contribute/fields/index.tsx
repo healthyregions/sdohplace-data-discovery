@@ -25,6 +25,7 @@ export type FieldProps = {
   example?: string;
   info?: string;
   onChange: (name: keyof DatasetSubmissionValues, value: string) => void;
+  onBlur?: () => void;
 };
 
 export function FieldHint({ hint, example }: { hint?: string; example?: string }): JSX.Element | null {
@@ -68,6 +69,7 @@ export function Field({
   example,
   info,
   onChange,
+  onBlur,
 }: FieldProps): JSX.Element {
   const readOnly = useReadOnly();
   return (
@@ -80,6 +82,7 @@ export function Field({
         required={required}
         disabled={readOnly}
         onChange={(event) => onChange(name, event.target.value)}
+        onBlur={onBlur}
       />
       <FieldHint hint={hint} example={example} />
     </label>
@@ -95,6 +98,7 @@ export function TextAreaField({
   example,
   info,
   onChange,
+  onBlur,
 }: FieldProps): JSX.Element {
   const readOnly = useReadOnly();
   return (
@@ -107,6 +111,7 @@ export function TextAreaField({
         required={required}
         disabled={readOnly}
         onChange={(event) => onChange(name, event.target.value)}
+        onBlur={onBlur}
       />
       <FieldHint hint={hint} example={example} />
     </label>
@@ -127,6 +132,7 @@ export function SelectField({
   info,
   options,
   onChange,
+  onBlur,
 }: SelectFieldProps): JSX.Element {
   const readOnly = useReadOnly();
   return (
@@ -139,6 +145,7 @@ export function SelectField({
         required={required}
         disabled={readOnly}
         onChange={(event) => onChange(name, event.target.value)}
+        onBlur={onBlur}
       >
         {options.map((option) => (
           <option key={option} value={option}>

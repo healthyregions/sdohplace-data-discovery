@@ -16,6 +16,8 @@ type GenerateSpatialMetadataProps = {
   disabled?: boolean;
   onEnsureSubmissionId: () => Promise<string>;
   onGenerated: (values: SpatialGeneratedValues) => void;
+  onProgress?: (elapsedSeconds: number) => void;
+  onFinished?: (outcome: { ok: boolean; message: string; details?: string[] }) => void;
 };
 
 export function GenerateSpatialMetadata({
@@ -23,6 +25,8 @@ export function GenerateSpatialMetadata({
   disabled = false,
   onEnsureSubmissionId,
   onGenerated,
+  onProgress,
+  onFinished,
 }: GenerateSpatialMetadataProps): JSX.Element {
   const [file, setFile] = React.useState<File | null>(null);
   const [boundaryYear, setBoundaryYear] = React.useState(BOUNDARY_YEARS[0]);
@@ -46,20 +50,41 @@ export function GenerateSpatialMetadata({
       const result = await generateSpatialMetadata(
         { submissionId, file, boundaryYear, spatialLevel, geoIdColumn: geoIdColumn.trim() },
         session,
-        setElapsed,
+        (seconds) => {
+          setElapsed(seconds);
+          onProgress?.(seconds);
+        },
       );
+      const details = describeResult(result);
       onGenerated(resultToValues(result));
-      setSummary(describeResult(result));
+      setSummary(details);
+      onFinished?.({
+        ok: true,
+        message: "Geospatial metadata generated and filled into the form below.",
+        details,
+      });
     } catch (generateError) {
-      setError(
+      const message =
         generateError instanceof Error
           ? generateError.message
-          : "Geospatial metadata could not be generated.",
-      );
+          : "Geospatial metadata could not be generated.";
+      setError(message);
+      onFinished?.({ ok: false, message });
     } finally {
       setIsGenerating(false);
     }
-  }, [boundaryYear, file, geoIdColumn, isGenerating, onEnsureSubmissionId, onGenerated, session, spatialLevel]);
+  }, [
+    boundaryYear,
+    file,
+    geoIdColumn,
+    isGenerating,
+    onEnsureSubmissionId,
+    onFinished,
+    onGenerated,
+    onProgress,
+    session,
+    spatialLevel,
+  ]);
 
   return (
     <section className="mb-8 rounded-md border border-lightgray bg-[#fbfbfd] p-6">

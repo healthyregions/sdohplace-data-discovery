@@ -6,6 +6,7 @@ import NavBar from "@/components/NavBar";
 import Footer from "@/components/homepage/footer";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { ContentCard, NoticeCard } from "@/components/contribute/SectionCard";
+import { HelpLink } from "@/components/contribute/ContributeBanner";
 
 const ContributePage: NextPage = () => {
   const auth = useAuth();
@@ -70,6 +71,7 @@ const ContributePage: NextPage = () => {
           >
             View My Submissions
           </Link>
+          <HelpLink />
         </div>
       </ContentCard>
     );
