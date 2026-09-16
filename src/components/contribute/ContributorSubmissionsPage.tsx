@@ -196,6 +196,9 @@ function SubmissionDetail({
   const [loadError, setLoadError] = React.useState("");
   const [isSaving, setIsSaving] = React.useState(false);
   const [isRemoving, setIsRemoving] = React.useState(false);
+  const sessionRef = React.useRef(session);
+
+  sessionRef.current = session;
 
   React.useEffect(() => {
     let cancelled = false;
@@ -208,7 +211,7 @@ function SubmissionDetail({
       setLoadError("");
       setMessage("");
       try {
-        const loaded = await getContributorSubmission(submissionId, session);
+        const loaded = await getContributorSubmission(submissionId, sessionRef.current);
         if (!cancelled) {
           setSubmission(loaded);
           setValues(valuesFromSubmission(loaded));
@@ -227,7 +230,7 @@ function SubmissionDetail({
     return () => {
       cancelled = true;
     };
-  }, [isNew, session, submissionId]);
+  }, [isNew, submissionId]);
 
   const save = React.useCallback(
     async (nextStatus: "draft" | "submitted") => {
@@ -429,6 +432,9 @@ const ContributorSubmissionsPage: NextPage = () => {
   const [submissions, setSubmissions] = React.useState<ContributorSubmission[]>([]);
   const [isLoadingList, setIsLoadingList] = React.useState(false);
   const [listError, setListError] = React.useState("");
+  const sessionRef = React.useRef(session);
+  
+  sessionRef.current = session;
 
   React.useEffect(() => {
     setSubmissionId(pathSubmissionId());
@@ -448,19 +454,19 @@ const ContributorSubmissionsPage: NextPage = () => {
   }, [isAuthenticated, isConfigured, isReady, login]);
 
   const loadList = React.useCallback(async () => {
-    if (!session) {
+    if (!sessionRef.current) {
       return;
     }
     setIsLoadingList(true);
     setListError("");
     try {
-      setSubmissions(await listContributorSubmissions(session));
+      setSubmissions(await listContributorSubmissions(sessionRef.current));
     } catch (error) {
       setListError(error instanceof Error ? error.message : "Submissions could not be loaded.");
     } finally {
       setIsLoadingList(false);
     }
-  }, [session]);
+  }, []);
 
   React.useEffect(() => {
     if (!isReady || !isAuthenticated || !hasRole(requiredRole) || submissionId) {
