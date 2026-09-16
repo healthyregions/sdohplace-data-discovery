@@ -1,11 +1,13 @@
 import * as React from "react";
 import { DatasetSubmissionValues } from "@/services/SubmissionService";
-
-const ReadOnlyContext = React.createContext(false);
-
-function useReadOnly(): boolean {
-  return React.useContext(ReadOnlyContext);
-}
+import {
+  Field,
+  GENERATED_FIELD_INFO,
+  GeneratedField,
+  ReadOnlyProvider,
+  SelectField,
+  TextAreaField,
+} from "@/components/contribute/fields";
 
 export const initialSubmissionValues: DatasetSubmissionValues = {
   title: "",
@@ -24,6 +26,10 @@ export const initialSubmissionValues: DatasetSubmissionValues = {
   dataVariables: "",
   methodsVariables: "",
   dataUsageNotes: "",
+  geometry: "",
+  boundingBox: "",
+  centroid: "",
+  highlightIds: "",
 };
 
 const subjectOptions = [
@@ -54,103 +60,6 @@ const spatialResolutionOptions = [
   "Zip Code Tabulation Area (ZCTA)",
   "Other",
 ];
-
-type FieldProps = {
-  label: string;
-  name: keyof DatasetSubmissionValues;
-  value: string;
-  required?: boolean;
-  hint?: string;
-  example?: string;
-  onChange: (name: keyof DatasetSubmissionValues, value: string) => void;
-};
-
-function FieldHint({ hint, example }: { hint?: string; example?: string }) {
-  if (!hint && !example) return null;
-  return (
-    <div className="mt-2 space-y-1">
-      {hint && <span className="block text-sm leading-5 text-darkgray">{hint}</span>}
-      {example && (
-        <span className="block text-sm leading-5 text-darkgray">
-          <span className="font-semibold">Example:</span> {example}
-        </span>
-      )}
-    </div>
-  );
-}
-
-function FieldLabel({ label, required }: { label: string; required: boolean }) {
-  return (
-    <span className="mb-2 block text-base font-bold text-almostblack">
-      {label}
-      {required && <span className="text-frenchviolet"> *</span>}
-    </span>
-  );
-}
-
-function Field({ label, name, value, required = false, hint, example, onChange }: FieldProps): JSX.Element {
-  const readOnly = useReadOnly();
-  return (
-    <label className="block">
-      <FieldLabel label={label} required={required} />
-      <input
-        className="h-12 w-full rounded-md border border-lightgray bg-white px-4 text-base text-almostblack disabled:bg-[#f5f5f7] disabled:text-[#55555f]"
-        name={name}
-        value={value}
-        required={required}
-        disabled={readOnly}
-        onChange={(event) => onChange(name, event.target.value)}
-      />
-      <FieldHint hint={hint} example={example} />
-    </label>
-  );
-}
-
-function TextAreaField({ label, name, value, required = false, hint, example, onChange }: FieldProps): JSX.Element {
-  const readOnly = useReadOnly();
-  return (
-    <label className="block">
-      <FieldLabel label={label} required={required} />
-      <textarea
-        className="min-h-[7rem] w-full rounded-md border border-lightgray bg-white px-4 py-3 text-base leading-6 text-almostblack disabled:bg-[#f5f5f7] disabled:text-[#55555f]"
-        name={name}
-        value={value}
-        required={required}
-        disabled={readOnly}
-        onChange={(event) => onChange(name, event.target.value)}
-      />
-      <FieldHint hint={hint} example={example} />
-    </label>
-  );
-}
-
-type SelectFieldProps = FieldProps & {
-  options: string[];
-};
-
-function SelectField({ label, name, value, required = false, hint, example, options, onChange }: SelectFieldProps): JSX.Element {
-  const readOnly = useReadOnly();
-  return (
-    <label className="block">
-      <FieldLabel label={label} required={required} />
-      <select
-        className="h-12 w-full rounded-md border border-lightgray bg-white px-4 text-base text-almostblack disabled:bg-[#f5f5f7] disabled:text-[#55555f]"
-        name={name}
-        value={value}
-        required={required}
-        disabled={readOnly}
-        onChange={(event) => onChange(name, event.target.value)}
-      >
-        {options.map((option) => (
-          <option key={option} value={option}>
-            {option}
-          </option>
-        ))}
-      </select>
-      <FieldHint hint={hint} example={example} />
-    </label>
-  );
-}
 
 type SubmissionFormProps = {
   values: DatasetSubmissionValues;
@@ -188,7 +97,7 @@ export function SubmissionForm({
   );
 
   return (
-    <ReadOnlyContext.Provider value={readOnly}>
+    <ReadOnlyProvider value={readOnly}>
     <form
       className="grid gap-6"
       onSubmit={(event) => {
@@ -274,6 +183,28 @@ export function SubmissionForm({
           example="County — if each row in the dataset represents one U.S. county"
           options={spatialResolutionOptions}
           onChange={updateValue}
+        />
+      </div>
+      <div className="grid gap-6 md:grid-cols-2">
+        <GeneratedField
+          label="Bounding Box"
+          value={values.boundingBox}
+          info={GENERATED_FIELD_INFO}
+        />
+        <GeneratedField label="Centroid" value={values.centroid} info={GENERATED_FIELD_INFO} />
+      </div>
+      <div className="grid gap-6 md:grid-cols-2">
+        <GeneratedField
+          label="Geographic IDs"
+          value={values.highlightIds}
+          info={GENERATED_FIELD_INFO}
+          multiline
+        />
+        <GeneratedField
+          label="Geometry"
+          value={values.geometry}
+          info={GENERATED_FIELD_INFO}
+          multiline
         />
       </div>
       <div className="grid gap-6 md:grid-cols-2">
@@ -389,6 +320,6 @@ export function SubmissionForm({
       </div>
       )}
     </form>
-    </ReadOnlyContext.Provider>
+    </ReadOnlyProvider>
   );
 }

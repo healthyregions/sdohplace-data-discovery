@@ -17,6 +17,9 @@ import {
 import { SubmissionForm, initialSubmissionValues } from "@/components/contribute/SubmissionForm";
 import { SubmissionStatusBadge } from "@/components/contribute/SubmissionStatusBadge";
 import { ContentCard, NoticeCard } from "@/components/contribute/SectionCard";
+import { MessageBox } from "@/components/contribute/MessageBox";
+import { GenerateSpatialMetadata } from "@/components/contribute/GenerateSpatialMetadata";
+import { SpatialGeneratedValues } from "@/services/SpatialMetadataService";
 import {
   canEditSubmission,
   canRemoveSubmission,
@@ -55,32 +58,6 @@ function navigate(submissionId: string | null): void {
   }
   window.history.pushState(null, "", url);
   window.dispatchEvent(new PopStateEvent("popstate"));
-}
-
-type MessageBoxVariant = "error" | "success" | "warning" | "locked" | "loading";
-
-const messageBoxClasses: Record<MessageBoxVariant, string> = {
-  error: "border-[#f1c5c5] bg-[#fff6f6] text-almostblack",
-  success: "border-[#bfe3cd] bg-[#f2fff6] text-[#23623a]",
-  warning: "border-[#e5b849] bg-[#fff8df] text-almostblack",
-  locked: "border-lightgray bg-[#fbfbfd] text-almostblack",
-  loading: "border-lightgray bg-white text-darkgray",
-};
-
-function MessageBox({
-  variant,
-  className,
-  children,
-}: {
-  variant: MessageBoxVariant;
-  className?: string;
-  children: React.ReactNode;
-}): JSX.Element {
-  return (
-    <div className={`${className ? `${className} ` : ""}rounded-md border p-4 text-base ${messageBoxClasses[variant]}`}>
-      {children}
-    </div>
-  );
 }
 
 function AuthNotice({
@@ -288,6 +265,28 @@ function SubmissionDetail({
     [isNew, isSaving, session, submission, submissionId, values],
   );
 
+  const ensureSubmissionId = React.useCallback(async () => {
+    const existing = savedIdRef.current || submission?.id || (!isNew ? submissionId : "");
+    if (existing) {
+      return existing;
+    }
+    const saved = await saveContributorSubmission(values, session, { status: "draft" });
+    if (!saved.id) {
+      throw new Error("A draft could not be saved before generating. Please try again.");
+    }
+    setSubmission(saved);
+    savedIdRef.current = saved.id;
+    if (typeof window !== "undefined") {
+      window.history.replaceState(null, "", `/contribute/submissions/?id=${encodeURIComponent(saved.id)}`);
+    }
+    setMessage("Draft saved so the uploaded file stays linked to this submission.");
+    return saved.id;
+  }, [isNew, session, submission, submissionId, values]);
+
+  const applyGenerated = React.useCallback((generated: SpatialGeneratedValues) => {
+    setValues((previous) => ({ ...previous, ...generated }));
+  }, []);
+
   const currentSubmissionId = savedIdRef.current || submission?.id || (!isNew ? submissionId : undefined);
   const editable = isNew || canEditSubmission(submission?.status);
   const removable = Boolean(currentSubmissionId && canRemoveSubmission(submission?.status));
@@ -392,6 +391,12 @@ function SubmissionDetail({
         </div>
       ) : (
         <>
+          <GenerateSpatialMetadata
+            session={session}
+            disabled={isSaving || isRemoving}
+            onEnsureSubmissionId={ensureSubmissionId}
+            onGenerated={applyGenerated}
+          />
           <SubmissionForm
             values={values}
             isSaving={isSaving}
