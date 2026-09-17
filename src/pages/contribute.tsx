@@ -54,16 +54,37 @@ const ContributePage: NextPage = () => {
         <div className="mb-6 inline-flex rounded-full bg-lightviolet px-4 py-2 text-sm font-bold uppercase text-frenchviolet">
           Contributor
         </div>
-        <h1 className="mb-4 text-4xl font-bold text-almostblack">Contribute Data to Discovery Platform</h1>
-        <p className="mb-8 max-w-3xl text-lg leading-8 text-almostblack">
-          Start a new contribution, save a draft, or return to submissions that need changes before review.
+        <h1 className="mb-4 text-4xl font-bold text-almostblack">Share a dataset with the community</h1>
+        <p className="mb-6 max-w-3xl text-lg leading-8 text-almostblack">
+          Tell us about a dataset you use or maintain, and we will add it to the search platform so
+          other researchers can find it. It takes about ten minutes, and you can save a draft at any
+          point and come back.
         </p>
+        <div className="mb-8 grid gap-6 md:grid-cols-2">
+          <div className="rounded-md border border-lightgray bg-[#fbfbfd] p-5">
+            <h2 className="mb-3 text-l font-bold text-almostblack">Have these ready</h2>
+            <ul className="m-0 grid gap-2 pl-5 text-base leading-7 text-almostblack">
+              <li>The dataset&rsquo;s name and a sentence or two about it</li>
+              <li>Who created it and who publishes it</li>
+              <li>A data file, if you have one: CSV, zipped shapefile, GeoJSON, or GeoPackage</li>
+              <li>A link to where the data lives, if there is one</li>
+            </ul>
+          </div>
+          <div className="rounded-md border border-lightgray bg-[#fbfbfd] p-5">
+            <h2 className="mb-3 text-l font-bold text-almostblack">What happens next</h2>
+            <ol className="m-0 grid gap-2 pl-5 text-base leading-7 text-almostblack">
+              <li>You fill in four short steps and submit</li>
+              <li>A reviewer checks it, usually within a week, and may ask a question</li>
+              <li>Once published, it appears in search and you get an email</li>
+            </ol>
+          </div>
+        </div>
         <div className="flex flex-wrap gap-4">
           <Link
             href="/contribute/submissions/new"
             className="inline-flex h-12 items-center rounded-md bg-frenchviolet px-6 text-base font-bold text-white no-underline"
           >
-            Contribute Data to Discovery Platform
+            Start a new contribution
           </Link>
           <Link
             href="/contribute/submissions"

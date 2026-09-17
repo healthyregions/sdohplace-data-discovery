@@ -14,7 +14,9 @@ export const inputClassName =
   "h-12 w-full rounded-md border border-lightgray bg-white px-4 text-base text-almostblack disabled:bg-[#f5f5f7] disabled:text-[#55555f]";
 
 export const textAreaClassName =
-  "min-h-[7rem] w-full rounded-md border border-lightgray bg-white px-4 py-3 text-base leading-6 text-almostblack disabled:bg-[#f5f5f7] disabled:text-[#55555f]";
+  "min-h-[7rem] w-full rounded-md border border-lightgray bg-white px-4 py-3 text-base leading-6 text-almostblack placeholder:text-neutralgray disabled:bg-[#f5f5f7] disabled:text-[#55555f]";
+
+export const compactTextAreaClassName = textAreaClassName.replace("min-h-[7rem]", "min-h-[4.5rem]");
 
 export type FieldProps = {
   label: string;
@@ -24,6 +26,7 @@ export type FieldProps = {
   hint?: string;
   example?: string;
   info?: string;
+  compact?: boolean;
   onChange: (name: keyof DatasetSubmissionValues, value: string) => void;
   onBlur?: () => void;
 };
@@ -31,7 +34,7 @@ export type FieldProps = {
 export function FieldHint({ hint, example }: { hint?: string; example?: string }): JSX.Element | null {
   if (!hint && !example) return null;
   return (
-    <div className="mt-2 space-y-1">
+    <div className="mt-1.5 space-y-1">
       {hint && <span className="block text-sm leading-5 text-darkgray">{hint}</span>}
       {example && (
         <span className="block text-sm leading-5 text-darkgray">
@@ -40,6 +43,10 @@ export function FieldHint({ hint, example }: { hint?: string; example?: string }
       )}
     </div>
   );
+}
+
+function examplePlaceholder(example?: string): string | undefined {
+  return example ? `e.g. ${example.split("\n").join(", ")}` : undefined;
 }
 
 export function FieldLabel({
@@ -76,15 +83,16 @@ export function Field({
     <label className="block">
       <FieldLabel label={label} required={required} info={info} />
       <input
-        className={inputClassName}
+        className={`${inputClassName} placeholder:text-neutralgray`}
         name={name}
         value={value}
         required={required}
         disabled={readOnly}
+        placeholder={examplePlaceholder(example)}
         onChange={(event) => onChange(name, event.target.value)}
         onBlur={onBlur}
       />
-      <FieldHint hint={hint} example={example} />
+      <FieldHint hint={hint} />
     </label>
   );
 }
@@ -97,6 +105,7 @@ export function TextAreaField({
   hint,
   example,
   info,
+  compact = false,
   onChange,
   onBlur,
 }: FieldProps): JSX.Element {
@@ -105,15 +114,16 @@ export function TextAreaField({
     <label className="block">
       <FieldLabel label={label} required={required} info={info} />
       <textarea
-        className={textAreaClassName}
+        className={compact ? compactTextAreaClassName : textAreaClassName}
         name={name}
         value={value}
         required={required}
         disabled={readOnly}
+        placeholder={example ? `e.g. ${example}` : undefined}
         onChange={(event) => onChange(name, event.target.value)}
         onBlur={onBlur}
       />
-      <FieldHint hint={hint} example={example} />
+      <FieldHint hint={hint} />
     </label>
   );
 }

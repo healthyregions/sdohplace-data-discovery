@@ -10,7 +10,8 @@ export function explainRequestError(status: number, code: string): string {
     not_owned:
       "This submission is not available under your account. If you submitted it with a different sign-in, please sign out and try again.",
     unauthorized: "Your session is not valid for this action. Please sign out and sign back in.",
-    "Bearer token expired": "Your session has expired. Please sign out and sign back in.",
+    "Bearer token expired":
+      "Your sign-in timed out while this was running. Try the action again; if it keeps happening, sign out and sign back in.",
     "Contributor role required": "Your account does not yet have contributor access.",
     spatial_not_configured:
       "Geospatial generation is not configured on the server yet. Please contact the team.",

@@ -18,12 +18,68 @@ export const SPATIAL_LEVELS = [
   "Zip Code Tabulation Area (ZCTA)",
 ];
 
+export const DEFAULT_ACCEPT = ".csv,.zip,.geojson,.gpkg";
+export const MAX_UPLOAD_BYTES = 500 * 1024 * 1024;
+export const LARGE_UPLOAD_BYTES = 100 * 1024 * 1024;
+
+export type SpatialOptions = {
+  spatial_levels: string[];
+  boundary_years: string[];
+  upload_kinds: string[];
+  upload_extensions: Record<string, string[]>;
+  accept: string;
+  max_upload_bytes: number;
+  large_upload_bytes: number;
+};
+
+export const FALLBACK_OPTIONS: SpatialOptions = {
+  spatial_levels: SPATIAL_LEVELS,
+  boundary_years: BOUNDARY_YEARS,
+  upload_kinds: ["csv", "geo"],
+  upload_extensions: { csv: [".csv"], geo: [".zip", ".geojson", ".gpkg"] },
+  accept: DEFAULT_ACCEPT,
+  max_upload_bytes: MAX_UPLOAD_BYTES,
+  large_upload_bytes: LARGE_UPLOAD_BYTES,
+};
+
+export function formatBytes(bytes: number): string {
+  if (bytes >= 1024 * 1024 * 1024) {
+    return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`;
+  }
+  if (bytes >= 1024 * 1024) {
+    return `${Math.round(bytes / (1024 * 1024))} MB`;
+  }
+  return `${Math.max(1, Math.round(bytes / 1024))} KB`;
+}
+
+export async function fetchSpatialOptions(
+  session: AuthSession | null,
+): Promise<SpatialOptions> {
+  try {
+    const options = await contributorRequest<SpatialOptions>(BASE_PATH, "/options", session);
+    return { ...FALLBACK_OPTIONS, ...options };
+  } catch {
+    return FALLBACK_OPTIONS;
+  }
+}
+
+export function uploadKindForFile(filename: string, options: SpatialOptions): string | null {
+  const lowered = filename.toLowerCase();
+  for (const [kind, extensions] of Object.entries(options.upload_extensions || {})) {
+    if (extensions.some((extension) => lowered.endsWith(extension))) {
+      return kind;
+    }
+  }
+  return null;
+}
+
 export type SpatialJobInput = {
   submissionId: string;
   file: File;
   boundaryYear: string;
   spatialLevel: string;
   geoIdColumn: string;
+  uploadKind?: string | null;
 };
 
 export type SpatialResult = {
@@ -86,73 +142,133 @@ export function describeResult(result: SpatialResult): string[] {
   return lines;
 }
 
+export type SessionGetter = () => AuthSession | null;
+
+function isExpiredSessionError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : "";
+  return message.includes("session has expired") || message.includes("not valid for this action");
+}
+
+async function withFreshSession<T>(
+  getSession: SessionGetter,
+  run: (session: AuthSession | null) => Promise<T>,
+): Promise<T> {
+  try {
+    return await run(getSession());
+  } catch (error) {
+    if (!isExpiredSessionError(error)) {
+      throw error;
+    }
+    await delay(1500);
+    return run(getSession());
+  }
+}
+
 async function requestUploadUrl(
   submissionId: string,
-  filename: string,
-  session: AuthSession | null,
-): Promise<{ upload_url: string; s3_key: string; content_type: string }> {
-  return contributorRequest(BASE_PATH, "/upload-url", session, {
-    method: "POST",
-    body: JSON.stringify({ submission_id: submissionId, filename }),
-  });
+  file: File,
+  getSession: SessionGetter,
+): Promise<{ upload_url: string; s3_key: string; content_type: string; upload_kind: string }> {
+  return withFreshSession(getSession, (session) =>
+    contributorRequest(BASE_PATH, "/upload-url", session, {
+      method: "POST",
+      body: JSON.stringify({
+        submission_id: submissionId,
+        filename: file.name,
+        file_size: file.size,
+      }),
+    }),
+  );
 }
 
 async function uploadToS3(uploadUrl: string, file: File, contentType: string): Promise<void> {
-  const response = await fetch(uploadUrl, {
-    method: "PUT",
-    headers: { "Content-Type": contentType || "text/csv" },
-    body: file,
-  });
+  let response: Response;
+  try {
+    response = await fetch(uploadUrl, {
+      method: "PUT",
+      headers: { "Content-Type": contentType || "text/csv" },
+      body: file,
+    });
+  } catch {
+    throw new Error(
+      `Your ${formatBytes(file.size)} file could not be uploaded. This usually means the ` +
+        "connection dropped part way. Check your connection and try Generate again, or email " +
+        "heroplab23@gmail.com if it keeps happening.",
+    );
+  }
+  if (response.status === 403) {
+    throw new Error(
+      `The upload window for your ${formatBytes(file.size)} file ran out before it finished. ` +
+        "Click Generate again to start a fresh upload, ideally on a faster connection.",
+    );
+  }
   if (!response.ok) {
     throw new Error(
-      "The file could not be uploaded. Check your connection and try again, or email heroplab23@gmail.com if it keeps failing.",
+      `Your ${formatBytes(file.size)} file could not be uploaded (error ${response.status}). ` +
+        "Try Generate again, or email heroplab23@gmail.com if it keeps happening.",
     );
   }
 }
 
-async function startPipeline(input: SpatialJobInput, s3Key: string, session: AuthSession | null): Promise<void> {
-  await contributorRequest(BASE_PATH, "/start", session, {
-    method: "POST",
-    body: JSON.stringify({
-      submission_id: input.submissionId,
-      s3_key: s3Key,
-      boundary_year: input.boundaryYear,
-      spatial_level: input.spatialLevel,
-      geo_id_column: input.geoIdColumn,
+async function startPipeline(
+  input: SpatialJobInput,
+  s3Key: string,
+  uploadKind: string,
+  getSession: SessionGetter,
+): Promise<void> {
+  const body: Record<string, unknown> = {
+    submission_id: input.submissionId,
+    s3_key: s3Key,
+    upload_kind: uploadKind,
+  };
+  if (uploadKind === "csv") {
+    body.boundary_year = input.boundaryYear;
+    body.spatial_level = input.spatialLevel;
+    body.geo_id_column = input.geoIdColumn;
+  }
+  await withFreshSession(getSession, (session) =>
+    contributorRequest(BASE_PATH, "/start", session, {
+      method: "POST",
+      body: JSON.stringify(body),
     }),
-  });
+  );
 }
 
 async function fetchStatus(
   submissionId: string,
   s3Key: string,
-  session: AuthSession | null,
+  getSession: SessionGetter,
 ): Promise<SpatialStatus> {
   const query = `?submission_id=${encodeURIComponent(submissionId)}&key=${encodeURIComponent(s3Key)}`;
-  return contributorRequest<SpatialStatus>(BASE_PATH, `/status${query}`, session);
+  return withFreshSession(getSession, (session) =>
+    contributorRequest<SpatialStatus>(BASE_PATH, `/status${query}`, session),
+  );
 }
 
 export async function generateSpatialMetadata(
   input: SpatialJobInput,
-  session: AuthSession | null,
+  getSession: SessionGetter,
   onProgress?: (elapsedSeconds: number) => void,
 ): Promise<SpatialResult> {
-  const job = await requestUploadUrl(input.submissionId, input.file.name, session);
+  const job = await requestUploadUrl(input.submissionId, input.file, getSession);
   await uploadToS3(job.upload_url, input.file, job.content_type);
-  await startPipeline(input, job.s3_key, session);
+  await startPipeline(input, job.s3_key, job.upload_kind || input.uploadKind || "csv", getSession);
 
   const startedAt = Date.now();
   for (;;) {
     const elapsed = Date.now() - startedAt;
     if (elapsed >= POLL_TIMEOUT_MS) {
       throw new Error(
-        "Generation is still running after 10 minutes. Your upload was saved, so try Generate again in a few minutes.",
+        "Your file is taking longer than 10 minutes to process, so we stopped waiting. " +
+          "Nothing is lost: your upload was saved and it may still finish in the background. " +
+          "Wait a few minutes and click Generate again, or email heroplab23@gmail.com if a " +
+          "large file never completes.",
       );
     }
     await delay(pollDelay(elapsed));
     onProgress?.(Math.round((Date.now() - startedAt) / 1000));
 
-    const status = await fetchStatus(input.submissionId, job.s3_key, session);
+    const status = await fetchStatus(input.submissionId, job.s3_key, getSession);
     if (status.status === "ready") {
       return status.result;
     }

@@ -19,7 +19,9 @@ const lifecycle = [
   ["Draft", "Yours to edit. Saves automatically and is not visible to reviewers yet."],
   ["Submitted", "Sent for review. Locked while a reviewer looks at it."],
   ["Needs changes", "A reviewer asked for edits. Editable again, with their comments shown at the top."],
-  ["Approved", "Accepted by a reviewer. Locked, and queued for publication."],
+  ["Approved", "Accepted by a reviewer and waiting to be added to the search platform."],
+  ["Published", "Live and searchable on the discovery platform. You are emailed when this happens."],
+  ["Unpublished", "Was published, and has since been removed from search. You are emailed when this happens."],
   ["Rejected", "Closed. You can still open it, copy anything useful, or remove it."],
 ];
 
@@ -44,6 +46,32 @@ const ContributeHelpPage: NextPage = () => {
             </p>
 
             <div className="grid gap-10">
+              <Section title="The four steps">
+                <ol className="m-0 grid gap-3 pl-5 text-base leading-7 text-almostblack">
+                  <li>
+                    <strong>Describe.</strong> The dataset&rsquo;s title, a short description, its
+                    subject, and a few keywords people might search for.
+                  </li>
+                  <li>
+                    <strong>Attribution.</strong> Who created it, who publishes it, where to get
+                    it, and whether it is public or restricted.
+                  </li>
+                  <li>
+                    <strong>Location.</strong> Upload a data file and we work out the geography.
+                    Then confirm the resolution and the years it covers.
+                  </li>
+                  <li>
+                    <strong>Review.</strong> Check everything, confirm the citation we drafted for
+                    you, add any optional details, and submit.
+                  </li>
+                </ol>
+                <p className="mb-0 mt-4 text-base leading-7 text-almostblack">
+                  The citation is written for you from your earlier answers; edit it if the source
+                  has its own preferred wording. Everything under Optional details can be left for
+                  a reviewer to complete.
+                </p>
+              </Section>
+              
               <Section title="How your work is saved">
                 <p className="m-0 text-base leading-7 text-almostblack">
                   Your draft is saved automatically at three moments:
@@ -74,20 +102,42 @@ const ContributeHelpPage: NextPage = () => {
 
               <Section title="Generating geospatial metadata">
                 <p className="m-0 text-base leading-7 text-almostblack">
-                  Upload the CSV your dataset is based on, choose the boundary year and the spatial
-                  level the rows represent, and we calculate the geometry, bounding box, centroid,
-                  spatial coverage, and geographic IDs for you.
+                  Upload the data file your dataset is based on and we calculate the geometry,
+                  bounding box, centroid, spatial coverage, and geographic IDs for you. For a CSV,
+                  you also choose the boundary year and the spatial level the rows represent.
+                </p>
+                <p className="mb-0 mt-4 text-base leading-7 text-almostblack">
+                  <strong>Geometry is required</strong> before you can submit, because it is what
+                  places your dataset on the map. You can move through the steps and save a draft
+                  without it, but the review step will ask you to upload a file first. Geographic
+                  IDs are filled in when the data matches census units; some datasets, such as
+                  custom boundaries, will not have them, and that is fine.
                 </p>
                 <ul className="mb-0 mt-4 grid gap-2 pl-5 text-base leading-7 text-almostblack">
-                  <li>Your CSV needs a column of geographic IDs, usually called GEOID or FIPS.</li>
                   <li>
-                    The IDs must match the spatial level you pick. County rows use five-digit codes,
+                    You can upload a data table as CSV, or a spatial file: a zipped shapefile,
+                    GeoJSON, or GeoPackage.
+                  </li>
+                  <li>
+                    For a shapefile, put the .shp, .shx, .dbf and .prj files together in one .zip.
+                  </li>
+                  <li>
+                    A CSV needs a column of geographic IDs, usually called GEOID or FIPS, and the
+                    IDs must match the spatial level you pick. County rows use five-digit codes,
                     census tracts use eleven.
                   </li>
-                  <li>CSV is the only format supported at the moment.</li>
                   <li>
-                    Large files can take several minutes. You can close the progress window and keep
-                    editing while it runs.
+                    Spatial files already carry their own geometry, so you are not asked for a
+                    boundary year or spatial level.
+                  </li>
+                  <li>Files can be up to 500 MB.</li>
+                  <li>
+                    Most files finish in under a minute. Large ones can take several, and we stop
+                    waiting after 10 minutes &mdash; if that happens your upload is still saved, so
+                    wait a little and click Generate again to pick up the result.
+                  </li>
+                  <li>
+                    You can close the progress window and keep editing while it runs.
                   </li>
                 </ul>
                 <p className="mb-0 mt-4 text-base leading-7 text-almostblack">
@@ -125,9 +175,11 @@ const ContributeHelpPage: NextPage = () => {
                   </table>
                 </div>
                 <p className="mb-0 mt-4 text-base leading-7 text-almostblack">
-                  Approval and publication are separate steps. After a reviewer approves your
-                  submission, it becomes searchable once an administrator publishes it. You are
-                  emailed at each stage.
+                  Approval and publication are separate steps. A reviewer approving your submission
+                  means it has been accepted; it only becomes <strong>Published</strong> once an
+                  administrator adds it to the search platform, and that is when you are emailed
+                  that it is live. You are emailed at each stage, including if a published record is
+                  later removed.
                 </p>
               </Section>
 

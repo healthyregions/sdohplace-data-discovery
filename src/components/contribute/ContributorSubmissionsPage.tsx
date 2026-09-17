@@ -14,7 +14,9 @@ import {
   validateSubmissionValues,
   valuesFromSubmission,
 } from "@/services/SubmissionService";
-import { SubmissionForm, initialSubmissionValues } from "@/components/contribute/SubmissionForm";
+import { initialSubmissionValues } from "@/components/contribute/SubmissionForm";
+import { SubmissionWizard } from "@/components/contribute/SubmissionWizard";
+import { buildDraftCitation } from "@/components/contribute/submissionSteps";
 import { SubmissionStatusBadge } from "@/components/contribute/SubmissionStatusBadge";
 import { ContentCard, NoticeCard } from "@/components/contribute/SectionCard";
 import { MessageBox } from "@/components/contribute/MessageBox";
@@ -22,7 +24,7 @@ import { GenerateSpatialMetadata } from "@/components/contribute/GenerateSpatial
 import { SpatialGeneratedValues } from "@/services/SpatialMetadataService";
 import { ActionDialog, ActionDialogState, closedActionDialog } from "@/components/contribute/ActionDialog";
 import { SessionExpiredDialog } from "@/components/contribute/SessionExpiredDialog";
-import { ContributeBanner, HelpLink } from "@/components/contribute/ContributeBanner";
+import { HelpLink } from "@/components/contribute/ContributeBanner";
 import { useAutosave } from "@/components/contribute/useAutosave";
 import {
   canEditSubmission,
@@ -240,7 +242,17 @@ function SubmissionDetail({
     };
   }, [isNew, submissionId]);
   const currentId = savedIdRef.current || submission?.id || (!isNew ? submissionId : undefined);
-  const autosaveEnabled = isNew || canEditSubmission(submission?.status);
+  const autosaveEnabled = submission ? canEditSubmission(submission.status) : isNew;
+  const initialStep = React.useMemo(() => {
+    if (typeof window === "undefined") return 0;
+    const match = window.location.hash.match(/step-(\d+)/);
+    return match ? Math.max(0, Number(match[1]) - 1) : 0;
+  }, []);
+  const rememberStep = React.useCallback((index: number) => {
+    if (typeof window === "undefined") return;
+    const { pathname, search } = window.location;
+    window.history.replaceState(null, "", `${pathname}${search}#step-${index + 1}`);
+  }, []);
   const autosave = React.useCallback(async () => {
     const values = valuesRef.current;
     const existingId = savedIdRef.current || submission?.id || (!isNew ? submissionId : undefined);
@@ -290,10 +302,16 @@ function SubmissionDetail({
       setIsSaving(true);
       try {
         const resolvedId = savedIdRef.current || (isNew ? undefined : submission?.id || submissionId);
-        const saved = await saveContributorSubmission(values, sessionRef.current, {
+        const submitValues = values.preferredCitation.trim()
+          ? values
+          : { ...values, preferredCitation: buildDraftCitation(values) };
+        const saved = await saveContributorSubmission(submitValues, sessionRef.current, {
           submissionId: resolvedId,
           status: nextStatus,
         });
+        if (submitValues !== values) {
+          setValues(submitValues);
+        }
         setSubmission(saved);
         if (saved.id) {
           savedIdRef.current = saved.id;
@@ -367,7 +385,7 @@ function SubmissionDetail({
   }, []);
 
   const currentSubmissionId = savedIdRef.current || submission?.id || (!isNew ? submissionId : undefined);
-  const editable = isNew || canEditSubmission(submission?.status);
+  const editable = submission ? canEditSubmission(submission.status) : isNew;
   const removable = Boolean(currentSubmissionId && canRemoveSubmission(submission?.status));
 
   const remove = React.useCallback(async () => {
@@ -426,9 +444,9 @@ function SubmissionDetail({
             Back to my submissions
           </button>
           <h1 className="mb-3 text-4xl font-bold text-almostblack">
-            {isNew ? "New Data Contribution" : values.title || "Edit Submission"}
+            {submission || !isNew ? values.title || "Edit Submission" : "New Data Contribution"}
           </h1>
-          <SubmissionStatusBadge status={isNew ? undefined : submission?.status} />
+          <SubmissionStatusBadge status={submission?.status} />
         </div>
         <HelpLink className="shrink-0" />
       </div>
@@ -458,7 +476,7 @@ function SubmissionDetail({
           <p className="m-0">
             To make a new version, start a new contribution from your submissions list.
           </p>
-          <SubmissionForm
+          <SubmissionWizard
             values={values}
             isSaving={isSaving}
             isRemoving={isRemoving}
@@ -471,44 +489,47 @@ function SubmissionDetail({
         </div>
       ) : (
         <>
-          <ContributeBanner />
-          <GenerateSpatialMetadata
-            session={session}
-            disabled={isSaving || isRemoving}
-            onEnsureSubmissionId={ensureSubmissionId}
-            onGenerated={applyGenerated}
-            onProgress={(seconds) =>
-              setDialog((previous) =>
-                previous.open && previous.status === "running"
-                  ? {
-                      ...previous,
-                      message: `Working on your file. This can take several minutes (${seconds}s elapsed).`,
-                    }
-                  : previous,
-              )
-            }
-            onFinished={(outcome) =>
-              setDialog({
-                open: true,
-                title: outcome.ok ? "Geospatial Metadata Ready" : "Generation Failed",
-                status: outcome.ok ? "success" : "error",
-                message: outcome.message,
-                details: outcome.details,
-              })
-            }
-          />
-          <SubmissionForm
+          <SubmissionWizard
             values={values}
             isSaving={isSaving}
             isRemoving={isRemoving}
+            initialStep={initialStep}
             submitLabel={submission?.status === "needs_changes" || submission?.status === "rejected" ? "Resubmit for Review" : "Submit for Review"}
             autosaveLabel={autosaveLabel}
             onChange={setValues}
             onFieldBlur={() => void flushAutosave()}
+            onStepChange={rememberStep}
             onRemove={removable ? () => void remove() : undefined}
             onSaveDraft={() => void save("draft")}
             onSubmit={() => void save("submitted")}
             onClear={isNew ? () => setValues(initialSubmissionValues) : undefined}
+            uploadSlot={
+              <GenerateSpatialMetadata
+                session={session}
+                disabled={isSaving || isRemoving}
+                onEnsureSubmissionId={ensureSubmissionId}
+                onGenerated={applyGenerated}
+                onProgress={(seconds) =>
+                  setDialog((previous) =>
+                    previous.open && previous.status === "running"
+                      ? {
+                          ...previous,
+                          message: `Working on your file. This can take several minutes (${seconds}s elapsed).`,
+                        }
+                      : previous,
+                  )
+                }
+                onFinished={(outcome) =>
+                  setDialog({
+                    open: true,
+                    title: outcome.ok ? "Geospatial Metadata Ready" : "Generation Failed",
+                    status: outcome.ok ? "success" : "error",
+                    message: outcome.message,
+                    details: outcome.details,
+                  })
+                }
+              />
+            }
           />
         </>
       )}
@@ -607,7 +628,7 @@ const ContributorSubmissionsPage: NextPage = () => {
       <NavBar />
       <SessionExpiredDialog open={isExpired} onSignIn={() => void login(returnToCurrent())} />
       <main className="min-h-screen bg-[#f7f4fb] px-6 pb-24 pt-36">
-        <div className="mx-auto max-w-6xl">{content}</div>
+        <div className="mx-auto max-w-7xl">{content}</div>
       </main>
       <Footer />
     </>

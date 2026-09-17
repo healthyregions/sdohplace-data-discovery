@@ -178,6 +178,9 @@ export default async (request) => {
   const action = actionFromRequest(request);
   const url = new URL(request.url);
   try {
+    if (action === "options" && request.method === "GET") {
+      return jsonResponse(await intakeRequest("GET", "/spatial/options"));
+    }
     if (action === "status" && request.method === "GET") {
       const submissionId = url.searchParams.get("submission_id") || "";
       const key = url.searchParams.get("key") || "";

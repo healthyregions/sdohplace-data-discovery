@@ -41,8 +41,8 @@ export function ContributeBanner(): JSX.Element | null {
           last edit is not kept, so use <strong>Save Draft</strong> before you leave.
         </li>
         <li>
-          Uploading a CSV fills the geospatial fields for you and saves them straight away. It can
-          take a few minutes.
+          Uploading a data file (CSV, zipped shapefile, GeoJSON, or GeoPackage) fills the geospatial
+          fields for you and saves them straight away. It can take a few minutes.
         </li>
       </ul>
       <a

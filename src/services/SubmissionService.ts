@@ -4,6 +4,7 @@ import {
   contributorRequest as sharedContributorRequest,
   explainRequestError,
 } from "@/services/contributorRequest";
+import { allRequiredErrors } from "@/components/contribute/submissionSteps";
 
 export type DatasetSubmissionValues = {
   title: string;
@@ -165,35 +166,7 @@ export function payloadToSubmissionValues(payload: Record<string, unknown> | und
 }
 
 export function validateSubmissionValues(values: DatasetSubmissionValues): string[] {
-  const errors: string[] = [];
-  if (!values.title.trim()) {
-    errors.push("Dataset title is required.");
-  }
-  if (!values.description.trim()) {
-    errors.push("Description is required.");
-  }
-  if (!values.creator.trim()) {
-    errors.push("Creator is required.");
-  }
-  if (!values.publisher.trim()) {
-    errors.push("Publisher is required.");
-  }
-  if (!values.subject) {
-    errors.push("Subject is required.");
-  }
-  if (!values.keywords.trim()) {
-    errors.push("At least one keyword is required.");
-  }
-  if (!values.spatialResolution) {
-    errors.push("Spatial resolution is required.");
-  }
-  if (!values.accessRights) {
-    errors.push("Access rights is required.");
-  }
-  if (!values.preferredCitation.trim()) {
-    errors.push("Preferred citation is required.");
-  }
-  return errors;
+  return Object.values(allRequiredErrors(values));
 }
 
 function submitterFromSession(session: AuthSession | null): Record<string, string> {
@@ -224,7 +197,11 @@ function contributorRequest<T>(
   return sharedContributorRequest<T>("/api/contributor-submissions", path, session, init);
 }
 
-function submissionBody(values: DatasetSubmissionValues, status: "draft" | "submitted", session: AuthSession | null) {
+function submissionBody(
+  values: DatasetSubmissionValues,
+  status: "draft" | "submitted",
+  session: AuthSession | null,
+) {
   return JSON.stringify({
     status,
     ...submitterFromSession(session),
