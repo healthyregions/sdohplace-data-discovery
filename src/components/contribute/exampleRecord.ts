@@ -8,7 +8,7 @@ export type ExampleRecord = {
 
 export const EXAMPLE_RECORD: ExampleRecord = {
   recordId: "herop-yumqkc",
-  platformUrl: "https://search.sdohplace.org/?query=+Opportunity+Index&show=herop-yumqkc",
+  platformUrl: "https://search.sdohplace.org/?query=*&show=herop-yumqkc",
   values: {
     title: "Opportunity Index",
     description:
