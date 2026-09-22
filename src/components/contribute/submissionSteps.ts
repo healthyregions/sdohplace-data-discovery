@@ -148,6 +148,7 @@ export const FIELD_DEFS: Record<FieldName, FieldDef> = {
     label: "Data Variables",
     kind: "textarea",
     compact: true,
+    required: true,
     hint: "The main columns or measures in the dataset. One per line.",
     example: "Total violent crimes\nTotal property crimes\nCounty FIPS code",
   },
@@ -155,12 +156,14 @@ export const FIELD_DEFS: Record<FieldName, FieldDef> = {
     label: "Methods Variables",
     kind: "textarea",
     compact: true,
+    required: true,
     hint: "The units of analysis or dimensions the data are organized by. One per line.",
     example: "Murder\nRobbery\nCounty\nYear",
   },
   dataUsageNotes: {
     label: "Data Usage Notes",
     kind: "textarea",
+    required: true,
     hint: "Caveats or guidance for anyone using this dataset.",
     example: "Reporting practices differ across counties, so compare with care.",
   },
@@ -174,7 +177,6 @@ export type Step = {
   rows: FieldName[][];
   uploadSlot?: boolean;
   generatedRows?: FieldName[][];
-  optionalRows?: FieldName[][];
 };
 
 export const STEPS: Step[] = [
@@ -203,12 +205,19 @@ export const STEPS: Step[] = [
     generatedRows: [["boundingBox", "centroid"], ["highlightIds", "geometry"]],
   },
   {
+    id: "contents",
+    title: "What is in the data",
+    shortLabel: "Contents",
+    intro:
+      "Tell people what they will find inside the file, and anything they should know before using it.",
+    rows: [["dataVariables", "methodsVariables"], ["dataUsageNotes"]],
+  },
+  {
     id: "review",
     title: "Review and submit",
     shortLabel: "Review",
-    intro: "Check everything over, confirm the citation, and submit. Anything under optional details can be added during review.",
+    intro: "Check everything over, confirm the citation, and submit.",
     rows: [["preferredCitation"]],
-    optionalRows: [["dataVariables", "methodsVariables"], ["dataUsageNotes"]],
   },
 ];
 

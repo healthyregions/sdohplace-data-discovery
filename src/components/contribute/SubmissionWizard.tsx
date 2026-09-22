@@ -33,11 +33,13 @@ function reviewFieldAnchorId(name: FieldName): string {
 function StepIndicator({
   activeIndex,
   values,
+  visited,
   onJump,
   reviewFields,
 }: {
   activeIndex: number;
   values: DatasetSubmissionValues;
+  visited: Record<number, boolean>;
   onJump: (index: number) => void;
   reviewFields?: FieldName[];
 }): JSX.Element {
@@ -45,7 +47,7 @@ function StepIndicator({
     <ol className="m-0 flex list-none flex-wrap gap-2 p-0 md:flex-col md:gap-1" aria-label="Submission steps">
       {STEPS.map((step, index) => {
         const isActive = index === activeIndex;
-        const isDone = !isActive && index < REVIEW_STEP_INDEX && isStepComplete(values, step);
+        const isDone = !isActive && index < REVIEW_STEP_INDEX && visited[index] && isStepComplete(values, step);
         const enabled = canJumpTo(index, activeIndex, values);
         const tone = isActive
           ? "border-frenchviolet bg-frenchviolet text-white"
@@ -160,15 +162,10 @@ function ValueRow({
 export function ReviewSummary({
   values,
   onEdit,
-  showOptional = true,
 }: {
   values: DatasetSubmissionValues;
   onEdit?: (stepIndex: number) => void;
-  showOptional?: boolean;
 }): JSX.Element {
-  const optionalNames = STEPS[REVIEW_STEP_INDEX].optionalRows?.flat() || [];
-  const filledOptional = optionalNames.filter((name) => displayValue(values[name]));
-
   return (
     <div className="grid gap-6">
       {STEPS.slice(0, REVIEW_STEP_INDEX).map((step, index) => {
@@ -206,30 +203,16 @@ export function ReviewSummary({
           </dl>
         </section>
       )}
-
-      {showOptional && !onEdit && filledOptional.length > 0 && (
-        <section className="rounded-md border border-lightgray bg-[#fbfbfd] p-6">
-          <h3 className="m-0 mb-4 text-l font-bold text-almostblack">Optional details</h3>
-          <dl className="m-0 grid gap-3">
-            {filledOptional.map((name) => (
-              <ValueRow key={name} name={name} values={values} editable={false} />
-            ))}
-          </dl>
-        </section>
-      )}
     </div>
   );
 }
 
-function reviewNavFields(values: DatasetSubmissionValues): FieldName[] {
+function reviewNavFields(): FieldName[] {
   const main = STEPS.slice(0, REVIEW_STEP_INDEX).flatMap((step) => [
     ...stepFields(step),
     ...(step.generatedRows?.flat() || []),
   ]);
-  const optional = (STEPS[REVIEW_STEP_INDEX].optionalRows?.flat() || []).filter((name) =>
-    displayValue(values[name]),
-  );
-  return [...main, CITATION_FIELD, ...optional];
+  return [...main, CITATION_FIELD];
 }
 
 type SubmissionWizardProps = {
@@ -271,7 +254,13 @@ export function SubmissionWizard({
     Math.min(Math.max(initialStep, 0), REVIEW_STEP_INDEX),
   );
   const [attempted, setAttempted] = React.useState<Record<number, boolean>>({});
-  const [optionalOpen, setOptionalOpen] = React.useState(false);
+  const [visited, setVisited] = React.useState<Record<number, boolean>>(() => {
+    const seen: Record<number, boolean> = {};
+    for (let i = 0; i <= Math.min(Math.max(initialStep, 0), REVIEW_STEP_INDEX); i += 1) {
+      seen[i] = true;
+    }
+    return seen;
+  });
   const topRef = React.useRef<HTMLDivElement>(null);
 
   const step: Step = STEPS[activeIndex];
@@ -301,6 +290,7 @@ export function SubmissionWizard({
       }
       onFieldBlur?.();
       setActiveIndex(next);
+      setVisited((prev) => ({ ...prev, [next]: true }));
       onStepChange?.(next);
       topRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
     },
@@ -346,8 +336,9 @@ export function SubmissionWizard({
         <StepIndicator
           activeIndex={activeIndex}
           values={values}
+          visited={visited}
           onJump={goTo}
-          reviewFields={isReview ? reviewNavFields(values) : undefined}
+          reviewFields={isReview ? reviewNavFields() : undefined}
         />
         {!isReview && allComplete && (
           <button
@@ -416,30 +407,6 @@ export function SubmissionWizard({
                   onFieldBlur={onFieldBlur}
                   errors={reviewErrors}
                 />
-              </section>
-
-              <section className="rounded-md border border-lightgray bg-[#fbfbfd] p-6">
-                <button
-                  type="button"
-                  className="mb-0 font-bold text-frenchviolet"
-                  onClick={() => setOptionalOpen((open) => !open)}
-                  aria-expanded={optionalOpen}
-                >
-                  {optionalOpen ? "Hide optional details" : "Add optional details"}
-                </button>
-                <p className="mb-0 mt-1 text-sm leading-5 text-darkgray">
-                  Variables and usage notes. A reviewer can add these if you would rather not.
-                </p>
-                {optionalOpen && (
-                  <div className="mt-6">
-                    <SubmissionForm
-                      values={values}
-                      step={{ ...step, rows: step.optionalRows || [], uploadSlot: false }}
-                      onChange={onChange}
-                      onFieldBlur={onFieldBlur}
-                    />
-                  </div>
-                )}
               </section>
             </>
           ) : (
