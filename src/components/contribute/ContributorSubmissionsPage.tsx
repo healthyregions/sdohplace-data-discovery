@@ -14,9 +14,18 @@ import {
   validateSubmissionValues,
   valuesFromSubmission,
 } from "@/services/SubmissionService";
-import { SubmissionForm, initialSubmissionValues } from "@/components/contribute/SubmissionForm";
+import { initialSubmissionValues } from "@/components/contribute/SubmissionForm";
+import { SubmissionWizard } from "@/components/contribute/SubmissionWizard";
+import { buildDraftCitation } from "@/components/contribute/submissionSteps";
 import { SubmissionStatusBadge } from "@/components/contribute/SubmissionStatusBadge";
 import { ContentCard, NoticeCard } from "@/components/contribute/SectionCard";
+import { MessageBox } from "@/components/contribute/MessageBox";
+import { GenerateSpatialMetadata } from "@/components/contribute/GenerateSpatialMetadata";
+import { SpatialGeneratedValues } from "@/services/SpatialMetadataService";
+import { ActionDialog, ActionDialogState, closedActionDialog } from "@/components/contribute/ActionDialog";
+import { SessionExpiredDialog } from "@/components/contribute/SessionExpiredDialog";
+import { HelpLink } from "@/components/contribute/ContributeBanner";
+import { useAutosave } from "@/components/contribute/useAutosave";
 import {
   canEditSubmission,
   canRemoveSubmission,
@@ -55,32 +64,6 @@ function navigate(submissionId: string | null): void {
   }
   window.history.pushState(null, "", url);
   window.dispatchEvent(new PopStateEvent("popstate"));
-}
-
-type MessageBoxVariant = "error" | "success" | "warning" | "locked" | "loading";
-
-const messageBoxClasses: Record<MessageBoxVariant, string> = {
-  error: "border-[#f1c5c5] bg-[#fff6f6] text-almostblack",
-  success: "border-[#bfe3cd] bg-[#f2fff6] text-[#23623a]",
-  warning: "border-[#e5b849] bg-[#fff8df] text-almostblack",
-  locked: "border-lightgray bg-[#fbfbfd] text-almostblack",
-  loading: "border-lightgray bg-white text-darkgray",
-};
-
-function MessageBox({
-  variant,
-  className,
-  children,
-}: {
-  variant: MessageBoxVariant;
-  className?: string;
-  children: React.ReactNode;
-}): JSX.Element {
-  return (
-    <div className={`${className ? `${className} ` : ""}rounded-md border p-4 text-base ${messageBoxClasses[variant]}`}>
-      {children}
-    </div>
-  );
 }
 
 function AuthNotice({
@@ -154,6 +137,7 @@ function SubmissionList({
           >
             Refresh
           </button>
+          <HelpLink />
         </div>
       </div>
 
@@ -219,6 +203,12 @@ function SubmissionDetail({
   const [loadError, setLoadError] = React.useState("");
   const [isSaving, setIsSaving] = React.useState(false);
   const [isRemoving, setIsRemoving] = React.useState(false);
+  const [dialog, setDialog] = React.useState<ActionDialogState>(closedActionDialog);
+  const sessionRef = React.useRef(session);
+  const valuesRef = React.useRef(values);
+
+  sessionRef.current = session;
+  valuesRef.current = values;
 
   React.useEffect(() => {
     let cancelled = false;
@@ -231,7 +221,7 @@ function SubmissionDetail({
       setLoadError("");
       setMessage("");
       try {
-        const loaded = await getContributorSubmission(submissionId, session);
+        const loaded = await getContributorSubmission(submissionId, sessionRef.current);
         if (!cancelled) {
           setSubmission(loaded);
           setValues(valuesFromSubmission(loaded));
@@ -250,7 +240,52 @@ function SubmissionDetail({
     return () => {
       cancelled = true;
     };
-  }, [isNew, session, submissionId]);
+  }, [isNew, submissionId]);
+  const currentId = savedIdRef.current || submission?.id || (!isNew ? submissionId : undefined);
+  const autosaveEnabled = submission ? canEditSubmission(submission.status) : isNew;
+  const initialStep = React.useMemo(() => {
+    if (typeof window === "undefined") return 0;
+    const match = window.location.hash.match(/step-(\d+)/);
+    return match ? Math.max(0, Number(match[1]) - 1) : 0;
+  }, []);
+  const rememberStep = React.useCallback((index: number) => {
+    if (typeof window === "undefined") return;
+    const { pathname, search } = window.location;
+    window.history.replaceState(null, "", `${pathname}${search}#step-${index + 1}`);
+  }, []);
+  const autosave = React.useCallback(async () => {
+    const values = valuesRef.current;
+    const existingId = savedIdRef.current || submission?.id || (!isNew ? submissionId : undefined);
+    const saved = await saveContributorSubmission(values, sessionRef.current, {
+      submissionId: existingId,
+      status: "draft",
+    });
+    if (saved.id) {
+      savedIdRef.current = saved.id;
+      if (!existingId && typeof window !== "undefined") {
+        window.history.replaceState(null, "", `/contribute/submissions/?id=${encodeURIComponent(saved.id)}`);
+      }
+      setSubmission((previous) => previous || saved);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isNew, submission, submissionId]);
+  const {
+    state: autosaveState,
+    savedAt,
+    flush: flushAutosave,
+    markSaved: markAutosaved,
+  } = useAutosave({
+    values,
+    enabled: autosaveEnabled,
+    submissionId: currentId,
+    onSave: autosave,
+  });
+  const autosaveLabel = React.useMemo(() => {
+    if (autosaveState === "saving") return "Saving...";
+    if (autosaveState === "error") return "Could not save automatically";
+    if (autosaveState === "saved" && savedAt) return `Saved at ${savedAt.toLocaleTimeString()}`;
+    return "";
+  }, [autosaveState, savedAt]);
 
   const save = React.useCallback(
     async (nextStatus: "draft" | "submitted") => {
@@ -267,10 +302,16 @@ function SubmissionDetail({
       setIsSaving(true);
       try {
         const resolvedId = savedIdRef.current || (isNew ? undefined : submission?.id || submissionId);
-        const saved = await saveContributorSubmission(values, session, {
+        const submitValues = values.preferredCitation.trim()
+          ? values
+          : { ...values, preferredCitation: buildDraftCitation(values) };
+        const saved = await saveContributorSubmission(submitValues, sessionRef.current, {
           submissionId: resolvedId,
           status: nextStatus,
         });
+        if (submitValues !== values) {
+          setValues(submitValues);
+        }
         setSubmission(saved);
         if (saved.id) {
           savedIdRef.current = saved.id;
@@ -278,18 +319,73 @@ function SubmissionDetail({
             window.history.replaceState(null, "", `/contribute/submissions/?id=${encodeURIComponent(saved.id)}`);
           }
         }
+        markAutosaved(values);
         setMessage(nextStatus === "draft" ? "Draft saved." : "Submission sent for review.");
+        setDialog({
+          open: true,
+          title: nextStatus === "draft" ? "Draft Saved" : "Submitted for Review",
+          status: "success",
+          message:
+            nextStatus === "draft"
+              ? "Your draft is saved. You can keep editing or come back to it later."
+              : "Your submission was sent for review. You will be emailed when a reviewer responds.",
+        });
       } catch (error) {
-        setMessage(error instanceof Error ? error.message : "Submission could not be saved.");
+        const failure = error instanceof Error ? error.message : "Submission could not be saved.";
+        setMessage(failure);
+        setDialog({
+          open: true,
+          title: nextStatus === "draft" ? "Draft Not Saved" : "Submission Failed",
+          status: "error",
+          message: failure,
+        });
       } finally {
         setIsSaving(false);
       }
     },
-    [isNew, isSaving, session, submission, submissionId, values],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [isNew, isSaving, submission, submissionId, values],
   );
 
+  const ensureSubmissionId = React.useCallback(async () => {
+    const existing = savedIdRef.current || submission?.id || (!isNew ? submissionId : "");
+    if (existing) {
+      return existing;
+    }
+    const saved = await saveContributorSubmission(values, sessionRef.current, { status: "draft" });
+    if (!saved.id) {
+      throw new Error("A draft could not be saved before generating. Please try again.");
+    }
+    setSubmission(saved);
+    savedIdRef.current = saved.id;
+    markAutosaved(values);
+    if (typeof window !== "undefined") {
+      window.history.replaceState(null, "", `/contribute/submissions/?id=${encodeURIComponent(saved.id)}`);
+    }
+    setMessage("Draft saved so the uploaded file stays linked to this submission.");
+    return saved.id;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isNew, submission, submissionId, values]);
+
+  const applyGenerated = React.useCallback((generated: SpatialGeneratedValues) => {
+    setValues((previous) => {
+      const next = { ...previous, ...generated };
+      const id = savedIdRef.current;
+      if (id) {
+        void saveContributorSubmission(next, sessionRef.current, {
+          submissionId: id,
+          status: "draft",
+        })
+          .then(() => markAutosaved(next))
+          .catch(() => undefined);
+      }
+      return next;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const currentSubmissionId = savedIdRef.current || submission?.id || (!isNew ? submissionId : undefined);
-  const editable = isNew || canEditSubmission(submission?.status);
+  const editable = submission ? canEditSubmission(submission.status) : isNew;
   const removable = Boolean(currentSubmissionId && canRemoveSubmission(submission?.status));
 
   const remove = React.useCallback(async () => {
@@ -348,10 +444,11 @@ function SubmissionDetail({
             Back to my submissions
           </button>
           <h1 className="mb-3 text-4xl font-bold text-almostblack">
-            {isNew ? "New Data Contribution" : values.title || "Edit Submission"}
+            {submission || !isNew ? values.title || "Edit Submission" : "New Data Contribution"}
           </h1>
-          <SubmissionStatusBadge status={isNew ? undefined : submission?.status} />
+          <SubmissionStatusBadge status={submission?.status} />
         </div>
+        <HelpLink className="shrink-0" />
       </div>
 
       {(submission?.status === "needs_changes" || submission?.status === "rejected") && submission.review_notes && (
@@ -379,7 +476,7 @@ function SubmissionDetail({
           <p className="m-0">
             To make a new version, start a new contribution from your submissions list.
           </p>
-          <SubmissionForm
+          <SubmissionWizard
             values={values}
             isSaving={isSaving}
             isRemoving={isRemoving}
@@ -392,16 +489,47 @@ function SubmissionDetail({
         </div>
       ) : (
         <>
-          <SubmissionForm
+          <SubmissionWizard
             values={values}
             isSaving={isSaving}
             isRemoving={isRemoving}
+            initialStep={initialStep}
             submitLabel={submission?.status === "needs_changes" || submission?.status === "rejected" ? "Resubmit for Review" : "Submit for Review"}
+            autosaveLabel={autosaveLabel}
             onChange={setValues}
+            onFieldBlur={() => void flushAutosave()}
+            onStepChange={rememberStep}
             onRemove={removable ? () => void remove() : undefined}
             onSaveDraft={() => void save("draft")}
             onSubmit={() => void save("submitted")}
             onClear={isNew ? () => setValues(initialSubmissionValues) : undefined}
+            uploadSlot={
+              <GenerateSpatialMetadata
+                session={session}
+                disabled={isSaving || isRemoving}
+                onEnsureSubmissionId={ensureSubmissionId}
+                onGenerated={applyGenerated}
+                onProgress={(seconds) =>
+                  setDialog((previous) =>
+                    previous.open && previous.status === "running"
+                      ? {
+                          ...previous,
+                          message: `Working on your file. This can take several minutes (${seconds}s elapsed).`,
+                        }
+                      : previous,
+                  )
+                }
+                onFinished={(outcome) =>
+                  setDialog({
+                    open: true,
+                    title: outcome.ok ? "Geospatial Metadata Ready" : "Generation Failed",
+                    status: outcome.ok ? "success" : "error",
+                    message: outcome.message,
+                    details: outcome.details,
+                  })
+                }
+              />
+            }
           />
         </>
       )}
@@ -413,17 +541,21 @@ function SubmissionDetail({
           {message}
         </MessageBox>
       )}
+      <ActionDialog state={dialog} onClose={() => setDialog(closedActionDialog)} />
     </ContentCard>
   );
 }
 
 const ContributorSubmissionsPage: NextPage = () => {
   const auth = useAuth();
-  const { hasRole, isAuthenticated, isConfigured, isReady, login, requiredRole, session } = auth;
+  const { hasRole, isAuthenticated, isConfigured, isExpired, isReady, login, requiredRole, session } = auth;
   const [submissionId, setSubmissionId] = React.useState<string | null>(null);
   const [submissions, setSubmissions] = React.useState<ContributorSubmission[]>([]);
   const [isLoadingList, setIsLoadingList] = React.useState(false);
   const [listError, setListError] = React.useState("");
+  const sessionRef = React.useRef(session);
+  
+  sessionRef.current = session;
 
   React.useEffect(() => {
     setSubmissionId(pathSubmissionId());
@@ -432,30 +564,33 @@ const ContributorSubmissionsPage: NextPage = () => {
     return () => window.removeEventListener("popstate", handleNavigation);
   }, []);
 
-  React.useEffect(() => {
-    if (!isReady || !isConfigured || isAuthenticated) {
-      return;
-    }
-    const returnTo = typeof window === "undefined"
+  const returnToCurrent = React.useCallback(() => {
+    return typeof window === "undefined"
       ? "/contribute/submissions/"
       : `${window.location.pathname}${window.location.search}${window.location.hash}`;
-    void login(returnTo);
-  }, [isAuthenticated, isConfigured, isReady, login]);
+  }, []);
+
+  React.useEffect(() => {
+    if (!isReady || !isConfigured || isAuthenticated || isExpired) {
+      return;
+    }
+    void login(returnToCurrent());
+  }, [isAuthenticated, isConfigured, isExpired, isReady, login, returnToCurrent]);
 
   const loadList = React.useCallback(async () => {
-    if (!session) {
+    if (!sessionRef.current) {
       return;
     }
     setIsLoadingList(true);
     setListError("");
     try {
-      setSubmissions(await listContributorSubmissions(session));
+      setSubmissions(await listContributorSubmissions(sessionRef.current));
     } catch (error) {
       setListError(error instanceof Error ? error.message : "Submissions could not be loaded.");
     } finally {
       setIsLoadingList(false);
     }
-  }, [session]);
+  }, []);
 
   React.useEffect(() => {
     if (!isReady || !isAuthenticated || !hasRole(requiredRole) || submissionId) {
@@ -491,8 +626,9 @@ const ContributorSubmissionsPage: NextPage = () => {
         description="Contributor submissions for SDOH & Place data discovery."
       />
       <NavBar />
+      <SessionExpiredDialog open={isExpired} onSignIn={() => void login(returnToCurrent())} />
       <main className="min-h-screen bg-[#f7f4fb] px-6 pb-24 pt-36">
-        <div className="mx-auto max-w-6xl">{content}</div>
+        <div className="mx-auto max-w-7xl">{content}</div>
       </main>
       <Footer />
     </>

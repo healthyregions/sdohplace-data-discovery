@@ -129,7 +129,7 @@ involved and none of them talk to the browser directly except this one.
 flowchart TB
     U["Contributor browser<br/>search.sdohplace.org"]
     K["Keycloak<br/>NCSA-hosted"]
-    E["Edge function<br/>/api/contributor-submissions"]
+    E["Edge functions<br/>/api/contributor-submissions<br/>/api/contributor-spatial"]
     I["Intake API<br/>Netlify"]
     B[("Netlify Blobs<br/>submissions")]
     M["Metadata Manager<br/>Flask on EC2"]
@@ -151,6 +151,16 @@ flowchart TB
 The browser never holds the intake API token. It sends a Keycloak JWT to the
 edge function, which verifies the signature, checks the `contributor` role, and
 only then calls the intake API with the shared bearer token.
+
+### Generating geospatial metadata
+
+The submission form opens with a **Generate Geospatial Metadata** section. A contributor uploads the dataset CSV, picks a boundary year and spatial level, and the pipeline derives the geometry, bounding box, centroid, spatial coverage, and geographic IDs, then fills them into the form below.
+
+Those derived fields are shown but not editable, each with a tooltip explaining that the value is calculated from the upload. Everything else on the form stays hand-entered as before.
+
+The S3 upload and Lambda invocation live in the intake API, not here, so the AWS credentials stay in one service and both this app and the Metadata Manager use the same pipeline. The browser uploads its CSV straight to S3 with a presigned URL from the intake API, then polls for the result.
+
+Generating requires a submission id, so a new contribution is saved as a draft first and the page switches to that draft's URL. CSV is the only supported upload for now.
 
 ### Submission lifecycle
 
@@ -175,11 +185,17 @@ indexes to Solr.
 | Sign In / Sign Out buttons, `NEXT_PUBLIC_SHOW_SIGN_IN` | `src/components/NavBar.tsx` |
 | OIDC callback page | `src/pages/sign-in.tsx` |
 | Submission form fields and read-only mode | `src/components/contribute/SubmissionForm.tsx` |
+| Shared form inputs, tooltips, generated fields | `src/components/contribute/fields/` |
 | Submission list, detail, locked view | `src/components/contribute/ContributorSubmissionsPage.tsx` |
 | Status rules and locked wording | `src/components/contribute/submissionDisplay.ts` |
 | API calls and user-facing error text | `src/services/SubmissionService.ts` |
+| Shared request and error wording for both services | `src/services/contributorRequest.ts` |
+| Generate geospatial metadata section | `src/components/contribute/GenerateSpatialMetadata.tsx` |
+| Upload, pipeline start, polling | `src/services/SpatialMetadataService.ts` |
 | Token verification, ownership checks (production) | `netlify/edge-functions/contributor-submissions.js` |
 | Same proxy for `npm run dev` only | `src/pages/api/contributor-submissions/[[...path]].ts` |
+| Spatial token verification, ownership (production) | `netlify/edge-functions/contributor-spatial.js` |
+| Same spatial proxy for `npm run dev` only | `src/pages/api/contributor-spatial/[[...path]].ts` |
 | Storage, status transitions, all email | `sdohplace-intake-api` |
 | Review UI, record creation, Solr indexing | `SDOHPlace-MetadataManager` |
 

@@ -1,4 +1,10 @@
 import { AuthSession } from "@/lib/auth";
+import {
+  SUPPORT_EMAIL,
+  contributorRequest as sharedContributorRequest,
+  explainRequestError,
+} from "@/services/contributorRequest";
+import { allRequiredErrors } from "@/components/contribute/submissionSteps";
 
 export type DatasetSubmissionValues = {
   title: string;
@@ -17,6 +23,10 @@ export type DatasetSubmissionValues = {
   dataVariables: string;
   methodsVariables: string;
   dataUsageNotes: string;
+  geometry: string;
+  boundingBox: string;
+  centroid: string;
+  highlightIds: string;
 };
 
 export type SubmissionResponse = {
@@ -122,6 +132,10 @@ export function buildSubmissionPayload(values: DatasetSubmissionValues): Record<
     data_variables: listFromText(values.dataVariables),
     methods_variables: listFromText(values.methodsVariables),
     data_usage_notes: values.dataUsageNotes.trim(),
+    geometry: values.geometry.trim(),
+    bounding_box: values.boundingBox.trim(),
+    centroid: values.centroid.trim(),
+    highlight_ids: listFromText(values.highlightIds),
   };
 }
 
@@ -144,39 +158,15 @@ export function payloadToSubmissionValues(payload: Record<string, unknown> | und
     dataVariables: textFromList(payload?.data_variables),
     methodsVariables: textFromList(payload?.methods_variables),
     dataUsageNotes: typeof payload?.data_usage_notes === "string" ? payload.data_usage_notes : "",
+    geometry: typeof payload?.geometry === "string" ? payload.geometry : "",
+    boundingBox: typeof payload?.bounding_box === "string" ? payload.bounding_box : "",
+    centroid: typeof payload?.centroid === "string" ? payload.centroid : "",
+    highlightIds: textFromList(payload?.highlight_ids),
   };
 }
 
 export function validateSubmissionValues(values: DatasetSubmissionValues): string[] {
-  const errors: string[] = [];
-  if (!values.title.trim()) {
-    errors.push("Dataset title is required.");
-  }
-  if (!values.description.trim()) {
-    errors.push("Description is required.");
-  }
-  if (!values.creator.trim()) {
-    errors.push("Creator is required.");
-  }
-  if (!values.publisher.trim()) {
-    errors.push("Publisher is required.");
-  }
-  if (!values.subject) {
-    errors.push("Subject is required.");
-  }
-  if (!values.keywords.trim()) {
-    errors.push("At least one keyword is required.");
-  }
-  if (!values.spatialResolution) {
-    errors.push("Spatial resolution is required.");
-  }
-  if (!values.accessRights) {
-    errors.push("Access rights is required.");
-  }
-  if (!values.preferredCitation.trim()) {
-    errors.push("Preferred citation is required.");
-  }
-  return errors;
+  return Object.values(allRequiredErrors(values));
 }
 
 function submitterFromSession(session: AuthSession | null): Record<string, string> {
@@ -197,79 +187,21 @@ function payloadFromSubmission(submission: SubmissionResponse): Record<string, u
   return submission.payload_json || submission.payload || submission.record || submission.data || {};
 }
 
-export const SUPPORT_EMAIL = "heroplab23@gmail.com";
+export { SUPPORT_EMAIL, explainRequestError };
 
-const SUPPORT_HINT =
-  `If this keeps happening, please email ${SUPPORT_EMAIL} with a screenshot of this message.`;
-
-function explainRequestError(status: number, code: string): string {
-  const known: Record<string, string> = {
-    not_found:
-      "We could not find this submission. It may have been removed.",
-    not_owned:
-      "This submission is not available under your account. If you submitted it with a different sign-in, please sign out and try again.",
-    unauthorized:
-      "Your session is not valid for this action. Please sign out and sign back in.",
-    "Bearer token expired":
-      "Your session has expired. Please sign out and sign back in.",
-    "Contributor role required":
-      "Your account does not yet have contributor access.",
-  };
-
-  if (known[code]) {
-    return `${known[code]} ${SUPPORT_HINT}`;
-  }
-
-  if (status === 401 || status === 403) {
-    return `Your session is not valid for this action. Please sign out and sign back in. ${SUPPORT_HINT}`;
-  }
-  if (status === 404) {
-    return `We could not find this submission. It may have been removed. ${SUPPORT_HINT}`;
-  }
-  if (status === 409) {
-    return `${code || "This submission can no longer be changed."} ${SUPPORT_HINT}`;
-  }
-  if (status >= 500) {
-    return `The submission service is temporarily unavailable. Please try again in a few minutes. ${SUPPORT_HINT}`;
-  }
-  return `${code || `Something went wrong (error ${status}).`} ${SUPPORT_HINT}`;
-}
-
-async function contributorRequest<T>(
+function contributorRequest<T>(
   path: string,
   session: AuthSession | null,
   init: RequestInit = {},
 ): Promise<T> {
-  if (!session?.accessToken) {
-    throw new Error("You need to sign in before using contributor submissions.");
-  }
-
-  const response = await fetch(`/api/contributor-submissions${path}`, {
-    ...init,
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${session.accessToken}`,
-      ...(init.headers || {}),
-    },
-  });
-
-  if (!response.ok) {
-    const details = await response.text();
-    let code = "";
-    try {
-      const parsed = JSON.parse(details);
-      code = parsed.error || parsed.message || "";
-    } catch (e) {
-      if (e instanceof SyntaxError === false) throw e;
-    }
-    throw new Error(explainRequestError(response.status, code));
-  }
-
-  const text = await response.text();
-  return text ? JSON.parse(text) : ({} as T);
+  return sharedContributorRequest<T>("/api/contributor-submissions", path, session, init);
 }
 
-function submissionBody(values: DatasetSubmissionValues, status: "draft" | "submitted", session: AuthSession | null) {
+function submissionBody(
+  values: DatasetSubmissionValues,
+  status: "draft" | "submitted",
+  session: AuthSession | null,
+) {
   return JSON.stringify({
     status,
     ...submitterFromSession(session),

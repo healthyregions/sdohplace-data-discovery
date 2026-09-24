@@ -11,6 +11,12 @@ export function statusClass(status?: string): string {
   if (status === "needs_changes") {
     return "border-[#e5b849] bg-[#fff8df] text-[#5e4700]";
   }
+  if (status === "published") {
+    return "border-[#8fd0a8] bg-[#e9fbef] text-[#1b5130]";
+  }
+  if (status === "unpublished") {
+    return "border-lightgray bg-[#f2f2f5] text-[#55555f]";
+  }
   if (status === "approved") {
     return "border-[#bfe3cd] bg-[#f2fff6] text-[#23623a]";
   }
@@ -59,7 +65,13 @@ export function lockedSubmissionMessage(status?: string): string {
     return "This submission is under review and can no longer be edited unless it is returned for changes.";
   }
   if (status === "approved") {
-    return "This submission has been approved and can no longer be edited.";
+    return "This submission has been approved and is waiting to be published to the search platform.";
+  }
+  if (status === "published") {
+    return "This submission is published and searchable on the discovery platform.";
+  }
+  if (status === "unpublished") {
+    return "This record was published and has since been removed from the search platform. Contact us if you would like it restored or want to submit it again.";
   }
   return "This submission can no longer be edited.";
 }

@@ -19,6 +19,7 @@ type AuthContextValue = {
   isReady: boolean;
   isAuthenticated: boolean;
   isConfigured: boolean;
+  isExpired: boolean;
   session: AuthSession | null;
   displayName: string;
   login: (returnTo?: string) => Promise<void>;
@@ -34,6 +35,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }): JSX.E
   const config = getAuthConfig();
   const [session, setSession] = React.useState<AuthSession | null>(null);
   const [isReady, setIsReady] = React.useState(false);
+  const [isExpired, setIsExpired] = React.useState(false);
 
   React.useEffect(() => {
     let cancelled = false;
@@ -90,9 +92,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }): JSX.E
       try {
         const nextSession = await refreshSession(session);
         setSession(nextSession);
+        setIsExpired(false);
       } catch {
         clearStoredSession();
-        setSession(null);
+        setIsExpired(true);
       }
     }, refreshAt);
 
@@ -101,11 +104,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }): JSX.E
     };
   }, [session]);
 
+  const hasSessionRole = React.useCallback(
+    (role?: string) => hasRole(session, role),
+    [session],
+  );
+
   const value = React.useMemo<AuthContextValue>(
     () => ({
       isReady,
       isAuthenticated: Boolean(session),
       isConfigured: config.isConfigured,
+      isExpired,
       session,
       displayName: getDisplayName(session),
       login: async (returnTo?: string) => {
@@ -114,15 +123,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }): JSX.E
       finishLogin: async (code: string, state: string) => {
         const result = await completeLogin(code, state);
         setSession(result.session);
+        setIsExpired(false);
         return result;
       },
       signOut: (returnTo?: string) => {
         logout(session, returnTo);
       },
-      hasRole: (role?: string) => hasRole(session, role),
+      hasRole: hasSessionRole,
       requiredRole: config.requiredRole,
     }),
-    [config.isConfigured, config.requiredRole, isReady, session],
+    [config.isConfigured, config.requiredRole, hasSessionRole, isExpired, isReady, session],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
