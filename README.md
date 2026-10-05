@@ -26,7 +26,18 @@ We use the latest [Netlify Edge feature](https://www.netlify.com/platform/core/e
     cp .env.local.example .env
     ```
 
-    Update environment variables as needed. See the explanation in `.env.local.example` for what variables need to be setup.
+    `.env` is git-ignored; never commit real keys. `.env.local.example` documents every variable, grouped by feature:
+
+    | Group | Variables | Required? |
+    |---|---|---|
+    | Solr and map | `NEXT_PUBLIC_SOLR_URL`, `NEXT_PUBLIC_MAPTILER_API_KEY` | Yes, for search and the map |
+    | AI search (server-side) | `LLM_ENDPOINT`, `MODEL_NAME`, `OPENAI_API_KEY`, `UIUC_CHAT_API_KEY`, `COURSE_NAME` | Yes to start the edge function; use `XXX` for unused keys |
+    | AI search mode | `NEXT_PUBLIC_ONTOLOGY_SEARCH_MODE` (`deterministic`, `prompt` or `off`) | No, defaults to `deterministic` |
+    | Contributor sign-in | `NEXT_PUBLIC_SHOW_SIGN_IN`, `NEXT_PUBLIC_KEYCLOAK_*` | Only for the contribution feature |
+    | Contributor submissions (server-side) | `INTAKE_API_BASE_URL`, `INTAKE_API_TOKEN` | Only for the contribution feature |
+
+    `NEXT_PUBLIC_*` values are inlined at build time, so restart the dev server (or rebuild on Netlify) after changing them.
+    Everything without that prefix is only visible to the edge functions.
 
 ### Keycloak frontend setup
 
