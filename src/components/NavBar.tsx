@@ -130,7 +130,7 @@ const NavBar = (): JSX.Element => {
   ];
 
   const resourcesItems = [
-    { title: "Data Discovery", url: "https://sdohplace.org/search" },
+    { title: "Data Discovery", url: "https://search.sdohplace.org" },
     { title: "Data Refuge", url: "https://sdohplace.org/data-refuge" },
     { title: "Community Toolkit", url: "https://toolkit.sdohplace.org" },
     { title: "SDOH Guides", url: "https://sdohplace.org/guides" },
@@ -140,7 +140,7 @@ const NavBar = (): JSX.Element => {
 
   const communityItems = [
     { title: "Fellows", url: "https://sdohplace.org/fellows" },
-    { title: "Showcase", url: "https://sdohplace.org/showcase" },
+    { title: "Showcase", url: "https://sdohplace.org/showcase", subitem: true },
     { title: "Partner Projects", url: "" },
     { title: "Butterflies Rising", url: "https://butterflies-rising.sdohplace.org/", subitem: true, target: "_blank" },
   ];
@@ -178,12 +178,7 @@ const NavBar = (): JSX.Element => {
 
           {/* Community Menu */}
           <li
-            className={`mt-4 ml-6 ${
-              router.pathname == "https://sdohplace.org/fellows" ||
-              router.pathname.startsWith("/showcase")
-                ? "active"
-                : ""
-            }`}
+            className={`mt-4 ml-6`}
           >
             <NavDropdownButton
               title="Community"
@@ -194,26 +189,21 @@ const NavBar = (): JSX.Element => {
 
           {/* Symposium Link */}
           <li
-            className={`mt-4 ml-6`}
+            className={`mt-4 ml-6 active`}
           >
-            <Link href="https://symposium2025.sdohplace.org" target="_blank">Symposium</Link>
+            <Link href="https://symposium.sdohplace.org/" target="_blank">Symposium</Link>
           </li>
 
           {/* News Link */}
           <li
-            className={`mt-4 ml-6 ${router.pathname.startsWith("/news") ? "active" : ""}`}
+            className={`mt-4 ml-6`}
           >
             <Link href="https://sdohplace.org/news">News</Link>
           </li>
 
           {/* About Menu */}
           <li
-            className={`mt-4 ml-4 ${
-              router.pathname.startsWith("https://sdohplace.org/about") ||
-              router.pathname.startsWith("https://sdohplace.org/advisory")
-                ? "active"
-                : ""
-            }`}
+            className={`mt-4 ml-4`}
           >
             <NavDropdownButton
               title="About"
@@ -224,9 +214,7 @@ const NavBar = (): JSX.Element => {
 
           {/* Contact Us Link */}
           <li
-            className={`mt-4 ml-4 ${
-              router.pathname.startsWith("https://sdohplace.org/contact") ? "active" : ""
-            }`}
+            className={`mt-4 ml-4`}
           >
             <Link href="https://sdohplace.org/contact">Contact Us</Link>
           </li>
@@ -325,7 +313,7 @@ const NavBar = (): JSX.Element => {
 
             {/* Symposium Link */}
             <li className={'text-uppercase'}>
-              <Link href="https://symposium2025.sdohplace.org" target="_blank">Symposium</Link>
+              <Link href="https://symposium.sdohplace.org/" target="_blank">Symposium</Link>
             </li>
 
             {/* News Link */}
