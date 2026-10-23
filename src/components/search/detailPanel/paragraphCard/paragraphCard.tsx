@@ -114,7 +114,7 @@ const ParagraphCard = (props: Props): JSX.Element => {
         <div className={`container`}>
           {props.collapsible ? (
             <details>
-              <summary className="text-s">
+              <summary className="text-s cursor-pointer marker:text-frenchviolet">
                 <b>{props.title}</b>
               </summary>
               <span style={paragraphCardStyle}>{props.value}</span>

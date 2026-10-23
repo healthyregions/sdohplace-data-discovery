@@ -8,6 +8,8 @@ import { useSelector } from "react-redux";
 import IconMatch from "../helper/IconMatch";
 import HeaderRow from "./headerRow";
 import IconTag from "./iconTag";
+import ResearchSection from "./researchSection";
+import LaunchIcon from "@mui/icons-material/Launch";
 
 interface Props {
   resultList: any[];
@@ -40,13 +42,9 @@ const DetailPanel = (props: Props): JSX.Element => {
             onMobileBackToList={props.onMobileBackToList}
           />
         </div>
-        <div className="flex flex-col sm:flex-row mb-12" id="introCardRow">
-          <IntroCard resultItem={resultItem} />
-        </div>
-
         {resultItem.meta.subject && (
           <div
-            className="flex flex-col flex-wrap sm:flex-row gap-4 mb-12 sm:gap-8"
+            className="flex flex-row flex-wrap gap-3 mb-8"
             id="iconTagRow"
           >
             {resultItem.meta.subject.map((s, index) => (
@@ -62,10 +60,16 @@ const DetailPanel = (props: Props): JSX.Element => {
           </div>
         )}
 
-        <div
-          className="container pb-2 gap-4 sm:gap-8 border-b border-b-1 border-strongorange rounded"
-          id="notesRow"
-        >
+        <div className="flex flex-col sm:flex-row mb-4" id="metadataRow">
+          <IntroCard resultItem={resultItem} />
+        </div>
+
+        <div className="container border-0 border-t border-solid border-strongorange pt-6">
+          <h2 className="m-0 mb-6 font-fredoka font-normal text-2xl">
+            Technical Details
+          </h2>
+        </div>
+        <div className="container gap-4 sm:gap-8" id="notesRow">
           {resultItem.meta.display_note &&
             resultItem.meta.display_note.map((s, index) => {
               const [before, after] = (
@@ -88,7 +92,7 @@ const DetailPanel = (props: Props): JSX.Element => {
             />
           )}
         </div>
-        <div className="container mt-7 gap-4 sm:gap-8" id="restRow">
+        <div className="container gap-4 sm:gap-8" id="restRow">
           {resultItem.meta.featured_variable && (
             <ParagraphCard
               type="rest"
@@ -96,14 +100,14 @@ const DetailPanel = (props: Props): JSX.Element => {
               value={resultItem.meta.featured_variable}
             />
           )}
-            {resultItem.meta.data_variables && (
-              <ParagraphCard
-                type="rest"
-                title="What's in this dataset?"
-                value={resultItem.meta.data_variables.join(", ")}
-                collapsible={true}
-              />
-            )}
+          {resultItem.meta.data_variables && (
+            <ParagraphCard
+              type="rest"
+              title="What's in this dataset?"
+              value={resultItem.meta.data_variables.join(", ")}
+              collapsible={true}
+            />
+          )}
           {resultItem.meta.methods_variables && (
             <ParagraphCard
               type="rest"
@@ -120,6 +124,19 @@ const DetailPanel = (props: Props): JSX.Element => {
             />
           )}
         </div>
+        <div className="text-s text-darkgray mt-2" id="feedbackRow">
+          See anything wrong or missing?{" "}
+          <a
+            href="https://sdohplace.org/contact"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 text-frenchviolet no-underline"
+          >
+            Share feedback
+            <LaunchIcon sx={{ fontSize: "0.875rem" }} />
+          </a>
+        </div>
+        <ResearchSection resultItem={resultItem} />
       </div>
     )
   );
