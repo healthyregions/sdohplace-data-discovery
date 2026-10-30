@@ -4,12 +4,14 @@ import tailwindConfig from "../../../../../tailwind.config";
 import resolveConfig from "tailwindcss/resolveConfig";
 import { displayNotesIcons } from "./displayNotesIcons";
 import { ParseReferenceLink } from "../../helper/ParsingMethods";
+import ArrowRightIcon from "@mui/icons-material/ArrowRight";
 
 interface Props {
   type: string;
   title: string;
   value: string;
   collapsible?: boolean;
+  subtitle?: string;
 }
 
 const fullConfig = resolveConfig(tailwindConfig);
@@ -113,11 +115,24 @@ const ParagraphCard = (props: Props): JSX.Element => {
       {props.type === "rest" && (
         <div className={`container`}>
           {props.collapsible ? (
-            <details>
-              <summary className="text-s cursor-pointer marker:text-frenchviolet">
-                <b>{props.title}</b>
+            <details className="group">
+              <summary className="flex items-start gap-1 cursor-pointer list-none [&::-webkit-details-marker]:hidden">
+                <ArrowRightIcon
+                  className="flex-none transition-transform group-open:rotate-90"
+                  style={linkStyle}
+                />
+                <span>
+                  <b className="text-base">{props.title}</b>
+                  {props.subtitle && (
+                    <span className="block text-s font-semibold mt-1">
+                      {props.subtitle}
+                    </span>
+                  )}
+                </span>
               </summary>
-              <span style={paragraphCardStyle}>{props.value}</span>
+              <div className="pl-7 mt-2" style={paragraphCardStyle}>
+                {props.value}
+              </div>
             </details>
           ) : (
             <>

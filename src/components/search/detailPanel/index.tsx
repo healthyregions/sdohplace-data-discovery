@@ -28,7 +28,7 @@ const DetailPanel = (props: Props): JSX.Element => {
   return (
     resultItem && (
       <div
-        className={`container sm:px-11 sm:mb-60 mx-auto bg-white shadow-none aspect-ratio`}
+        className={`container sm:px-11 mb-16 sm:mb-60 mx-auto bg-white shadow-none aspect-ratio`}
       >
         <div className="flex flex-col sm:flex-row mb-4" id="introCardRow">
           <HeaderRow
@@ -104,6 +104,7 @@ const DetailPanel = (props: Props): JSX.Element => {
             <ParagraphCard
               type="rest"
               title="What's in this dataset?"
+              subtitle="See how closely this resource fits your needs"
               value={resultItem.meta.data_variables.join(", ")}
               collapsible={true}
             />
@@ -112,6 +113,7 @@ const DetailPanel = (props: Props): JSX.Element => {
             <ParagraphCard
               type="rest"
               title="Measures and data input:"
+              subtitle="Calculated indicators & variables"
               value={resultItem.meta.methods_variables.join(", ")}
               collapsible={true}
             />
