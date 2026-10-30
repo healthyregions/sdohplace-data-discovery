@@ -28,7 +28,7 @@ const DetailPanel = (props: Props): JSX.Element => {
   return (
     resultItem && (
       <div
-        className={`container sm:px-11 mb-16 sm:mb-60 mx-auto bg-white shadow-none aspect-ratio`}
+        className={`container sm:px-11 mb-16 sm:mb-60 mx-auto bg-white shadow-none aspect-ratio [&_a]:no-underline`}
       >
         <div className="flex flex-col sm:flex-row mb-4" id="introCardRow">
           <HeaderRow
