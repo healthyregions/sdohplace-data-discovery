@@ -16,23 +16,6 @@ const levels = [
   { label: "Tract", matches: ["census tract", "tract"], r: 28, labelY: 114 },
   { label: "Block group", matches: ["census block group", "block group", "bg"], r: 14, labelY: 142 },
 ];
-// active circles get lighter toward the inside, so nested active levels stay distinguishable
-const activeOuter = colors["strongorange"];
-const activeInner = "#FFE0D2";
-const activeStroke = "#F27D52";
-const mixHex = (from: string, to: string, t: number): string => {
-  const channel = (hex: string, i: number) => parseInt(hex.slice(1 + i * 2, 3 + i * 2), 16);
-  return (
-    "#" +
-    [0, 1, 2]
-      .map((i) => Math.round(channel(from, i) + (channel(to, i) - channel(from, i)) * t))
-      .map((v) => v.toString(16).padStart(2, "0"))
-      .join("")
-  );
-};
-const activeShade = (index: number, count: number): string =>
-  count <= 1 ? activeOuter : mixHex(activeOuter, activeInner, index / (count - 1));
-
 const cx = 80;
 const bottom = 160;
 const lineEnd = 186;
@@ -55,18 +38,19 @@ const GeographicLevel = (props: Props): JSX.Element => {
       aria-label={`Geographic levels: ${props.spatialResolution.join(", ")}`}
     >
       {levels.map((l) => {
-        const activeIndex = activeLevels.indexOf(l);
-        const active = activeIndex !== -1;
+        const active = activeLevels.includes(l);
+        // with several active levels, a light dashed outline keeps each nested orange circle visible
+        const separated = active && activeLevels.length > 1;
         return (
           <circle
             key={l.label}
             cx={cx}
             cy={bottom - l.r}
             r={l.r}
-            fill={active ? activeShade(activeIndex, activeLevels.length) : colors["lightbisque"]}
-            stroke={active ? activeStroke : colors["strongorange"]}
-            strokeWidth={active ? 1.5 : 1}
-            strokeDasharray={active ? undefined : "4 3"}
+            fill={active ? colors["strongorange"] : colors["lightbisque"]}
+            stroke={separated ? colors["lightbisque"] : colors["strongorange"]}
+            strokeWidth={separated ? 1.5 : 1}
+            strokeDasharray={active && !separated ? undefined : "4 3"}
           />
         );
       })}
