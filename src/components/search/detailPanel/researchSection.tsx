@@ -29,7 +29,6 @@ const researchGuides: Record<string, string> = {
   "Economic Stability": "https://sdohplace.org/guides/area-deprivation-indexes",
   "Transportation and Infrastructure": "https://sdohplace.org/guides/public-transit-equity",
 };
-const researchRabbitUrl = "https://app.researchrabbit.ai/";
 
 const ExternalLink = ({ href, children }: { href: string; children: React.ReactNode }) => (
   <a href={href} target="_blank" rel="noopener noreferrer" className={linkClass}>
@@ -100,30 +99,16 @@ const ResearchSection = (props: Props): JSX.Element => {
           </IconButton>
         </div>
       )}
-      <div className="flex flex-col sm:flex-row gap-6 sm:px-6">
-        <div className="flex-1">
-          <p className="m-0 mb-2 text-s">Visualize connected Research Papers:</p>
-          <Image
-            src="/logos/research/researchrabbit.png"
-            alt="ResearchRabbit"
-            width={150}
-            height={30}
-          />
-          <div className="ml-10 mt-1 text-s">
-            <ExternalLink href={researchRabbitUrl}>Access</ExternalLink>
-          </div>
-        </div>
-        <div className="flex-1">
-          <p className="m-0 mb-2 text-s">Search related Research Papers:</p>
-          <Image
-            src="/logos/research/google-scholar.png"
-            alt="Google Scholar"
-            width={143}
-            height={24}
-          />
-          <div className="ml-10 mt-1 text-s">
-            <ExternalLink href={scholarUrl}>Access</ExternalLink>
-          </div>
+      <div className="sm:px-6">
+        <p className="m-0 mb-2 text-s">Search related Research Papers:</p>
+        <Image
+          src="/logos/research/google-scholar.png"
+          alt="Google Scholar"
+          width={161}
+          height={28}
+        />
+        <div className="ml-10 mt-1 text-s">
+          <ExternalLink href={scholarUrl}>Access</ExternalLink>
         </div>
       </div>
     </div>
