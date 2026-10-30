@@ -2,18 +2,21 @@ import * as React from "react";
 import tailwindConfig from "../../../../tailwind.config";
 import resolveConfig from "tailwindcss/resolveConfig";
 import { SolrObject } from "../../../../meta/interface/SolrObject";
-import DOMPurify from "dompurify";
 import CloseIcon from "@mui/icons-material/Close";
-import CopyAllIcon from "@mui/icons-material/CopyAll";
-import LaunchIcon from '@mui/icons-material/Launch';
-import { Box, Container, IconButton, Collapse } from "@mui/material";
-import ButtonWithIcon from "@/components/homepage/buttonwithicon";
+import CheckIcon from "@mui/icons-material/Check";
+import ContentCopyIcon from "@mui/icons-material/ContentCopy";
+import LaunchIcon from "@mui/icons-material/Launch";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import ShareOutlinedIcon from "@mui/icons-material/ShareOutlined";
+import ArchiveOutlinedIcon from "@mui/icons-material/ArchiveOutlined";
+import { Button, IconButton, Collapse } from "@mui/material";
 import { ParseReferenceLink } from "../helper/ParsingMethods";
 import { AppDispatch, RootState } from "@/store";
 import { useDispatch, useSelector } from "react-redux";
 import { setShowDetailPanel, setShowSharedLink } from "@/store/slices/uiSlice";
-import {EventType} from "@/lib/event";
-import {usePlausible} from "next-plausible";
+import { EventType } from "@/lib/event";
+import { usePlausible } from "next-plausible";
+import { copyShareCard } from "./shareCard";
 
 interface Props {
   resultItem: SolrObject;
@@ -26,6 +29,8 @@ const introCardStyle: React.CSSProperties = {
   color: `${fullConfig.theme.colors["almostblack"]}`,
   fontFamily: `${fullConfig.theme.fontFamily["sans"]}`,
 };
+const actionLinkClass =
+  "flex items-center gap-1 text-base text-frenchviolet cursor-pointer bg-transparent border-0 p-0 no-underline";
 
 const HeaderRow = (props: Props): JSX.Element => {
   const dispatch = useDispatch<AppDispatch>();
@@ -41,8 +46,14 @@ const HeaderRow = (props: Props): JSX.Element => {
     }
   };
 
+  const [copied, setCopied] = React.useState(false);
+  // a fresh share panel (or a different resource) starts uncopied
+  React.useEffect(() => {
+    setCopied(false);
+  }, [currentShowSharedLink, props.resultItem.id]);
+
   // not reflect shared link in url, only in redux
-  const handleShowShareLink = () => {
+  const handleShare = () => {
     dispatch(setShowSharedLink(!currentShowSharedLink));
     plausible(EventType.ClickedShareButton, {
       props: {
@@ -50,165 +61,150 @@ const HeaderRow = (props: Props): JSX.Element => {
       }
     });
   };
-  const handleCopyLink = () => {
-    navigator.clipboard.writeText(window.location.href);
-    alert("The shared link has been copied to the clipboard successfully!");
+  const handleCopyShareCard = () => {
+    copyShareCard(props.resultItem, window.location.href)
+      .then(() => setCopied(true))
+      .catch((err) => console.error("Failed to copy share card:", err));
   };
   // get the second items's value as the link to be parsed from the meta.references,
   // e.g. {"http://schema.org/url ": "https://ephtracking.cdc.gov/DataExplorer/#/", "http://lccn.loc.gov/sh85035852": "https://data.cdc.gov/Environmental-Health-Toxicology/Daily-Census-Tract-Level-PM2-5-Concentrations-2011/qjxm-7fny/data_preview"}"
-  const links = ParseReferenceLink(JSON.parse(props.resultItem.meta.references) || {}  ); 
+  const links = ParseReferenceLink(props.resultItem.meta.references);
   const resourceUrl = links.homepageUrl || links.downloadUrl || links.dataDictionaryUrl;
   return (
-    <div className={`container mx-auto shadow-none aspect-ratio`}>
-      <div className="flex flex-col sm:mb-5 sm:flex-row">
+    <div className={`container mx-auto shadow-none aspect-ratio`} style={introCardStyle}>
+      <div className="flex mb-5">
         <a
           href="#"
-          className="text-xl text-frenchviolet font-bold leading-8 sm:mb-1"
+          className="flex items-center gap-2 text-xl text-frenchviolet leading-8"
           onClick={backToMapView}
           style={{ textDecoration: "none" }}
         >
-          {props.isMobileView ? "Back to list" : "Back to map"}
+          <ArrowBackIcon fontSize="inherit" />
+          {props.isMobileView ? "Back to list" : "Back to Map search"}
         </a>
       </div>
-      <div className="flex flex-col sm:mb-7 sm:flex-row items-start">
-        <div className="flex flex-col sm:flex-row items-start flex-grow">
+      <div className="flex flex-col sm:flex-row items-start gap-4 pb-6 border-0 border-b border-solid border-lightgray">
+        <div className="flex items-start flex-grow">
           <div
-            className="flex items-center sm:text-[4em]"
+            className="flex items-center text-[2em] sm:text-[2.5em] mt-1"
             style={{ color: fullConfig.theme.colors["strongorange"] }}
           >
             {React.cloneElement(props.headerIcon, { fontSize: "inherit" })}
           </div>
-          <Box
-            sx={{ display: "inline",
-            marginTop: "0.75rem"}}
-            className="text-4xl leading-10 ml-[0.5em]"
-            style={introCardStyle}
-          >
+          <h1 className="m-0 ml-3 sm:ml-4 font-fredoka font-normal text-2xl sm:text-4xl leading-tight">
             {props.resultItem.title}
-          </Box>
+          </h1>
         </div>
-        <div className="flex items-start justify-center sm:justify-end order-1 sm:order-none flex-none">
-          <div className="mr-7">
-            <ButtonWithIcon
-              label={"Share"}
-              borderRadius={"0"}
-              noBox={true}
-              noHover={true}
-              width={"100%"}
-              justifyContent="space-between"
-              fillColor={"white"}
-              labelColor={"frenchviolet"}
-              onClick={handleShowShareLink}
-            />
-          </div>
-          <ButtonWithIcon
-            className={'max-w-min'}
-            label={"Go to Resource"}
-            borderRadius={"0.25rem"}
-            width={"100%"}
-            justifyContent="space-between"
-            fillColor={"frenchviolet"}
-            labelColor={"white"}
-            endIcon={<LaunchIcon />}
-            noBox={true}
-            noHover={true}
-            disabled={!resourceUrl}
-            onClick={() => {
-              if (!resourceUrl) return;
-              const resourceWindow = window.open(resourceUrl, "_blank", "noopener,noreferrer");
-              resourceWindow?.focus();
-              plausible(EventType.ClickedGoToResource, {
-                props: {
-                  resourceId: props.resultItem.id
-                }
-              });
-            }}
-          />
-        </div>
+        <Button
+          disableElevation
+          variant="contained"
+          endIcon={<LaunchIcon />}
+          disabled={!resourceUrl}
+          onClick={() => {
+            if (!resourceUrl) return;
+            const resourceWindow = window.open(resourceUrl, "_blank", "noopener,noreferrer");
+            resourceWindow?.focus();
+            plausible(EventType.ClickedGoToResource, {
+              props: {
+                resourceId: props.resultItem.id
+              }
+            });
+          }}
+          sx={{
+            flex: "none",
+            whiteSpace: "nowrap",
+            textTransform: "none",
+            borderRadius: "0.25rem",
+            backgroundColor: `${fullConfig.theme.colors["frenchviolet"]} !important`,
+            color: "white !important",
+            fontFamily: fullConfig.theme.fontFamily["sans"],
+            fontSize: "1rem",
+            fontWeight: 400,
+            padding: "0.5rem 1rem",
+            "&.Mui-disabled": { opacity: 0.6 },
+          }}
+        >
+          Go to Resource
+        </Button>
       </div>
       <Collapse
-          className={"relative w-full"}
-          in={currentShowSharedLink}
-          timeout={150}
-          easing={"linear"}
+        className={"relative w-full"}
+        in={currentShowSharedLink}
+        timeout={150}
+        easing={"linear"}
+      >
+        <div
+          className="flex items-center gap-4 px-4 py-4 bg-lightbisque border-0 border-t-2 border-solid border-strongorange rounded-b-lg"
         >
-        <div className="flex w-full p-0" style={introCardStyle}>
-          <div
-            className={`flex-1 sm:px-[1em] sm:py-[0.5em] sm:my-[1.5em]`}
-            style={{
-              fontFamily: `${fullConfig.theme.fontFamily["sans"]} !important`,
-              backgroundColor: fullConfig.theme.colors["lightbisque"],
-              borderRadius: "0.5em 0 0 0.5em",
+          <IconButton
+            aria-label="Close share link"
+            className="self-start"
+            sx={{
+              padding: 0,
+              color: fullConfig.theme.colors["frenchviolet"],
+              "&:hover": { backgroundColor: "transparent" },
+            }}
+            onClick={() => dispatch(setShowSharedLink(false))}
+          >
+            <CloseIcon fontSize="small" />
+          </IconButton>
+          <div className="flex-1 min-w-0">
+            <p className="m-0 mb-1 font-bold">
+              {copied ? "Copied to clipboard:" : "Share link:"}
+            </p>
+            <p className="m-0" style={{ overflowWrap: "anywhere", lineHeight: "1.4" }}>
+              {window.location.href}
+            </p>
+          </div>
+          <IconButton
+            aria-label={copied ? "Share link copied" : "Copy share link"}
+            onClick={handleCopyShareCard}
+            sx={{
+              flex: "none",
+              width: "2.5rem",
+              height: "2.5rem",
+              border: copied ? "none" : `1px solid ${fullConfig.theme.colors["frenchviolet"]}`,
+              backgroundColor: copied ? fullConfig.theme.colors["strongorange"] : "white",
+              color: copied ? "white" : fullConfig.theme.colors["frenchviolet"],
+              "&:hover": {
+                backgroundColor: copied ? fullConfig.theme.colors["strongorange"] : "white",
+              },
             }}
           >
-            <div className="flex flex-col">
-              <div className="flex sm:flex-start sm:items-center">
-                <IconButton
-                  sx={{
-                    width: "0.875em",
-                    color: fullConfig.theme.colors["frenchviolet"],
-                    "&:hover": {
-                      backgroundColor: "transparent",
-                    },
-                  }}
-                  onClick={() => dispatch(setShowSharedLink(false))}
-                >
-                  <CloseIcon />
-                </IconButton>
-                <p style={{ marginLeft: "2em" }}>Share link:</p>
-              </div>
-              <div className="font-bold sm:flex-start sm:mb-[0.5em] sm:ml-[3.4em] sm:pr-[2em]">
-                <p style={{ 
-                  wordBreak: "break-all",
-                  overflowWrap: "break-word",
-                  whiteSpace: "normal",
-                  lineHeight: "1.4"
-                }}>{window.location.href}</p>
-              </div>
-            </div>
-          </div>
-          <div
-            className="flex items-center justify-center sm:p-[1.5em] sm:my-[1.5em] flex-shrink-0"
-            style={{
-              background: fullConfig.theme.colors["strongbisque"],
-              borderRadius: "0 0.5em 0.5em 0",
-            }}
-          >
-            <IconButton
-              sx={{
-                padding: 0,
-                color: fullConfig.theme.colors["frenchviolet"],
-                "&:hover": {
-                  backgroundColor: "transparent",
-                },
-              }}
-              onClick={handleCopyLink}
-            >
-              <CopyAllIcon
-                sx={{
-                  fontSize: "2em",
-                }}
-              />
-            </IconButton>
-          </div>
+            {copied ? <CheckIcon /> : <ContentCopyIcon fontSize="small" />}
+          </IconButton>
         </div>
       </Collapse>
+      <div className="flex flex-wrap items-center gap-x-6 gap-y-2 mt-4 mb-6">
+        <button type="button" className={actionLinkClass} onClick={handleShare}>
+          <ShareOutlinedIcon fontSize="small" />
+          Share
+        </button>
+        {links.archiveUrl && (
+          <a
+            className={actionLinkClass}
+            href={String(links.archiveUrl)}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ textDecoration: "none" }}
+          >
+            <ArchiveOutlinedIcon fontSize="small" />
+            Resource unavailable? Access Archive
+            <LaunchIcon sx={{ fontSize: "1rem" }} />
+          </a>
+        )}
+      </div>
       {props.resultItem.description.length > 0 && (
-        <div className="flex flex-col items-center">
+        <div className="flex flex-col">
           {props.resultItem.description.map((description, index) => {
-            return <div
+            return <p
               key={index}
-              className="text-base mb-2"
+              className="m-0 text-base leading-relaxed mb-2"
             >{description}
-            </div>
+            </p>
           })}
         </div>
       )}
-      {links.archiveUrl ? (
-        <div className="mt-2">
-          <strong>Data Offline?</strong> Checkout a copy of this dataset in our <a href={links.archiveUrl}>Data Archive</a>
-        </div>
-      ) : null}
     </div>
   );
 };

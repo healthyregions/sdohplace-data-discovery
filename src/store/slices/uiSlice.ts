@@ -34,6 +34,8 @@ const uiSlice = createSlice({
       state.infoPanelTab = action.payload;
     },
     setShowDetailPanel: (state, action) => {
+      // close the share panel when switching resources, so it never claims a copy that didn't happen
+      if (state.showDetailPanel !== action.payload) state.showSharedLink = false;
       state.showDetailPanel = action.payload;
     },
     setShowFilter: (state, action) => {
