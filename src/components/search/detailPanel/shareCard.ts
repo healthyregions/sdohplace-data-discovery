@@ -1,3 +1,6 @@
+// Not used yet: copying a rich HTML "data card" to the clipboard is parked for a future release.
+// Sharing currently copies the URL only, and the preview card comes from link unfurling
+// (netlify/edge-functions/resource-preview.js).
 import { SolrObject } from "../../../../meta/interface/SolrObject";
 
 const siteSuffix = "Data Discovery, The SDOH & Place Project";

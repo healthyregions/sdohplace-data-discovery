@@ -16,7 +16,6 @@ import { useDispatch, useSelector } from "react-redux";
 import { setShowDetailPanel, setShowSharedLink } from "@/store/slices/uiSlice";
 import { EventType } from "@/lib/event";
 import { usePlausible } from "next-plausible";
-import { copyShareCard } from "./shareCard";
 
 interface Props {
   resultItem: SolrObject;
@@ -61,10 +60,13 @@ const HeaderRow = (props: Props): JSX.Element => {
       }
     });
   };
-  const handleCopyShareCard = () => {
-    copyShareCard(props.resultItem, window.location.href)
+  // copies only the URL; the resource preview card comes from link unfurling
+  // (netlify/edge-functions/resource-preview.js) wherever the link is pasted
+  const handleCopyLink = () => {
+    navigator.clipboard
+      ?.writeText(window.location.href)
       .then(() => setCopied(true))
-      .catch((err) => console.error("Failed to copy share card:", err));
+      .catch((err) => console.error("Failed to copy share link:", err));
   };
   // get the second items's value as the link to be parsed from the meta.references,
   // e.g. {"http://schema.org/url ": "https://ephtracking.cdc.gov/DataExplorer/#/", "http://lccn.loc.gov/sh85035852": "https://data.cdc.gov/Environmental-Health-Toxicology/Daily-Census-Tract-Level-PM2-5-Concentrations-2011/qjxm-7fny/data_preview"}"
@@ -158,7 +160,7 @@ const HeaderRow = (props: Props): JSX.Element => {
           </div>
           <IconButton
             aria-label={copied ? "Share link copied" : "Copy share link"}
-            onClick={handleCopyShareCard}
+            onClick={handleCopyLink}
             sx={{
               flex: "none",
               width: "2.5rem",
