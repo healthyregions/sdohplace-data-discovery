@@ -10,6 +10,11 @@ function = "chat-search"
 pattern = "/.netlify/edge-functions/health"
 function = "health"
 
+# link unfurling: resource-specific preview tags for shared /?show=<id> links
+[[edge_functions]]
+path = "/"
+function = "resource-preview"
+
 # contributor-submissions declares its own route via `export const config`
 # in netlify/edge-functions/contributor-submissions.js.
 
