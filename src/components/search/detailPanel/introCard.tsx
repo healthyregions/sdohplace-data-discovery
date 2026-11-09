@@ -67,7 +67,7 @@ const IntroCard = (props: Props): JSX.Element => {
 
   return (
     <div className={`container mx-auto shadow-none aspect-ratio`}>
-      <div className="flex flex-col sm:flex-row border-0 border-t border-solid border-strongorange pt-6 gap-x-8">
+      <div className="flex flex-col sm:flex-row border-0 border-t-[0.5px] border-solid border-neutralgray pt-6 gap-x-8">
         <div className="flex-1 w-full sm:w-1/2">
           {resourceClass.length > 0 && (
             <div className="mb-4" style={introCardStyle}>

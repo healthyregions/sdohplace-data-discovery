@@ -64,7 +64,7 @@ const DetailPanel = (props: Props): JSX.Element => {
           <IntroCard resultItem={resultItem} />
         </div>
 
-        <div className="container border-0 border-t border-solid border-strongorange pt-6">
+        <div className="container border-0 border-t-[0.5px] border-solid border-neutralgray pt-6">
           <h2 className="m-0 mb-6 font-fredoka font-normal text-2xl">
             Technical Details
           </h2>
