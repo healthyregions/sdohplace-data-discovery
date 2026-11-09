@@ -3,8 +3,6 @@ import tailwindConfig from "../../../../tailwind.config";
 import resolveConfig from "tailwindcss/resolveConfig";
 import { SolrObject } from "../../../../meta/interface/SolrObject";
 import CloseIcon from "@mui/icons-material/Close";
-import CheckIcon from "@mui/icons-material/Check";
-import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import LaunchIcon from "@mui/icons-material/Launch";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import ShareOutlinedIcon from "@mui/icons-material/ShareOutlined";
@@ -16,6 +14,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { setShowDetailPanel, setShowSharedLink } from "@/store/slices/uiSlice";
 import { EventType } from "@/lib/event";
 import { usePlausible } from "next-plausible";
+import CopyButton, { useCopyToClipboard } from "./copyButton";
 
 interface Props {
   resultItem: SolrObject;
@@ -45,11 +44,8 @@ const HeaderRow = (props: Props): JSX.Element => {
     }
   };
 
-  const [copied, setCopied] = React.useState(false);
   // a fresh share panel (or a different resource) starts uncopied
-  React.useEffect(() => {
-    setCopied(false);
-  }, [currentShowSharedLink, props.resultItem.id]);
+  const { copied, copy } = useCopyToClipboard(`${currentShowSharedLink}-${props.resultItem.id}`);
 
   // not reflect shared link in url, only in redux
   const handleShare = () => {
@@ -62,12 +58,7 @@ const HeaderRow = (props: Props): JSX.Element => {
   };
   // copies only the URL; the resource preview card comes from link unfurling
   // (netlify/edge-functions/resource-preview.js) wherever the link is pasted
-  const handleCopyLink = () => {
-    navigator.clipboard
-      ?.writeText(window.location.href)
-      .then(() => setCopied(true))
-      .catch((err) => console.error("Failed to copy share link:", err));
-  };
+  const handleCopyLink = () => copy(window.location.href);
   // get the second items's value as the link to be parsed from the meta.references,
   // e.g. {"http://schema.org/url ": "https://ephtracking.cdc.gov/DataExplorer/#/", "http://lccn.loc.gov/sh85035852": "https://data.cdc.gov/Environmental-Health-Toxicology/Daily-Census-Tract-Level-PM2-5-Concentrations-2011/qjxm-7fny/data_preview"}"
   const links = ParseReferenceLink(props.resultItem.meta.references);
@@ -85,7 +76,7 @@ const HeaderRow = (props: Props): JSX.Element => {
           {props.isMobileView ? "Back to list" : "Back to Map search"}
         </a>
       </div>
-      <div className="flex flex-col sm:flex-row items-start gap-4 pb-6 border-0 border-b border-solid border-lightgray">
+      <div className="flex flex-col sm:flex-row items-start gap-4 pb-6 border-0 border-b-[0.5px] border-solid border-neutralgray">
         <div className="flex items-start flex-grow">
           <div
             className="flex items-center text-[2em] sm:text-[2.5em] mt-1"
@@ -158,23 +149,7 @@ const HeaderRow = (props: Props): JSX.Element => {
               {window.location.href}
             </p>
           </div>
-          <IconButton
-            aria-label={copied ? "Share link copied" : "Copy share link"}
-            onClick={handleCopyLink}
-            sx={{
-              flex: "none",
-              width: "2.5rem",
-              height: "2.5rem",
-              border: copied ? "none" : `1px solid ${fullConfig.theme.colors["frenchviolet"]}`,
-              backgroundColor: copied ? fullConfig.theme.colors["strongorange"] : "white",
-              color: copied ? "white" : fullConfig.theme.colors["frenchviolet"],
-              "&:hover": {
-                backgroundColor: copied ? fullConfig.theme.colors["strongorange"] : "white",
-              },
-            }}
-          >
-            {copied ? <CheckIcon /> : <ContentCopyIcon fontSize="small" />}
-          </IconButton>
+          <CopyButton copied={copied} onClick={handleCopyLink} label="Share link" />
         </div>
       </Collapse>
       <div className="flex flex-wrap items-center gap-x-6 gap-y-2 mt-4 mb-6">

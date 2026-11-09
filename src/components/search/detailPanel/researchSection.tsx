@@ -4,9 +4,7 @@ import tailwindConfig from "../../../../tailwind.config";
 import resolveConfig from "tailwindcss/resolveConfig";
 import { SolrObject } from "../../../../meta/interface/SolrObject";
 import LaunchIcon from "@mui/icons-material/Launch";
-import ContentCopyIcon from "@mui/icons-material/ContentCopy";
-import CheckIcon from "@mui/icons-material/Check";
-import { IconButton } from "@mui/material";
+import CopyButton, { useCopyToClipboard } from "./copyButton";
 
 interface Props {
   resultItem: SolrObject;
@@ -39,24 +37,14 @@ const ExternalLink = ({ href, children }: { href: string; children: React.ReactN
 
 const ResearchSection = (props: Props): JSX.Element => {
   const { resultItem } = props;
-  const [copied, setCopied] = React.useState(false);
+  const { copied, copy } = useCopyToClipboard(resultItem.id);
   const guides = (resultItem.meta.subject || []).filter((s) => researchGuides[s]);
   const citation = resultItem.meta.preferred_citation;
   const scholarUrl = `https://scholar.google.com/scholar?q=${encodeURIComponent(resultItem.title)}`;
 
-  const handleCopyCitation = () => {
-    navigator.clipboard
-      ?.writeText(citation)
-      .then(() => {
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-      })
-      .catch((err) => console.error("Failed to copy citation:", err));
-  };
-
   return (
     <div
-      className="container border-0 border-t border-solid border-strongorange pt-6 mt-6"
+      className="container border-0 border-t-[0.5px] border-solid border-neutralgray pt-6 mt-6"
       id="researchRow"
       style={sectionStyle}
     >
@@ -79,24 +67,14 @@ const ResearchSection = (props: Props): JSX.Element => {
       {citation && (
         <div className="flex items-center gap-4 mb-6 p-4 sm:p-6 bg-lightbisque rounded">
           <div className="flex-1 min-w-0">
-            <p className="m-0 mb-2 font-bold">Suggested Citation:</p>
+            <p className="m-0 mb-2 font-bold">
+              {copied ? "Copied to clipboard:" : "Suggested Citation:"}
+            </p>
             <p className="m-0 text-s" style={{ overflowWrap: "anywhere" }}>
               {citation}
             </p>
           </div>
-          <IconButton
-            aria-label={copied ? "Citation copied" : "Copy citation"}
-            onClick={handleCopyCitation}
-            sx={{
-              flex: "none",
-              border: `1px solid ${fullConfig.theme.colors["frenchviolet"]}`,
-              color: fullConfig.theme.colors["frenchviolet"],
-              backgroundColor: "white",
-              "&:hover": { backgroundColor: "white" },
-            }}
-          >
-            {copied ? <CheckIcon /> : <ContentCopyIcon />}
-          </IconButton>
+          <CopyButton copied={copied} onClick={() => copy(citation)} label="Citation" />
         </div>
       )}
       <div className="sm:px-6">
