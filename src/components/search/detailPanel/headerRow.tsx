@@ -127,7 +127,7 @@ const HeaderRow = (props: Props): JSX.Element => {
         easing={"linear"}
       >
         <div
-          className="flex items-center gap-4 px-4 py-4 bg-lightbisque border-0 border-t-2 border-solid border-strongorange rounded-b-lg"
+          className="flex items-center gap-4 px-4 py-4 bg-lightbisque border-0 border-t-[0.5px] border-solid border-neutralgray rounded-b-lg"
         >
           <IconButton
             aria-label="Close share link"
