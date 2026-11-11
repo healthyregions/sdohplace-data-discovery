@@ -20,7 +20,9 @@ export interface SolrObject {
     language?: string;
     publisher?: string;
     provider?: string;
-    resource_type?: string;
+    resource_type?: string | string[];
+    format?: string;
+    file_size?: string;
     subject?: string[];
     theme?: string;
     issued?: string;
