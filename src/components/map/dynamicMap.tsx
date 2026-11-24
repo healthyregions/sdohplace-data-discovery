@@ -608,7 +608,7 @@ export default function DynamicMap(props: Props): JSX.Element {
       if (scaleControlEl) {
         (scaleControlEl as HTMLElement).style.borderColor = "#AAAAAA";
         (scaleControlEl as HTMLElement).style.color = "#444444";
-        (scaleControlEl as HTMLElement).style.fontFamily = "Nunito, sans-serif";
+        (scaleControlEl as HTMLElement).style.fontFamily = fullConfig.theme.fontFamily["sans"];
       }
 
       // change the icon that zoom control uses addIcon and minusIcon

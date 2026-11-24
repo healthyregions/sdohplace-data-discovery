@@ -681,7 +681,7 @@ const ResultsPanel = (props: Props): JSX.Element => {
       <span style={resultsPanelStyle}>
         <Box>
           <div className="flex items-center justify-between gap-3 mb-[1.5em] sm:ml-[1.1em]">
-            <div className="flex min-w-0 flex-1 text-2xl">
+            <div className="flex min-w-0 flex-1 text-2xl font-heading">
               <Fade in={!isResetting} timeout={300}>
                 <div className="min-w-0">
                   <Box sx={{ minHeight: "2rem" }}>
@@ -692,7 +692,7 @@ const ResultsPanel = (props: Props): JSX.Element => {
             </div>
 
             <div
-              className="inline-flex items-center sm:justify-end flex-none text-l sm:text-base sm:mr-[2.3em] text-frenchviolet cursor-pointer whitespace-nowrap"
+              className="inline-flex items-center sm:justify-end flex-none text-l sm:text-base sm:mr-[2.3em] text-frenchviolet cursor-pointer whitespace-nowrap font-heading"
               onClick={handleFilterToggle}
             >
               <SvgIcon

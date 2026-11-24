@@ -96,7 +96,7 @@ const SignInPage: NextPage = () => {
       />
       <main className="flex min-h-screen items-center justify-center bg-white px-6">
         <div className="max-w-[28rem] text-center">
-          <div className="font-fredoka text-4xl text-frenchviolet">SDOH &amp; Place</div>
+          <div className="font-heading text-4xl text-frenchviolet">SDOH &amp; Place</div>
           <p className="mt-6 mb-0 text-l leading-7 text-almostblack">
             {status === "error" || status === "idle" ? message : "Redirecting to the Keycloak sign-in page..."}
           </p>

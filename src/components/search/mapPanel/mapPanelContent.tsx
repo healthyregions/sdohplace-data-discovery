@@ -52,7 +52,7 @@ export default function MapPanelContent(props: Props): JSX.Element {
     <Box className="sm:px-[2em]" sx={{ display: props.showMap }}>
       <Box>
         <div className="flex flex-col mb-[0.5em] sm:mb-[1.5em] sm:ml-[1.1em] sm:flex-row items-start sm:items-center">
-          <div className="flex flex-col sm:flex-row sm:flex-grow text-2xl sm:mb-0">Map search</div>
+          <div className="flex flex-col sm:flex-row sm:flex-grow text-2xl sm:mb-0 font-heading">Map search</div>
           <Button
             id="overlays-button"
             sx={localStyles.overlaysButton}
@@ -78,7 +78,7 @@ export default function MapPanelContent(props: Props): JSX.Element {
                 borderRadius: "12px",
                 background: "white",
                 minWidth: 300,
-                fontFamily: "Nunito, sans-serif",
+                fontFamily: fullConfig.theme.fontFamily["sans"],
               },
             }}
             MenuListProps={{ "aria-labelledby": "overlays-button", className: "rounded" }}
@@ -95,7 +95,7 @@ export default function MapPanelContent(props: Props): JSX.Element {
       <Box className="my-[1.68em]">
         <div className="sm:mb-[1.5em] sm:flex-col">
           <Box id="sdoh-learn-more" height="100%" className="sm:mt-[2em] sm:ml-[1.1em]">
-            <Box className="text-2xl sm:mb-[0.6em]">Want to learn more about SDOH data?</Box>
+            <Box className="text-2xl sm:mb-[0.6em] font-heading">Want to learn more about SDOH data?</Box>
             <Box className="text-s sm:mb-[1.5em]">
               <p className="mb-[1em]">
                 We have a selection of resource guides available for different SDOH topics, like {" "}

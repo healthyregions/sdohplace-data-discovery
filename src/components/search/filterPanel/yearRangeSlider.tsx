@@ -71,7 +71,7 @@ const PriorYearToggle = ({
     role="switch"
     aria-checked={enabled}
     onClick={onToggle}
-    className="flex items-center gap-2 bg-transparent border-none p-0"
+    className="flex items-center gap-2 bg-transparent border-none p-0 font-sans"
     style={{ cursor: "pointer" }}
   >
     <span
@@ -228,10 +228,10 @@ export const YearRangeSlider = ({
 
   return (
     <Box className="mt-6">
-      <Box className="text-base font-bold" sx={{ mb: 1 }}>
+      <Box className="text-base font-bold font-heading" sx={{ mb: 1 }}>
         Filter
       </Box>
-      <Box className="text-base font-bold">Year</Box>
+      <Box className="text-base font-bold font-heading">Year</Box>
       <Box className="mt-2 flex items-center gap-3">
         <Box
           sx={{

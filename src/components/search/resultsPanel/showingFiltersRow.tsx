@@ -84,7 +84,7 @@ const ShowingFiltersRow = ({ chips, onClearAll }: Props): JSX.Element | null => 
             border: "none",
             background: "transparent",
             color: fullConfig.theme.colors["frenchviolet"],
-            fontFamily: fullConfig.theme.fontFamily["sans"],
+            fontFamily: fullConfig.theme.fontFamily["heading"],
             fontWeight: 700,
             cursor: "pointer",
             padding: ".2em .4em",

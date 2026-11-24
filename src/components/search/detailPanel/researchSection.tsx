@@ -48,7 +48,7 @@ const ResearchSection = (props: Props): JSX.Element => {
       id="researchRow"
       style={sectionStyle}
     >
-      <h2 className="m-0 mb-6 font-fredoka font-normal text-2xl">Research</h2>
+      <h2 className="m-0 mb-6 font-normal text-2xl">Research</h2>
       {guides.length > 0 && (
         <div className="mb-6">
           <p className="m-0">

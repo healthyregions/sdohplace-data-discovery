@@ -122,7 +122,7 @@ const CommunityAssetsDropdown: React.FC<Props> = ({
               <svg height="12" width="12" xmlns="http://www.w3.org/2000/svg">
                 <circle r="5" cx="6" cy="6" fill={color} />
               </svg>
-              <span style={{ fontFamily: "Nunito, sans-serif" }}>
+              <span style={{ fontFamily: fullConfig.theme.fontFamily["sans"] }}>
                 {overlay}
               </span>
             </Box>
@@ -149,7 +149,7 @@ const CommunityAssetsDropdown: React.FC<Props> = ({
         }}
       >
         {/* <ListItemIcon sx={{ minWidth: 44 }} /> */}
-        <span style={{ fontFamily: "Nunito, sans-serif", paddingLeft: "0.75em" }}>Clear all</span>
+        <span style={{ fontFamily: fullConfig.theme.fontFamily["heading"], paddingLeft: "0.75em" }}>Clear all</span>
       </MenuItem>
     </>
   );

@@ -186,7 +186,7 @@ const SearchInput: React.FC<SearchInputProps> = ({
                 component="span"
                 sx={{
                   fontWeight: 400,
-                  fontFamily: "Nunito, sans-serif",
+                  fontFamily: fullConfig.theme.fontFamily["sans"],
                   whiteSpace: "normal",
                 }}
               >

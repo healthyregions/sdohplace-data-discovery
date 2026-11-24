@@ -13,7 +13,7 @@ type Props = {
 
 const getStyles = (fullConfig: any): Record<string, React.CSSProperties> => ({
   container: {
-    fontFamily: fullConfig?.theme?.fontFamily?.["sans"] || "Nunito, sans-serif",
+    fontFamily: fullConfig?.theme?.fontFamily?.["sans"] || "Crimson Pro, serif",
     maxWidth: 440,
     minWidth: 320,
     borderRadius: 8,
@@ -34,6 +34,7 @@ const getStyles = (fullConfig: any): Record<string, React.CSSProperties> => ({
     flexDirection: "column",
   },
   name: {
+    fontFamily: fullConfig?.theme?.fontFamily?.["heading"] || "League Spartan, sans-serif",
     fontWeight: 600,
     color: fullConfig?.theme?.colors?.["almostblack"] || "rgb(55, 65, 81)",
     fontSize: "0.875rem",
@@ -124,7 +125,7 @@ export function assetPopupHTML(props: any, fullConfig?: any) {
   const address = getAddress(props);
   const accuracy = getAccuracy(props);
 
-  const fontFamily = fullConfig?.theme?.fontFamily?.["sans"] || "Nunito, sans-serif";
+  const fontFamily = fullConfig?.theme?.fontFamily?.["sans"] || "Crimson Pro, serif";
   const white = fullConfig?.theme?.colors?.["white"] || "white";
   const textColor = fullConfig?.theme?.colors?.["almostblack"] || "#374151";
   const subtleColor = fullConfig?.theme?.colors?.["darkgray"] || "#6B7280";

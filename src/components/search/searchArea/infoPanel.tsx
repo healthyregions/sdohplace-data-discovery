@@ -60,7 +60,7 @@ function CustomTabPanel(props: Props) {
                     dispatch(setInfoPanelTab(value - 1));
                   }}
                   style={{ cursor: "pointer" }}
-                  className="no-underline text-frenchviolet"
+                  className="no-underline text-frenchviolet font-heading"
                 >
                   &larr; Previous&nbsp;&nbsp;
                 </a>
@@ -71,7 +71,7 @@ function CustomTabPanel(props: Props) {
                     dispatch(setInfoPanelTab(value + 1));
                   }}
                   style={{ cursor: "pointer" }}
-                  className="no-underline text-frenchviolet"
+                  className="no-underline text-frenchviolet font-heading"
                 >
                   Next &rarr;
                 </a>
@@ -141,7 +141,7 @@ export default function InfoPanel() {
                 <Typography
                   sx={{
                     textTransform: "none",
-                    fontFamily: `${fullConfig.theme.fontFamily["sans"]}`,
+                    fontFamily: `${fullConfig.theme.fontFamily["heading"]}`,
                     fontWeight: 500,
                     color:
                       infoPanelTab === index

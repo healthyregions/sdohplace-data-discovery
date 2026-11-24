@@ -122,7 +122,7 @@ const ParagraphCard = (props: Props): JSX.Element => {
                   style={linkStyle}
                 />
                 <span>
-                  <b className="text-base">{props.title}</b>
+                  <b className="text-base font-heading">{props.title}</b>
                   {props.subtitle && (
                     <span className="block text-s font-semibold mt-1">
                       {props.subtitle}

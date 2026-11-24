@@ -52,7 +52,7 @@ const LocationSearchDropdown: React.FC<LocationSearchDropdownProps> = ({
     return (
       <div
         className="absolute top-full left-0 mt-2 w-[300px] bg-white rounded-lg shadow-lg border border-lightviolet overflow-hidden z-50"
-        style={{ fontFamily: 'Nunito, sans-serif' }}
+        style={{ fontFamily: fullConfig.theme.fontFamily["sans"] }}
       >
         <div className="px-4 py-4 flex flex-col items-center text-center">
           <div className="flex items-center gap-2 mb-1">
@@ -88,7 +88,7 @@ const LocationSearchDropdown: React.FC<LocationSearchDropdownProps> = ({
   return (
     <div
       className="absolute top-full left-0 mt-2 w-[300px] bg-white rounded-lg shadow-lg border border-lightviolet overflow-hidden z-50"
-      style={{ fontFamily: 'Nunito, sans-serif' }}
+      style={{ fontFamily: fullConfig.theme.fontFamily["sans"] }}
     >
       <ul className="py-1">
         {results.map((item, index) => {
@@ -100,7 +100,7 @@ const LocationSearchDropdown: React.FC<LocationSearchDropdownProps> = ({
               <button
                 type="button"
                 onClick={() => onSelect(item)}
-                className="w-full px-4 py-3 flex items-start gap-3 hover:bg-gray-50 transition-colors text-left"
+                className="w-full px-4 py-3 flex items-start gap-3 hover:bg-gray-50 transition-colors text-left font-sans"
               >
                 <div className="flex flex-col w-full">
                   <div className="flex items-center gap-2">
