@@ -4,7 +4,7 @@ import ThemeIcons from "../helper/themeIcons";
 export const ThemeOptions = (): JSX.Element => {
   return (
     <Box className="mt-6">
-      <Box className="text-base font-bold" sx={{ mb: 1 }}>
+      <Box className="text-base font-bold font-heading" sx={{ mb: 1 }}>
         Theme
       </Box>
       <Box className="flex flex-row flex-wrap gap-4">

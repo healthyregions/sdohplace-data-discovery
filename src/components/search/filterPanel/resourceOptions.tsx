@@ -28,7 +28,7 @@ export const ResourceOptions = (): JSX.Element => {
 
   return (
     <Box className="mt-6">
-      <Box className="text-base font-bold" sx={{ mb: 1 }}>
+      <Box className="text-base font-bold font-heading" sx={{ mb: 1 }}>
         Resource
       </Box>
       <Box className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-3 justify-items-start">
@@ -40,7 +40,7 @@ export const ResourceOptions = (): JSX.Element => {
               type="button"
               aria-pressed={checked}
               onClick={() => handleSelectionChange(option.value)}
-              className="inline-flex items-center bg-transparent border-none p-0 m-0 text-left whitespace-nowrap"
+              className="inline-flex items-center bg-transparent border-none p-0 m-0 text-left whitespace-nowrap font-sans"
               style={{ cursor: "pointer" }}
             >
               <span

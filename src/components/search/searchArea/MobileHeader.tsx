@@ -39,7 +39,7 @@ const MobileHeader: React.FC<MobileHeaderProps> = ({ title, onMenuClick }) => {
             height={50}
             style={{ objectFit: "contain" }}
           />
-          <h2 className="m-0 text-2xl font-fredoka">{title}</h2>
+          <h2 className="m-0 text-2xl">{title}</h2>
         </div>
         <button
           onClick={handleMenuClick}

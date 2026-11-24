@@ -452,6 +452,7 @@ const ResultCard = (props: Props): JSX.Element => {
           className="truncate"
           style={{
             ...resultCardStyle,
+            fontFamily: fullConfig.theme.fontFamily["heading"],
             fontSize: "1.1rem",
             lineHeight: 1.2,
             fontWeight: 500,
@@ -526,7 +527,7 @@ const ResultCard = (props: Props): JSX.Element => {
               roundBackground={true}
               svgIcon={IconMatch(itemSubject, "filled")}
               label={itemTitle}
-              labelClass={`text-l font-medium ${fullConfig.theme.fontFamily["sans"]}`}
+              labelClass="text-l font-medium font-heading"
               labelColor={fullConfig.theme.colors["almostblack"]}
             />
           </Grid>
@@ -572,7 +573,7 @@ const ResultCard = (props: Props): JSX.Element => {
                   color: hasHighlightIds
                     ? fullConfig.theme.colors["frenchviolet"]
                     : fullConfig.theme.colors["darkgray"],
-                  fontFamily: `${fullConfig.theme.fontFamily["sans"]}`,
+                  fontFamily: `${fullConfig.theme.fontFamily["heading"]}`,
                   fontSize: "0.875rem",
                 }}
               >

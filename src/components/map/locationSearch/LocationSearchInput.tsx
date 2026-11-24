@@ -39,7 +39,7 @@ const LocationSearchInput = forwardRef<HTMLInputElement, LocationSearchInputProp
           placeholder={placeholder}
           className="flex-1 h-full bg-transparent border-none text-smokegray text-base py-[0.25rem] pr-[0.5rem] sm:pl-0 placeholder:text-neutralgray"
           style={{
-            fontFamily: 'Nunito, sans-serif',
+            fontFamily: fullConfig.theme.fontFamily["sans"],
             WebkitAppearance: 'none',
             outline: 'none',
             boxShadow: 'none',

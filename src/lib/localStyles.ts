@@ -9,7 +9,7 @@ export const localStyles = {
     margin: 0,
     textTransform: "none" as const,
     color: `${fullConfig.theme.colors["frenchviolet"]}`,
-    fontFamily: `${fullConfig.theme.fontFamily["sans"]}`,
+    fontFamily: `${fullConfig.theme.fontFamily["heading"]}`,
     fontSize: "1.1em",
   },
 };

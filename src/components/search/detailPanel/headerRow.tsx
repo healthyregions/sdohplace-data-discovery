@@ -28,7 +28,7 @@ const introCardStyle: React.CSSProperties = {
   fontFamily: `${fullConfig.theme.fontFamily["sans"]}`,
 };
 const actionLinkClass =
-  "flex items-center gap-1 text-base text-frenchviolet cursor-pointer bg-transparent border-0 p-0 no-underline";
+  "flex items-center gap-1 text-base text-frenchviolet cursor-pointer bg-transparent border-0 p-0 no-underline font-heading";
 
 const HeaderRow = (props: Props): JSX.Element => {
   const dispatch = useDispatch<AppDispatch>();
@@ -68,7 +68,7 @@ const HeaderRow = (props: Props): JSX.Element => {
       <div className="flex mb-5">
         <a
           href="#"
-          className="flex items-center gap-2 text-xl text-frenchviolet leading-8"
+          className="flex items-center gap-2 text-xl text-frenchviolet leading-8 font-heading"
           onClick={backToMapView}
           style={{ textDecoration: "none" }}
         >
@@ -84,7 +84,7 @@ const HeaderRow = (props: Props): JSX.Element => {
           >
             {React.cloneElement(props.headerIcon, { fontSize: "inherit" })}
           </div>
-          <h1 className="m-0 ml-3 sm:ml-4 font-fredoka font-normal text-2xl sm:text-4xl leading-tight">
+          <h1 className="m-0 ml-3 sm:ml-4 font-normal text-2xl sm:text-4xl leading-tight">
             {props.resultItem.title}
           </h1>
         </div>
@@ -110,7 +110,7 @@ const HeaderRow = (props: Props): JSX.Element => {
             borderRadius: "0.25rem",
             backgroundColor: `${fullConfig.theme.colors["frenchviolet"]} !important`,
             color: "white !important",
-            fontFamily: fullConfig.theme.fontFamily["sans"],
+            fontFamily: fullConfig.theme.fontFamily["heading"],
             fontSize: "1rem",
             fontWeight: 400,
             padding: "0.5rem 1rem",
